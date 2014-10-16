@@ -62,7 +62,7 @@ facet normal -0.090751 0.060638 -0.018051
     vertex 0.249480 0.353553 0.982018
   endloop
 endfacet
-facet normal -0.084022 0.056142 -0.016713
+facet normal -0.084022 0.056143 -0.016713
   outer loop
     vertex 0.038060 0.191342 1.500000
     vertex 0.146447 0.353553 1.500000
@@ -307,7 +307,7 @@ facet normal 0.007982 0.026813 0.040128
     vertex 1.252620 0.353553 0.902761
   endloop
 endfacet
-facet normal -0.016713 0.056142 -0.084022
+facet normal -0.016713 0.056143 -0.084022
   outer loop
     vertex 1.500000 0.191342 0.038060
     vertex 0.982018 0.353553 0.249480
