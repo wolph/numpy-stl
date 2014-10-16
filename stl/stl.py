@@ -19,10 +19,10 @@ class StlMesh(mesh.Mesh):
     '''Load a mesh from a STL file
 
     :param str filename: The file to load
-    :param bool calculate_normals: Whether to calculate the normals
+    :param bool update_normals: Whether to update the normals
     :param file fh: The file handle to open
     '''
-    def __init__(self, filename, calculate_normals=True, fh=None):
+    def __init__(self, filename, update_normals=True, fh=None):
         self.filename = filename
         if fh:
             data = self.load(fh)
@@ -30,7 +30,7 @@ class StlMesh(mesh.Mesh):
             with open(filename, 'rb') as fh:
                 data = self.load(fh)
 
-        mesh.Mesh.__init__(self, data, calculate_normals)
+        mesh.Mesh.__init__(self, data, update_normals)
 
     def load(self, fh):
         '''Load Mesh from STL file
@@ -88,7 +88,7 @@ class StlMesh(mesh.Mesh):
 
         return numpy.fromiter(read_facet(fh), dtype=self.dtype)
 
-    def save(self, filename, fh=None, mode=AUTOMATIC, calculate_normals=True):
+    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
         '''Save the STL to a (binary) file
 
         If mode is :py:data:`AUTOMATIC` an :py:data:`ASCII` file will be
@@ -97,11 +97,11 @@ class StlMesh(mesh.Mesh):
         :param str filename: The file to load
         :param file fh: The file handle to open
         :param int mode: The mode to write, default is :py:data:`AUTOMATIC`.
-        :param bool calculate_normals: Whether to calculate the normals
+        :param bool update_normals: Whether to update the normals
         '''
         assert filename, 'Filename is required for the STL headers'
-        if calculate_normals:
-            self.calculate_normals()
+        if update_normals:
+            self.update_normals()
 
         if mode is AUTOMATIC:
             if fh and os.isatty(fh.fileno()):  # pragma: no cover

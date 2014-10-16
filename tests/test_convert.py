@@ -63,4 +63,4 @@ def test_stl_mesh(tmpdir):
         mesh.save(filename=str(tmp_file), mode='test')
 
     mesh.save(str(tmp_file))
-    mesh.save(str(tmp_file), calculate_normals=False)
+    mesh.save(str(tmp_file), update_normals=False)
