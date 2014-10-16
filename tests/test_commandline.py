@@ -28,7 +28,7 @@ def test_args(tmpdir):
     assert _get_name('--name', 'foobar') == 'foobar'
     assert _get_name('-', tmpdir.join('binary.stl')).endswith('binary.stl')
     assert _get_name(ascii_file, '-').endswith('HalfDonut.stl')
-    assert _get_name('-', '-') is None
+    assert _get_name('-', '-')
 
 
 def test_ascii(tmpdir):

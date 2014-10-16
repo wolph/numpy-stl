@@ -56,11 +56,14 @@ def test_binary_to_ascii(ascii_path, binary_path):
 
 
 def test_stl_mesh(tmpdir):
+    tmp_file = tmpdir.join('tmp.stl')
+
     mesh = stl.StlMesh(ascii_file)
     with pytest.raises(ValueError):
-        mesh.save(filename='donut.stl', mode='test')
+        mesh.save(filename=str(tmp_file), mode='test')
 
-    mesh.save(str(tmpdir.join('binary.stl')))
+    mesh.save(str(tmp_file))
+    mesh.save(str(tmp_file), calculate_normals=False)
 
 if __name__ == '__main__':
     path = current_path()

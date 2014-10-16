@@ -40,7 +40,6 @@ class StlMesh(mesh.Mesh):
         :param file fh: The file handle to open
         '''
         begin = fh.read(5).lower()
-        fh.seek(0)
         if begin.startswith('solid'):
             data = self._load_ascii(fh)
         else:
@@ -49,16 +48,14 @@ class StlMesh(mesh.Mesh):
         return data
 
     def _load_binary(self, fh):
-        # Skip the header
-        fh.seek(80)
+        # Skip the header minus the "solid" detection for ascii files
+        fh.read(80 - 5)
         # Read the size
         size, = struct.unpack('@i', fh.read(4))
         # Read the rest of the binary data
         return numpy.fromfile(fh, dtype=self.dtype, count=size)
 
     def _load_ascii(self, fh):
-        assert fh.next().startswith('solid')
-
         def get(fh, prefix=''):
             line = line = fh.next().lower().strip()
             if prefix:
@@ -73,7 +70,8 @@ class StlMesh(mesh.Mesh):
                 return line
 
         def read_facet(fh):
-            while fh:
+            get(fh)
+            while True:
                 data = []
                 data.append(get(fh, 'facet normal'))
 
@@ -101,6 +99,7 @@ class StlMesh(mesh.Mesh):
         :param int mode: The mode to write, default is :py:data:`AUTOMATIC`.
         :param bool calculate_normals: Whether to calculate the normals
         '''
+        assert filename, 'Filename is required for the STL headers'
         if calculate_normals:
             self.calculate_normals()
 
@@ -117,11 +116,14 @@ class StlMesh(mesh.Mesh):
             raise ValueError('Mode %r is invalid' % mode)
 
         name = os.path.split(filename)[-1]
-        if fh:
-            write(fh, name)
-        else:
-            with open(name, 'wb') as fh:
-                write(fh, filename)
+        try:
+            if fh:
+                write(fh, name)
+            else:
+                with open(name, 'wb') as fh:
+                    write(fh, filename)
+        except IOError:  # pragma: no cover
+            pass
 
     def _write_ascii(self, fh, name):
         print >>fh, 'solid %s' % name

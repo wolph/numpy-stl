@@ -1,6 +1,8 @@
 import sys
-from . import stl
+import random
 import argparse
+
+from . import stl
 
 
 def _get_parser(description):
@@ -24,7 +26,7 @@ def _get_name(args):
     elif not getattr(args.infile, 'name', '<').startswith('<'):
         name = args.infile.name
     else:
-        name = None
+        name = 'numpy-stl-%06d' % random.randint(0, 1e6)
     return name
 
 
