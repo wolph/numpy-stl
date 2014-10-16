@@ -64,8 +64,3 @@ def test_stl_mesh(tmpdir):
 
     mesh.save(str(tmp_file))
     mesh.save(str(tmp_file), calculate_normals=False)
-
-if __name__ == '__main__':
-    path = current_path()
-    test_binary_to_ascii(ascii_path(path), binary_path(path))
-    test_ascii_to_binary(ascii_path(path), binary_path(path))
