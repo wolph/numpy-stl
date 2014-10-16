@@ -13,3 +13,4 @@ pytest-cov==1.8.0
 pytest-flakes==0.2
 pytest-pep8==1.0.6
 python-utils==1.6.1
+Sphinx==1.2.3
