@@ -10,7 +10,8 @@ install:
 
 # command to run tests
 script:
-    - py.test
+    - py.test stl
+    - python setup.py test
 
 after_success:
         - coveralls
