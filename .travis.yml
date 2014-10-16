@@ -1,0 +1,17 @@
+language: python
+python:
+    - '2.7'
+    - '3.3'
+
+# command to install dependencies
+install:
+    - pip install -r test_requirements.txt --use-mirrors
+    - pip install . --use-mirrors
+    - pip install coveralls --use-mirrors
+
+# command to run tests
+script:
+    - py.test
+
+after_success:
+        - coveralls
