@@ -46,7 +46,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'python_utils',
+        'python-utils>=1.6.1',
     ],
 )
 
