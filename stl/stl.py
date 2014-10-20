@@ -14,6 +14,15 @@ ASCII = 1
 #: Force writing BINARY
 BINARY = 2
 
+#: Amount of bytes to read while using buffered reading
+BUFFER_SIZE = 4096
+#: The amount of bytes in the header field
+HEADER_SIZE = 80
+#: The amount of bytes in the count field
+COUNT_SIZE = 4
+#: The maximum amount of triangles we can read from binary files
+MAX_COUNT = 1e6
+
 
 class StlMesh(mesh.Mesh):
     '''Load a mesh from a STL file
@@ -32,61 +41,120 @@ class StlMesh(mesh.Mesh):
 
         mesh.Mesh.__init__(self, data, update_normals)
 
-    def load(self, fh):
+    def load(self, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
 
         Automatically detects binary versus ascii STL files.
 
         :param file fh: The file handle to open
         '''
-        begin = fh.read(5).lower()
-        if begin.startswith('solid'):
-            data = self._load_ascii(fh)
+        header = fh.read(HEADER_SIZE).lower()
+        if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):
+            try:
+                data = self._load_ascii(fh, header)
+            except RuntimeError, (recoverable, e):
+                if recoverable:  # Recoverable?
+                    data = self._load_binary(fh, header, check_size=True)
+                else:
+                    # Apparently we've read beyond the header. Let's try
+                    # seeking :)
+                    # Note that this fails when reading from stdin, we can't
+                    # recover from that.
+                    fh.seek(HEADER_SIZE)
+
+                    # Since we know this is a seekable file now and we're not
+                    # 100% certain it's binary, check the size while reading
+                    data = self._load_binary(fh, header, check_size=True)
         else:
-            data = self._load_binary(fh)
+            data = self._load_binary(fh, header)
 
         return data
 
-    def _load_binary(self, fh):
-        # Skip the header minus the "solid" detection for ascii files
-        fh.read(80 - 5)
-        # Read the size
-        size, = struct.unpack('@i', fh.read(4))
-        # Read the rest of the binary data
-        return numpy.fromfile(fh, dtype=self.dtype, count=size)
+    def _load_binary(self, fh, header, check_size=False):
+        # Read the triangle count
+        count, = struct.unpack('@i', fh.read(COUNT_SIZE))
+        assert count < MAX_COUNT, ('File too large, got %d triangles which '
+                                   'exceeds the maximum of %d') % (
+                                       count, MAX_COUNT)
 
-    def _load_ascii(self, fh):
-        def get(fh, prefix=''):
-            line = line = fh.next().lower().strip()
+        if check_size:
+            try:
+                # Check the size of the file
+                fh.seek(0, os.SEEK_END)
+                raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
+                expected_count = raw_size / self.dtype.itemsize
+                assert expected_count == count, ('Expected %d vectors but '
+                                                 'header indicates %d') % (
+                                                     expected_count, count)
+            except IOError:  # pragma: no cover
+                pass
+
+        # Read the rest of the binary data
+        return numpy.fromfile(fh, dtype=self.dtype, count=count)
+
+    def _ascii_reader(self, fh, header):
+        lines = header.split('\n')
+        recoverable = [True]
+
+        def get(prefix=''):
+            if lines:
+                line = lines.pop(0)
+            else:
+                raise RuntimeError(recoverable[0], 'Unable to find more lines')
+            if not lines:
+                recoverable[0] = False
+
+                # Read more lines and make sure we prepend any old data
+                lines[:] = fh.read(BUFFER_SIZE).split('\n')
+                line += lines.pop(0)
+
+            line = line.lower().strip()
             if prefix:
-                values = line.replace(prefix, '', 1).strip().split()
+                if line.startswith(prefix):
+                    values = line.replace(prefix, '', 1).strip().split()
+                elif line.startswith('endsolid'):
+                    raise StopIteration
+                else:
+                    raise RuntimeError(recoverable[0],
+                                       '%r should start with %r' % (line,
+                                                                    prefix))
+
                 if len(values) == 3:
                     return [float(v) for v in values]
-                elif values[0] == 'endsolid':
-                    raise StopIteration
                 else:  # pragma: no cover
-                    raise ValueError('Incorrect value %r' % line)
+                    raise RuntimeError(recoverable[0],
+                                       'Incorrect value %r' % line)
             else:
                 return line
 
-        def read_facet(fh):
-            get(fh)
-            while True:
-                data = []
-                data.append(get(fh, 'facet normal'))
+        assert get().startswith('solid ')
 
-                assert get(fh) == 'outer loop'
-                data.append(get(fh, 'vertex'))
-                data.append(get(fh, 'vertex'))
-                data.append(get(fh, 'vertex'))
-                assert get(fh) == 'endloop'
-                assert get(fh) == 'endfacet'
+        if not lines:
+            raise RuntimeError(recoverable[0],
+                               'No lines found, impossible to read')
 
-                # Attributes are currently not supported
-                data.append(0)
-                yield tuple(data)
+        while True:
+            # Read from the header lines first, until that point we can recover
+            # and go to the binary option. After that we cannot due to
+            # unseekable files such as sys.stdin
+            #
+            # Numpy doesn't support any non-file types so wrapping with a
+            # buffer and/or StringIO does not work.
+            try:
+                normals = get('facet normal')
+                assert get() == 'outer loop'
+                v0 = get('vertex')
+                v1 = get('vertex')
+                v2 = get('vertex')
+                assert get() == 'endloop'
+                assert get() == 'endfacet'
+                attrs = 0
+                yield (normals, (v0, v1, v2), attrs)
+            except AssertionError, e:
+                raise RuntimeError(recoverable[0], e)
 
-        return numpy.fromiter(read_facet(fh), dtype=self.dtype)
+    def _load_ascii(self, fh, header):
+        return numpy.fromiter(self._ascii_reader(fh, header), dtype=self.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
         '''Save the STL to a (binary) file
@@ -129,11 +197,12 @@ class StlMesh(mesh.Mesh):
         print >>fh, 'solid %s' % name
 
         for row in self.data:
+            vectors = row['vectors']
             print >>fh, 'facet normal %f %f %f' % tuple(row['normals'])
             print >>fh, '  outer loop'
-            print >>fh, '    vertex %f %f %f' % tuple(row['v0'])
-            print >>fh, '    vertex %f %f %f' % tuple(row['v1'])
-            print >>fh, '    vertex %f %f %f' % tuple(row['v2'])
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[0])
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[1])
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[2])
             print >>fh, '  endloop'
             print >>fh, 'endfacet'
 

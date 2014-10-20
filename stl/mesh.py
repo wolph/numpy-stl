@@ -5,6 +5,9 @@ import collections
 from python_utils import logger
 
 VECTORS = 3
+X = 0
+Y = 1
+Z = 2
 
 
 class Mesh(logger.Logged, collections.Mapping):
@@ -39,15 +42,20 @@ class Mesh(logger.Logged, collections.Mapping):
     '''
     dtype = numpy.dtype([
         ('normals', numpy.float32, (3, )),
-        ('v0', numpy.float32, (3, )),
-        ('v1', numpy.float32, (3, )),
-        ('v2', numpy.float32, (3, )),
+        ('vectors', numpy.float32, (3, 3)),
         ('attr', 'u2', (1, )),
     ])
 
     def __init__(self, data, calculate_normals=True):
         super(Mesh, self).__init__()
         self.data = data
+
+        self.points = data['vectors']
+        self.points.shape = data.size, 9
+        self.x = self.points[:, X::3]
+        self.y = self.points[:, Y::3]
+        self.z = self.points[:, Z::3]
+
         if calculate_normals:
             self.update_normals()
 
@@ -101,10 +109,10 @@ class Mesh(logger.Logged, collections.Mapping):
                      doc='Mesh unit vectors')
 
     def __getitem__(self, k):
-        return self.data['v%d' % (k % VECTORS)][k / VECTORS]
+        return self.vectors[k / VECTORS][k % VECTORS]
 
     def __setitem__(self, k, v):
-        self.data['v%d' % (k % VECTORS)][k / VECTORS] = v
+        self.vectors[k / VECTORS][k % VECTORS] = v
 
     def __len__(self):
         return self.data.size * VECTORS
@@ -119,13 +127,26 @@ class Mesh(logger.Logged, collections.Mapping):
             self.data[k] = v
         return __set
 
+    def _get_vector(n):
+        def __get(self):
+            return self.vectors[:, n]
+        return __get
+
+    def _set_vector(n):
+        def __set(self, v):
+            self.vectors[:, n] = v
+        return __set
+
     normals = property(_get('normals'), _set('normals'), doc='Normals')
-    v0 = property(_get('v0'), _set('v0'), doc='Vector 0')
-    v1 = property(_get('v1'), _set('v1'), doc='Vector 1')
-    v2 = property(_get('v2'), _set('v2'), doc='Vector 2')
+    vectors = property(_get('vectors'), _set('vectors'), doc='Vectors')
     attr = property(_get('attr'), _set('attr'), doc='Attributes')
+    v0 = property(_get_vector(0), _set_vector(0), doc='Normals')
+    v1 = property(_get_vector(1), _set_vector(1), doc='Normals')
+    v2 = property(_get_vector(2), _set_vector(2), doc='Normals')
 
     def as_points(self):
+        '''Returns the points as a nx9 array, this is just a reference, not a
+        copy'''
         points = numpy.concatenate((self.v0, self.v1, self.v2), axis=1)
         return points.reshape(points.shape[0] * VECTORS,
                               points.shape[1] / VECTORS)

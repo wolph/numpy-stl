@@ -45,7 +45,6 @@ setup(
     classifiers=['License :: OSI Approved :: BSD License'],
     install_requires=[
         'numpy',
-        'scipy',
         'python-utils>=1.6.1',
     ],
 )
