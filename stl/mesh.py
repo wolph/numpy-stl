@@ -1,5 +1,4 @@
 import numpy
-import itertools
 import collections
 
 from python_utils import logger
@@ -19,16 +18,30 @@ class Mesh(logger.Logged, collections.Mapping):
 
     >>> data = numpy.zeros(10, dtype=Mesh.dtype)
     >>> mesh = Mesh(data)
-    >>> mesh.v0 += 1
+    >>> # Increment vector 0 item 0
+    >>> mesh.v0[0] += 1
+    >>> mesh.v1[0] += 2
+
+    # Check item 0 (contains v0, v1 and v2)
     >>> mesh[0]
-    array([ 1.,  1.,  1.], dtype=float32)
-    >>> mesh[1]
-    array([ 0.,  0.,  0.], dtype=float32)
-    >>> mesh[0] += 1
+    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
+    >>> mesh.vectors[0]
+    array([[ 1.,  1.,  1.],
+           [ 2.,  2.,  2.],
+           [ 0.,  0.,  0.]], dtype=float32)
     >>> mesh.v0[0]
-    array([ 2.,  2.,  2.], dtype=float32)
-    >>> mesh.v1 += 1
-    >>> mesh.v2 += 2
+    array([ 1.,  1.,  1.], dtype=float32)
+    >>> mesh.points[0]
+    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
+    >>> mesh.data[0]
+    ([0.0, 0.0, 0.0], [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]], [0])
+    >>> mesh.x[0]
+    array([ 1.,  2.,  0.], dtype=float32)
+
+    >>> mesh[0] = 3
+    >>> mesh[0]
+    array([ 3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.], dtype=float32)
+
     >>> len(mesh) == len(list(mesh))
     True
     >>> (mesh.min_ < mesh.max_).all()
@@ -37,7 +50,7 @@ class Mesh(logger.Logged, collections.Mapping):
     >>> mesh.units.sum()
     nan
     >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
-    >>> mesh.as_points().sum()
+    >>> mesh.points.sum()
     0.0
     '''
     dtype = numpy.dtype([
@@ -50,11 +63,14 @@ class Mesh(logger.Logged, collections.Mapping):
         super(Mesh, self).__init__()
         self.data = data
 
-        self.points = data['vectors']
+        points = self.points = data['vectors']
         self.points.shape = data.size, 9
-        self.x = self.points[:, X::3]
-        self.y = self.points[:, Y::3]
-        self.z = self.points[:, Z::3]
+        self.x = points[:, X::3]
+        self.y = points[:, Y::3]
+        self.z = points[:, Z::3]
+        # self.v0 = data['vectors'][:, 0]
+        # self.v1 = data['vectors'][:, 1]
+        # self.v2 = data['vectors'][:, 2]
 
         if calculate_normals:
             self.update_normals()
@@ -109,13 +125,13 @@ class Mesh(logger.Logged, collections.Mapping):
                      doc='Mesh unit vectors')
 
     def __getitem__(self, k):
-        return self.vectors[k / VECTORS][k % VECTORS]
+        return self.points[k]
 
     def __setitem__(self, k, v):
-        self.vectors[k / VECTORS][k % VECTORS] = v
+        self.points[k] = v
 
     def __len__(self):
-        return self.data.size * VECTORS
+        return self.points.shape[0]
 
     def _get(k):
         def __get(self):
@@ -137,23 +153,14 @@ class Mesh(logger.Logged, collections.Mapping):
             self.vectors[:, n] = v
         return __set
 
+    def __iter__(self):
+        for point in self.points:
+            yield point
+
     normals = property(_get('normals'), _set('normals'), doc='Normals')
     vectors = property(_get('vectors'), _set('vectors'), doc='Vectors')
     attr = property(_get('attr'), _set('attr'), doc='Attributes')
     v0 = property(_get_vector(0), _set_vector(0), doc='Normals')
     v1 = property(_get_vector(1), _set_vector(1), doc='Normals')
     v2 = property(_get_vector(2), _set_vector(2), doc='Normals')
-
-    def as_points(self):
-        '''Returns the points as a nx9 array, this is just a reference, not a
-        copy'''
-        points = numpy.concatenate((self.v0, self.v1, self.v2), axis=1)
-        return points.reshape(points.shape[0] * VECTORS,
-                              points.shape[1] / VECTORS)
-
-    def __iter__(self):
-        for v0, v1, v2 in itertools.izip(self.v0, self.v1, self.v2):
-            yield v0
-            yield v1
-            yield v2
 
