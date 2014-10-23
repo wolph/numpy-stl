@@ -4,6 +4,7 @@ import collections
 from python_utils import logger
 
 VECTORS = 3
+DIMENSIONS = 3
 X = 0
 Y = 1
 Z = 2
@@ -48,8 +49,8 @@ class Mesh(logger.Logged, collections.Mapping):
     True
     >>> mesh.update_normals()
     >>> mesh.units.sum()
-    nan
-    >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
+    0.0
+    >>> mesh.v0[:] = mesh.v1[:] = mesh.v2[:] = 0
     >>> mesh.points.sum()
     0.0
     '''
@@ -68,16 +69,19 @@ class Mesh(logger.Logged, collections.Mapping):
         self.x = points[:, X::3]
         self.y = points[:, Y::3]
         self.z = points[:, Z::3]
-        # self.v0 = data['vectors'][:, 0]
-        # self.v1 = data['vectors'][:, 1]
-        # self.v2 = data['vectors'][:, 2]
+        self.v0 = data['vectors'][:, 0]
+        self.v1 = data['vectors'][:, 1]
+        self.v2 = data['vectors'][:, 2]
+        self.normals = data['normals']
+        self.vectors = data['vectors']
+        self.attr = data['attr']
 
         if calculate_normals:
             self.update_normals()
 
     def update_normals(self):
         '''Update the normals for all points'''
-        self.normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+        self.normals[:] = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
 
     def update_min(self):
         self._min = numpy.min((
@@ -98,8 +102,16 @@ class Mesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def update_units(self):
-        self.units = self.normals / numpy.hstack((self.areas, self.areas,
-                                                  self.areas))
+        units = self.normals.copy()
+        non_zero_areas = self.areas > 0
+        areas = self.areas
+
+        if non_zero_areas.any():
+            non_zero_areas.shape = non_zero_areas.shape[0]
+            areas = numpy.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
+            units[non_zero_areas] /= areas
+
+        self.units = units
 
     def _get_or_update(key):
         def _get(self):
@@ -133,34 +145,7 @@ class Mesh(logger.Logged, collections.Mapping):
     def __len__(self):
         return self.points.shape[0]
 
-    def _get(k):
-        def __get(self):
-            return self.data[k]
-        return __get
-
-    def _set(k):
-        def __set(self, v):
-            self.data[k] = v
-        return __set
-
-    def _get_vector(n):
-        def __get(self):
-            return self.vectors[:, n]
-        return __get
-
-    def _set_vector(n):
-        def __set(self, v):
-            self.vectors[:, n] = v
-        return __set
-
     def __iter__(self):
         for point in self.points:
             yield point
-
-    normals = property(_get('normals'), _set('normals'), doc='Normals')
-    vectors = property(_get('vectors'), _set('vectors'), doc='Vectors')
-    attr = property(_get('attr'), _set('attr'), doc='Attributes')
-    v0 = property(_get_vector(0), _set_vector(0), doc='Normals')
-    v1 = property(_get_vector(1), _set_vector(1), doc='Normals')
-    v2 = property(_get_vector(2), _set_vector(2), doc='Normals')
 

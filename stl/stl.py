@@ -54,7 +54,7 @@ class StlMesh(mesh.Mesh):
                 data = self._load_ascii(fh, header)
             except RuntimeError, (recoverable, e):
                 if recoverable:  # Recoverable?
-                    data = self._load_binary(fh, header, check_size=True)
+                    data = self._load_binary(fh, header, check_size=False)
                 else:
                     # Apparently we've read beyond the header. Let's try
                     # seeking :)
