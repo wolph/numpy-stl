@@ -87,6 +87,7 @@ class StlMesh(mesh.Mesh):
                 assert expected_count == count, ('Expected %d vectors but '
                                                  'header indicates %d') % (
                                                      expected_count, count)
+                fh.seek(HEADER_SIZE + COUNT_SIZE)
             except IOError:  # pragma: no cover
                 pass
 
