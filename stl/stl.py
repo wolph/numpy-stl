@@ -31,7 +31,7 @@ class StlMesh(mesh.Mesh):
     :param bool update_normals: Whether to update the normals
     :param file fh: The file handle to open
     '''
-    def __init__(self, filename, update_normals=True, fh=None):
+    def __init__(self, filename, update_normals=True, fh=None, **kwargs):
         self.filename = filename
         if fh:
             data = self.load(fh)
@@ -39,7 +39,7 @@ class StlMesh(mesh.Mesh):
             with open(filename, 'rb') as fh:
                 data = self.load(fh)
 
-        mesh.Mesh.__init__(self, data, update_normals)
+        mesh.Mesh.__init__(self, data, update_normals, **kwargs)
 
     def load(self, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
@@ -47,6 +47,7 @@ class StlMesh(mesh.Mesh):
         Automatically detects binary versus ascii STL files.
 
         :param file fh: The file handle to open
+        :param int mode: Automatically detect the filetype or force binary
         '''
         header = fh.read(HEADER_SIZE).lower()
         if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):

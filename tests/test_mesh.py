@@ -9,7 +9,7 @@ def test_units_1d():
                                       [1, 0, 0],
                                       [2, 0, 0]])
 
-    mesh = Mesh(data)
+    mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
     assert mesh.areas == 0
@@ -26,7 +26,7 @@ def test_units_2d():
                                       [0, 1, 0],
                                       [1, 1, 0]])
 
-    mesh = Mesh(data)
+    mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
     assert (mesh.areas == [1, 1]).all()
@@ -43,7 +43,7 @@ def test_units_3d():
                                       [1, 0, 0],
                                       [0, 1, 1.]])
 
-    mesh = Mesh(data)
+    mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
     assert mesh.areas == 2 ** .5

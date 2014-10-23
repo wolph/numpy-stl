@@ -3,6 +3,7 @@ import collections
 
 from python_utils import logger
 
+AREA_SIZE_THRESHOLD = 1e-6
 VECTORS = 3
 DIMENSIONS = 3
 X = 0
@@ -16,9 +17,11 @@ class Mesh(logger.Logged, collections.Mapping):
 
     :param numpy.array data: The data for this mesh
     :param bool calculate_normals: Whehter to calculate the normals
+    :param bool remove_empty_areas: Whether to remove triangles with 0 area
+            (due to rounding errors for example)
 
     >>> data = numpy.zeros(10, dtype=Mesh.dtype)
-    >>> mesh = Mesh(data)
+    >>> mesh = Mesh(data, remove_empty_areas=False)
     >>> # Increment vector 0 item 0
     >>> mesh.v0[0] += 1
     >>> mesh.v1[0] += 2
@@ -60,8 +63,11 @@ class Mesh(logger.Logged, collections.Mapping):
         ('attr', 'u2', (1, )),
     ])
 
-    def __init__(self, data, calculate_normals=True):
+    def __init__(self, data, calculate_normals=True, remove_empty_areas=True):
         super(Mesh, self).__init__()
+        if remove_empty_areas:
+            data = self.remove_empty_areas(data)
+
         self.data = data
 
         points = self.points = data['vectors']
@@ -78,6 +84,16 @@ class Mesh(logger.Logged, collections.Mapping):
 
         if calculate_normals:
             self.update_normals()
+
+    @classmethod
+    def remove_empty_areas(cls, data):
+        vectors = data['vectors']
+        v0 = vectors[:, 0]
+        v1 = vectors[:, 1]
+        v2 = vectors[:, 2]
+        normals = numpy.cross(v1 - v0, v2 - v0)
+        areas = numpy.sqrt((normals ** 2).sum(axis=1))
+        return data[areas > AREA_SIZE_THRESHOLD]
 
     def update_normals(self):
         '''Update the normals for all points'''
