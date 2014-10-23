@@ -44,7 +44,7 @@ def _test_conversion(from_, to, mode):
                 if mode is stl.BINARY:
                     dest = dest[80:]
 
-                assert dest == expected
+                assert dest.strip() == expected.strip()
 
 
 def test_ascii_to_binary(ascii_path, binary_path):
