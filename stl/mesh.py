@@ -100,18 +100,10 @@ class Mesh(logger.Logged, collections.Mapping):
         self.normals[:] = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
 
     def update_min(self):
-        self._min = numpy.min((
-            self.v0.min(axis=0),
-            self.v1.min(axis=0),
-            self.v2.min(axis=0),
-        ), axis=0)
+        self._min = self.vectors.min(axis=(0, 1))
 
     def update_max(self):
-        self._max = numpy.max((
-            self.v0.max(axis=0),
-            self.v1.max(axis=0),
-            self.v2.max(axis=0),
-        ), axis=0)
+        self._max = self.vectors.max(axis=(0, 1))
 
     def update_areas(self):
         areas = numpy.sqrt((self.normals ** 2).sum(axis=1))
