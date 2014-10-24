@@ -106,7 +106,7 @@ class Mesh(logger.Logged, collections.Mapping):
         self._max = self.vectors.max(axis=(0, 1))
 
     def update_areas(self):
-        areas = numpy.sqrt((self.normals ** 2).sum(axis=1))
+        areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
     def update_units(self):

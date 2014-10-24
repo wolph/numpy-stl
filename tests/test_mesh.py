@@ -29,12 +29,12 @@ def test_units_2d():
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
-    assert (mesh.areas == [1, 1]).all()
+    assert (mesh.areas == [.5, .5]).all()
     assert (mesh.normals == [[0, 0, 1.],
                              [0, 0, -1.]]).all()
 
-    assert (mesh.units == [[0, 0, 0.5],
-                           [0, 0, -0.5]]).all()
+    assert (mesh.units == [[0, 0, 1],
+                           [0, 0, -1]]).all()
 
 
 def test_units_3d():
@@ -46,12 +46,12 @@ def test_units_3d():
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
-    assert mesh.areas == 2 ** .5
-    assert (mesh.normals == [0, -1, 1.]).all()
+    assert (mesh.areas - 2 ** .5) < 0.0001
+    assert (mesh.normals == [0, -1, 1]).all()
 
     units = mesh.units[0]
     assert units[0] == 0
     # Due to floating point errors
-    assert (units[1] + .25 * 2 ** .5) < 0.0001
-    assert (units[2] - .25 * 2 ** .5) < 0.0001
+    assert (units[1] + .5 * 2 ** .5) < 0.0001
+    assert (units[2] - .5 * 2 ** .5) < 0.0001
 
