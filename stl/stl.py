@@ -31,7 +31,7 @@ class StlMesh(mesh.Mesh):
     :param bool update_normals: Whether to update the normals
     :param file fh: The file handle to open
     '''
-    def __init__(self, filename, update_normals=True, fh=None, **kwargs):
+    def __init__(self, filename, update_normals=True, remove_small=False fh=None, **kwargs):
         self.filename = filename
         if fh:
             data = self.load(fh)
@@ -39,7 +39,7 @@ class StlMesh(mesh.Mesh):
             with open(filename, 'rb') as fh:
                 data = self.load(fh)
 
-        mesh.Mesh.__init__(self, data, update_normals, **kwargs)
+        mesh.Mesh.__init__(self, data, update_normals=update_normals, remove_empty_areas=remove_small **kwargs)
 
     def load(self, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
