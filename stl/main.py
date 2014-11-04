@@ -15,6 +15,10 @@ def _get_parser(description):
     parser.add_argument(
         '-n', '--use-file-normals', action='store_true',
         help='Read the normals from the file instead of recalculating them')
+    parser.add_argument(
+        '-r', '--remove-empty-areas', action='store_true',
+        help='Remove areas with 0 surface areas to prevent errors during '
+        'normal calculation')
     return parser
 
 
@@ -40,7 +44,8 @@ def main():
     args = parser.parse_args()
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
-                           update_normals=False)
+                           calculate_normals=False,
+                           remove_empty_areas=args.remove_empty_areas)
 
     if args.binary:
         mode = stl.BINARY
@@ -58,7 +63,8 @@ def to_ascii():
     args = parser.parse_args()
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
-                           update_normals=False)
+                           calculate_normals=False,
+                           remove_empty_areas=args.remove_empty_areas)
     stl_file.save(name, args.outfile, mode=stl.ASCII,
                   update_normals=not args.use_file_normals)
 
@@ -68,7 +74,8 @@ def to_binary():
     args = parser.parse_args()
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
-                           update_normals=False)
+                           calculate_normals=False,
+                           remove_empty_areas=args.remove_empty_areas)
     stl_file.save(name, args.outfile, mode=stl.BINARY,
                   update_normals=not args.use_file_normals)
 

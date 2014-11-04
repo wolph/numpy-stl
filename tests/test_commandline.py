@@ -11,6 +11,8 @@ def test_main(tmpdir):
     try:
         sys.argv[:] = ['stl', ascii_file, str(tmpdir.join('binary.stl'))]
         main.main()
+        sys.argv[:] = ['stl', '-r', ascii_file, str(tmpdir.join('binary.stl'))]
+        main.main()
         sys.argv[:] = ['stl', '-a', binary_file, str(tmpdir.join('ascii.stl'))]
         main.main()
         sys.argv[:] = ['stl', '-b', ascii_file, str(tmpdir.join('binary.stl'))]

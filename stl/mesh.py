@@ -3,7 +3,7 @@ import collections
 
 from python_utils import logger
 
-AREA_SIZE_THRESHOLD = 1e-6
+AREA_SIZE_THRESHOLD = 0
 VECTORS = 3
 DIMENSIONS = 3
 X = 0
@@ -63,7 +63,8 @@ class Mesh(logger.Logged, collections.Mapping):
         ('attr', 'u2', (1, )),
     ])
 
-    def __init__(self, data, calculate_normals=True, remove_empty_areas=True):
+    def __init__(self, data, calculate_normals=True,
+                 remove_empty_areas=False):
         super(Mesh, self).__init__()
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
@@ -113,6 +114,10 @@ class Mesh(logger.Logged, collections.Mapping):
         units = self.normals.copy()
         non_zero_areas = self.areas > 0
         areas = self.areas
+
+        if non_zero_areas.shape[0] != areas.shape[0]:  # pragma: no cover
+            self.warning('Zero sized areas found, '
+                         'units calculation will be partially incorrect')
 
         if non_zero_areas.any():
             non_zero_areas.shape = non_zero_areas.shape[0]

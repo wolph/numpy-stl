@@ -28,10 +28,12 @@ class StlMesh(mesh.Mesh):
     '''Load a mesh from a STL file
 
     :param str filename: The file to load
-    :param bool update_normals: Whether to update the normals
+    :param bool calculate_normals: Whether to update the normals
     :param file fh: The file handle to open
+    :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
+
     '''
-    def __init__(self, filename, update_normals=True, fh=None, **kwargs):
+    def __init__(self, filename, calculate_normals=True, fh=None, **kwargs):
         self.filename = filename
         if fh:
             data = self.load(fh)
@@ -39,7 +41,7 @@ class StlMesh(mesh.Mesh):
             with open(filename, 'rb') as fh:
                 data = self.load(fh)
 
-        mesh.Mesh.__init__(self, data, update_normals, **kwargs)
+        mesh.Mesh.__init__(self, data, calculate_normals, **kwargs)
 
     def load(self, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
