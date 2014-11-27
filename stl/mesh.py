@@ -64,10 +64,13 @@ class Mesh(logger.Logged, collections.Mapping):
     ])
 
     def __init__(self, data, calculate_normals=True,
-                 remove_empty_areas=False):
+                 remove_empty_areas=False, remove_duplicate_polygons=False):
         super(Mesh, self).__init__()
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
+
+        if remove_duplicate_polygons:
+            data = self.remove_duplicate_polygons(data)
 
         self.data = data
 
@@ -85,6 +88,13 @@ class Mesh(logger.Logged, collections.Mapping):
 
         if calculate_normals:
             self.update_normals()
+
+    @classmethod
+    def remove_duplicate_polygons(cls, data):
+        polygons = data['vectors'].sum(axis=1)
+        idx = numpy.lexsort(polygons.T)
+        idx = numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
+        return data[idx]
 
     @classmethod
     def remove_empty_areas(cls, data):

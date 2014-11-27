@@ -7,6 +7,14 @@ and easy.
 Due to all operations heavily relying on `numpy` this is one of the fastest
 STL editing libraries for Python available.
 
+Links
+-----
+
+ - The source: https://github.com/WoLpH/numpy-stl
+ - Project page: https://pypi.python.org/pypi/numpy-stl
+ - Reporting bugs: https://github.com/WoLpH/numpy-stl/issues
+ - Documentation: http://numpy-stl.readthedocs.org/en/latest/
+
 Requirements for installing:
 ==============================================================================
 
