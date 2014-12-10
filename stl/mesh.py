@@ -92,8 +92,12 @@ class Mesh(logger.Logged, collections.Mapping):
     @classmethod
     def remove_duplicate_polygons(cls, data):
         polygons = data['vectors'].sum(axis=1)
+        numpy.unique
         idx = numpy.lexsort(polygons.T)
-        idx = numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
+        idx = numpy.concatenate((
+            [True],
+            numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1),
+        ))
         return data[idx]
 
     @classmethod

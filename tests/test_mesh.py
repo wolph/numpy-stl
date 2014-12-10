@@ -57,32 +57,40 @@ def test_units_3d():
 
 
 def test_duplicate_polygons():
-    data = numpy.zeros(2, dtype=Mesh.dtype)
+    data = numpy.zeros(3, dtype=Mesh.dtype)
     data['vectors'][0] = numpy.array([[0, 0, 0],
                                       [1, 0, 0],
                                       [0, 1, 0]])
     data['vectors'][1] = numpy.array([[1, 0, 0],
+                                      [0, 1, 0],
+                                      [1, 0, 0]])
+    data['vectors'][2] = numpy.array([[1, 0, 0],
                                       [0, 1, 0],
                                       [1, 0, 0]])
 
     mesh = Mesh(data, remove_duplicate_polygons=False)
-    assert mesh.data.size == 2
+    print mesh.vectors
+    assert mesh.data.size == 3
 
     mesh = Mesh(data, remove_duplicate_polygons=True)
-    assert mesh.data.size == 1
+    print mesh.vectors
+    assert mesh.data.size == 2
 
 
 def test_empty_areas():
-    data = numpy.zeros(2, dtype=Mesh.dtype)
+    data = numpy.zeros(3, dtype=Mesh.dtype)
     data['vectors'][0] = numpy.array([[0, 0, 0],
                                       [1, 0, 0],
                                       [0, 1, 0]])
     data['vectors'][1] = numpy.array([[1, 0, 0],
                                       [0, 1, 0],
                                       [1, 0, 0]])
+    data['vectors'][2] = numpy.array([[1, 0, 0],
+                                      [0, 1, 0],
+                                      [1, 0, 0]])
 
     mesh = Mesh(data, remove_empty_areas=False)
-    assert mesh.data.size == 2
+    assert mesh.data.size == 3
 
     mesh = Mesh(data, remove_empty_areas=True)
     assert mesh.data.size == 1
