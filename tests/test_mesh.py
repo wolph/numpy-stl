@@ -57,24 +57,43 @@ def test_units_3d():
 
 
 def test_duplicate_polygons():
-    data = numpy.zeros(3, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [0, 1, 0]])
-    data['vectors'][1] = numpy.array([[1, 0, 0],
-                                      [0, 1, 0],
-                                      [1, 0, 0]])
-    data['vectors'][2] = numpy.array([[1, 0, 0],
-                                      [0, 1, 0],
-                                      [1, 0, 0]])
+    data = numpy.zeros(6, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[1, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+    data['vectors'][1] = numpy.array([[2, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+    data['vectors'][2] = numpy.array([[0, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+    data['vectors'][3] = numpy.array([[2, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+    data['vectors'][4] = numpy.array([[1, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+    data['vectors'][5] = numpy.array([[0, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
 
     mesh = Mesh(data, remove_duplicate_polygons=False)
-    print mesh.vectors
-    assert mesh.data.size == 3
+    assert mesh.data.size == 6
 
     mesh = Mesh(data, remove_duplicate_polygons=True)
+    assert mesh.data.size == 3
+
+    print 'vectors'
     print mesh.vectors
-    assert mesh.data.size == 2
+    assert (mesh.vectors[0] == numpy.array([[1, 0, 0],
+                                            [0, 0, 0],
+                                            [0, 0, 0]])).all()
+    assert (mesh.vectors[1] == numpy.array([[2, 0, 0],
+                                            [0, 0, 0],
+                                            [0, 0, 0]])).all()
+    assert (mesh.vectors[2] == numpy.array([[0, 0, 0],
+                                            [0, 0, 0],
+                                            [0, 0, 0]])).all()
 
 
 def test_empty_areas():

@@ -1,6 +1,6 @@
 __package_name__ = 'numpy-stl'
 __import_name__ = 'stl'
-__version__ = '1.3.6'
+__version__ = '1.3.7'
 __author__ = 'Rick van Hattem'
 __author_email__ = 'Wolph@Wol.ph'
 __description__ = '''

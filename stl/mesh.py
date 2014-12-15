@@ -92,13 +92,13 @@ class Mesh(logger.Logged, collections.Mapping):
     @classmethod
     def remove_duplicate_polygons(cls, data):
         polygons = data['vectors'].sum(axis=1)
-        numpy.unique
+        # Get a sorted list of indices
         idx = numpy.lexsort(polygons.T)
-        idx = numpy.concatenate((
-            [True],
-            numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1),
-        ))
-        return data[idx]
+        # Get the indices of all different indices
+        diff = numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
+        # Only return the unique data, the True is so we always get at least
+        # the originals
+        return data[numpy.sort(idx[numpy.concatenate(([True], diff))])]
 
     @classmethod
     def remove_empty_areas(cls, data):
