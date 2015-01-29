@@ -2,6 +2,7 @@ import os
 import numpy
 import struct
 import datetime
+from python_utils import logger
 
 from . import mesh
 from . import metadata
@@ -34,6 +35,7 @@ class StlMesh(mesh.Mesh):
 
     '''
     def __init__(self, filename, calculate_normals=True, fh=None, **kwargs):
+        logger.Logged.__init__(self)
         self.filename = filename
         if fh:
             data = self.load(fh)
@@ -131,7 +133,12 @@ class StlMesh(mesh.Mesh):
             else:
                 return line
 
-        assert get().startswith('solid ')
+        line = get()
+        if not line.startswith('solid ') and line.startswith('solid'):
+            self.warning('ASCII STL files should start with solid <space>. '
+                         'The application that produced this STL file may be '
+                         'faulty, please report this error. The erroneous '
+                         'line: %r', line)
 
         if not lines:
             raise RuntimeError(recoverable[0],

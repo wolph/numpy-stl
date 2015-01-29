@@ -24,6 +24,21 @@ def test_valid_ascii(tmpdir):
         stl.StlMesh(str(tmp_file), fh=fh)
 
 
+def test_ascii_with_missing_name(tmpdir):
+    tmp_file = tmpdir.join('tmp.stl')
+    with tmp_file.open('w+') as fh:
+        # Split the file into lines
+        lines = _STL_FILE.splitlines()
+
+        # Remove everything except solid
+        lines[0] = lines[0].split()[0]
+
+        # Join the lines to test files that start with solid without space
+        fh.write('\n'.join(lines))
+        fh.seek(0)
+        stl.StlMesh(str(tmp_file), fh=fh)
+
+
 def test_incomplete_ascii_file(tmpdir):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
