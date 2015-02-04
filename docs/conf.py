@@ -22,16 +22,12 @@ try:
 except ImportError:
     # From the readthedocs manual
     # http://read-the-docs.readthedocs.org/en/latest/faq.html?highlight=numpy
-    from unittest.mock import MagicMock
-
-    class Mock(MagicMock):
-        @classmethod
-        def __getattr__(cls, name):
-                return Mock()
+    print >>sys.stderr, 'Unable to import numpy, falling back to mock'
+    import mock
 
     MOCK_MODULES = ['pygtk', 'gtk', 'gobject', 'argparse', 'numpy', 'pandas']
-    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
