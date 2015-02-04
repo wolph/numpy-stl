@@ -40,14 +40,15 @@ class Mesh(logger.Logged, collections.Mapping):
         array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
         >>> mesh.vectors[0]
         array([[ 1.,  1.,  1.],
-            [ 2.,  2.,  2.],
-            [ 0.,  0.,  0.]], dtype=float32)
+               [ 2.,  2.,  2.],
+               [ 0.,  0.,  0.]], dtype=float32)
         >>> mesh.v0[0]
         array([ 1.,  1.,  1.], dtype=float32)
         >>> mesh.points[0]
         array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
-        >>> mesh.data[0]
-        ([0.0, 0.0, 0.0], [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
+        >>> mesh.data[0] # doctest: +NORMALIZE_WHITESPACE
+        ([0.0, 0.0, 0.0],
+         [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
          [0])
         >>> mesh.x[0]
         array([ 1.,  2.,  0.], dtype=float32)
