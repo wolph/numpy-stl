@@ -2,3 +2,4 @@ build
 dist
 docs/_build
 cover
+*.egg-info

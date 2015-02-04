@@ -26,15 +26,15 @@ MAX_COUNT = 1e6
 
 
 class StlMesh(mesh.Mesh):
-    '''Load a mesh from a STL file
-
-    :param str filename: The file to load
-    :param bool calculate_normals: Whether to update the normals
-    :param file fh: The file handle to open
-    :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
-
-    '''
     def __init__(self, filename, calculate_normals=True, fh=None, **kwargs):
+        '''Load a mesh from a STL file
+
+        :param str filename: The file to load
+        :param bool calculate_normals: Whether to update the normals
+        :param file fh: The file handle to open
+        :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
+
+        '''
         logger.Logged.__init__(self)
         self.filename = filename
         if fh:
