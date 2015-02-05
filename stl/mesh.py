@@ -1,7 +1,11 @@
+import os
 import numpy
+import datetime
+import struct
 import collections
 
 from python_utils import logger
+from . import metadata
 
 AREA_SIZE_THRESHOLD = 0
 VECTORS = 3
@@ -9,6 +13,14 @@ DIMENSIONS = 3
 X = 0
 Y = 1
 Z = 2
+
+#: Automatically detect whether the output is a TTY, if so, write ASCII
+#: otherwise write BINARY
+AUTOMATIC = 0
+#: Force writing ASCII
+ASCII = 1
+#: Force writing BINARY
+BINARY = 2
 
 
 class Mesh(logger.Logged, collections.Mapping):
@@ -179,3 +191,64 @@ class Mesh(logger.Logged, collections.Mapping):
         for point in self.points:
             yield point
 
+    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
+        '''Save the STL to a (binary) file
+
+        If mode is :py:data:`AUTOMATIC` an :py:data:`ASCII` file will be
+        written if the output is a TTY and a :py:data:`BINARY` file otherwise.
+
+        :param str filename: The file to load
+        :param file fh: The file handle to open
+        :param int mode: The mode to write, default is :py:data:`AUTOMATIC`.
+        :param bool update_normals: Whether to update the normals
+        '''
+        assert filename, 'Filename is required for the STL headers'
+        if update_normals:
+            self.update_normals()
+
+        if mode is AUTOMATIC:
+            if fh and os.isatty(fh.fileno()):  # pragma: no cover
+                write = self._write_ascii
+            else:
+                write = self._write_binary
+        elif mode is BINARY:
+            write = self._write_binary
+        elif mode is ASCII:
+            write = self._write_ascii
+        else:
+            raise ValueError('Mode %r is invalid' % mode)
+
+        name = os.path.split(filename)[-1]
+        try:
+            if fh:
+                write(fh, name)
+            else:
+                with open(name, 'wb') as fh:
+                    write(fh, filename)
+        except IOError:  # pragma: no cover
+            pass
+
+    def _write_ascii(self, fh, name):
+        print >>fh, 'solid %s' % name
+
+        for row in self.data:
+            vectors = row['vectors']
+            print >>fh, 'facet normal %f %f %f' % tuple(row['normals'])
+            print >>fh, '  outer loop'
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[0])
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[1])
+            print >>fh, '    vertex %f %f %f' % tuple(vectors[2])
+            print >>fh, '  endloop'
+            print >>fh, 'endfacet'
+
+        print >>fh, 'endsolid %s' % name
+
+    def _write_binary(self, fh, name):
+        fh.write(('%s (%s) %s %s' % (
+            metadata.__package_name__,
+            metadata.__version__,
+            datetime.datetime.now(),
+            name,
+        ))[:80].ljust(80, ' '))
+        fh.write(struct.pack('@i', self.data.size))
+        self.data.tofile(fh)
