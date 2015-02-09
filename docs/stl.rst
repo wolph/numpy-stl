@@ -12,6 +12,14 @@ stl.main module
     :undoc-members:
     :show-inheritance:
 
+stl.base module
+---------------
+
+.. automodule:: stl.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 stl.mesh module
 ---------------
 
