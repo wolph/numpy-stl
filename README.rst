@@ -38,9 +38,16 @@ Quickstart
 
 .. code-block:: python
 
-   from stl import stl
-   
-   mesh = stl.StlMesh('some_file.stl')
+   from stl import mesh
+
+   # Using an existing stl file:
+   mesh = mesh.Mesh.from_file('some_file.stl')
+
+   # Or creating a new mesh:
+   VERTICE_COUNT = 100
+   data = numpy.zeros(VERTICE_COUNT, dtype=Mesh.dtype)
+   mesh = mesh.Mesh(data, remove_empty_areas=False)
+
    # The mesh normals (calculated automatically)
    mesh.normals
    # The mesh vectors
