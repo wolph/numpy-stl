@@ -2,9 +2,8 @@ import os
 import numpy
 import struct
 import datetime
-from python_utils import logger
 
-from . import mesh
+from . import base
 from . import metadata
 
 #: Automatically detect whether the output is a TTY, if so, write ASCII
@@ -25,27 +24,9 @@ COUNT_SIZE = 4
 MAX_COUNT = 1e6
 
 
-class StlMesh(mesh.Mesh):
-    def __init__(self, filename, calculate_normals=True, fh=None, **kwargs):
-        '''Load a mesh from a STL file
-
-        :param str filename: The file to load
-        :param bool calculate_normals: Whether to update the normals
-        :param file fh: The file handle to open
-        :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
-
-        '''
-        logger.Logged.__init__(self)
-        self.filename = filename
-        if fh:
-            data = self.load(fh)
-        else:
-            with open(filename, 'rb') as fh:
-                data = self.load(fh)
-
-        mesh.Mesh.__init__(self, data, calculate_normals, **kwargs)
-
-    def load(self, fh, mode=AUTOMATIC):
+class BaseStl(base.BaseMesh):
+    @classmethod
+    def load(cls, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
 
         Automatically detects binary versus ascii STL files.
@@ -56,10 +37,10 @@ class StlMesh(mesh.Mesh):
         header = fh.read(HEADER_SIZE).lower()
         if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):
             try:
-                data = self._load_ascii(fh, header)
+                data = cls._load_ascii(fh, header)
             except RuntimeError, (recoverable, e):
                 if recoverable:  # Recoverable?
-                    data = self._load_binary(fh, header, check_size=False)
+                    data = cls._load_binary(fh, header, check_size=False)
                 else:
                     # Apparently we've read beyond the header. Let's try
                     # seeking :)
@@ -69,13 +50,14 @@ class StlMesh(mesh.Mesh):
 
                     # Since we know this is a seekable file now and we're not
                     # 100% certain it's binary, check the size while reading
-                    data = self._load_binary(fh, header, check_size=True)
+                    data = cls._load_binary(fh, header, check_size=True)
         else:
-            data = self._load_binary(fh, header)
+            data = cls._load_binary(fh, header)
 
         return data
 
-    def _load_binary(self, fh, header, check_size=False):
+    @classmethod
+    def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
         count, = struct.unpack('@i', fh.read(COUNT_SIZE))
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
@@ -87,7 +69,7 @@ class StlMesh(mesh.Mesh):
                 # Check the size of the file
                 fh.seek(0, os.SEEK_END)
                 raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
-                expected_count = raw_size / self.dtype.itemsize
+                expected_count = raw_size / cls.dtype.itemsize
                 assert expected_count == count, ('Expected %d vectors but '
                                                  'header indicates %d') % (
                                                      expected_count, count)
@@ -96,9 +78,10 @@ class StlMesh(mesh.Mesh):
                 pass
 
         # Read the rest of the binary data
-        return numpy.fromfile(fh, dtype=self.dtype, count=count)
+        return numpy.fromfile(fh, dtype=cls.dtype, count=count)
 
-    def _ascii_reader(self, fh, header):
+    @classmethod
+    def _ascii_reader(cls, fh, header):
         lines = header.split('\n')
         recoverable = [True]
 
@@ -135,10 +118,10 @@ class StlMesh(mesh.Mesh):
 
         line = get()
         if not line.startswith('solid ') and line.startswith('solid'):
-            self.warning('ASCII STL files should start with solid <space>. '
-                         'The application that produced this STL file may be '
-                         'faulty, please report this error. The erroneous '
-                         'line: %r', line)
+            cls.warning('ASCII STL files should start with solid <space>. '
+                        'The application that produced this STL file may be '
+                        'faulty, please report this error. The erroneous '
+                        'line: %r', line)
 
         if not lines:
             raise RuntimeError(recoverable[0],
@@ -164,8 +147,9 @@ class StlMesh(mesh.Mesh):
             except AssertionError, e:
                 raise RuntimeError(recoverable[0], e)
 
-    def _load_ascii(self, fh, header):
-        return numpy.fromiter(self._ascii_reader(fh, header), dtype=self.dtype)
+    @classmethod
+    def _load_ascii(cls, fh, header):
+        return numpy.fromiter(cls._ascii_reader(fh, header), dtype=cls.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
         '''Save the STL to a (binary) file
@@ -228,3 +212,25 @@ class StlMesh(mesh.Mesh):
         ))[:80].ljust(80, ' '))
         fh.write(struct.pack('@i', self.data.size))
         self.data.tofile(fh)
+
+    @classmethod
+    def from_file(cls, filename, calculate_normals=True, fh=None, **kwargs):
+        '''Load a mesh from a STL file
+
+        :param str filename: The file to load
+        :param bool calculate_normals: Whether to update the normals
+        :param file fh: The file handle to open
+        :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
+
+        '''
+        if fh:
+            data = cls.load(fh)
+        else:
+            with open(filename, 'rb') as fh:
+                data = cls.load(fh)
+
+        return cls(data, calculate_normals, **kwargs)
+
+
+StlMesh = BaseStl.from_file
+
