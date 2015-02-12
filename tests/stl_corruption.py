@@ -109,4 +109,3 @@ def test_corrupt_binary_file(tmpdir):
         fh.seek(0)
         mesh.Mesh.from_file(str(tmp_file), fh=fh)
 
-

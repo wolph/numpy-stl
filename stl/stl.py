@@ -35,6 +35,9 @@ class BaseStl(base.BaseMesh):
         :param int mode: Automatically detect the filetype or force binary
         '''
         header = fh.read(HEADER_SIZE).lower()
+        if not header.strip():
+            return
+
         if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):
             try:
                 data = cls._load_ascii(fh, header)
@@ -102,7 +105,7 @@ class BaseStl(base.BaseMesh):
                 if line.startswith(prefix):
                     values = line.replace(prefix, '', 1).strip().split()
                 elif line.startswith('endsolid'):
-                    raise StopIteration
+                    raise StopIteration()
                 else:
                     raise RuntimeError(recoverable[0],
                                        '%r should start with %r' % (line,
@@ -146,6 +149,11 @@ class BaseStl(base.BaseMesh):
                 yield (normals, (v0, v1, v2), attrs)
             except AssertionError, e:
                 raise RuntimeError(recoverable[0], e)
+            except StopIteration:
+                if any(lines):
+                    # Seek back to where the next solid should begin
+                    fh.seek(-len('\n'.join(lines)), os.SEEK_CUR)
+                raise
 
     @classmethod
     def _load_ascii(cls, fh, header):
@@ -214,8 +222,28 @@ class BaseStl(base.BaseMesh):
         self.data.tofile(fh)
 
     @classmethod
-    def from_file(cls, filename, calculate_normals=True, fh=None, **kwargs):
+    def from_file(cls, filename, calculate_normals=True, fh=None,
+                  mode=AUTOMATIC, **kwargs):
         '''Load a mesh from a STL file
+
+        :param str filename: The file to load
+        :param bool calculate_normals: Whether to update the normals
+        :param file fh: The file handle to open
+        :param dict **kwargs: The same as for :py:class:`stl.mesh.Mesh`
+
+        '''
+        if fh:
+            data = cls.load(fh, mode=mode)
+        else:
+            with open(filename, 'rb') as fh:
+                data = cls.load(fh, mode=mode)
+
+        return cls(data, calculate_normals, **kwargs)
+
+    @classmethod
+    def from_multi_file(cls, filename, calculate_normals=True, fh=None,
+                        mode=ASCII, **kwargs):
+        '''Load multiple meshes from a STL file
 
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
@@ -223,12 +251,24 @@ class BaseStl(base.BaseMesh):
         :param dict \**kwargs: The same as for :py:class:`stl.mesh.Mesh`
         '''
         if fh:
-            data = cls.load(fh)
+            close = False
         else:
-            with open(filename, 'rb') as fh:
-                data = cls.load(fh)
+            fh = open(filename, 'rb')
+            close = True
 
-        return cls(data, calculate_normals, **kwargs)
+        try:
+            data = cls.load(fh, mode=mode)
+            yield cls(data, calculate_normals, **kwargs)
+            while True:
+                data = cls.load(fh, mode=mode)
+                if data is None:
+                    return
+                else:
+                    yield cls(data, calculate_normals, **kwargs)
+
+        finally:
+            if close:
+                fh.close()
 
 
 StlMesh = BaseStl.from_file
