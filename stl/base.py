@@ -29,7 +29,8 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
     :ivar numpy.array data: Data as :func:`BaseMesh.dtype`
     :ivar numpy.array points: All points (Nx9)
-    :ivar numpy.array normals: Normals for this mesh, calculated automatically (Nx3)
+    :ivar numpy.array normals: Normals for this mesh, calculated automatically
+        by default (Nx3)
     :ivar numpy.array vectors: Vectors in the mesh (Nx3x3)
     :ivar numpy.array attr: Attributes per vector (used by binary STL)
     :ivar numpy.array x: Points on the X axis by vertex (Nx3)
@@ -48,8 +49,10 @@ class BaseMesh(logger.Logged, collections.Mapping):
     >>> # Check item 0 (contains v0, v1 and v2)
     >>> mesh[0]
     array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
-    >>> mesh.vectors[0]
-    array([[ 1.,  1.,  1.], [ 2.,  2.,  2.], [ 0.,  0.,  0.]], dtype=float32)
+    >>> mesh.vectors[0] # doctest: +NORMALIZE_WHITESPACE
+    array([[ 1.,  1.,  1.],
+           [ 2.,  2.,  2.],
+           [ 0.,  0.,  0.]], dtype=float32)
     >>> mesh.v0[0]
     array([ 1.,  1.,  1.], dtype=float32)
     >>> mesh.points[0]
