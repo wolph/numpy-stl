@@ -38,9 +38,14 @@ class BaseStl(base.BaseMesh):
         if not header.strip():
             return
 
+        name = ''
+
         if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):
             try:
                 data = cls._load_ascii(fh, header)
+
+                # Get the name from the first line
+                name = header.split('\n', 1)[0][5:].strip()
             except RuntimeError, (recoverable, e):
                 if recoverable:  # Recoverable?
                     data = cls._load_binary(fh, header, check_size=False)
@@ -57,7 +62,7 @@ class BaseStl(base.BaseMesh):
         else:
             data = cls._load_binary(fh, header)
 
-        return data
+        return name, data
 
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
@@ -233,12 +238,12 @@ class BaseStl(base.BaseMesh):
 
         '''
         if fh:
-            data = cls.load(fh, mode=mode)
+            name, data = cls.load(fh, mode=mode)
         else:
             with open(filename, 'rb') as fh:
-                data = cls.load(fh, mode=mode)
+                name, data = cls.load(fh, mode=mode)
 
-        return cls(data, calculate_normals, **kwargs)
+        return cls(data, calculate_normals, name=name, **kwargs)
 
     @classmethod
     def from_multi_file(cls, filename, calculate_normals=True, fh=None,
@@ -257,14 +262,11 @@ class BaseStl(base.BaseMesh):
             close = True
 
         try:
-            data = cls.load(fh, mode=mode)
-            yield cls(data, calculate_normals, **kwargs)
-            while True:
-                data = cls.load(fh, mode=mode)
-                if data is None:
-                    return
-                else:
-                    yield cls(data, calculate_normals, **kwargs)
+            raw_data = cls.load(fh, mode=mode)
+            while raw_data:
+                name, data = raw_data
+                yield cls(data, calculate_normals, name=name, **kwargs)
+                raw_data = cls.load(fh, mode=mode)
 
         finally:
             if close:

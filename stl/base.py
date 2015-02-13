@@ -27,6 +27,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
     :param bool remove_empty_areas: Whether to remove triangles with 0 area
             (due to rounding errors for example)
 
+    :ivar str name: Name of the solid, only exists in ASCII files
     :ivar numpy.array data: Data as :func:`BaseMesh.dtype`
     :ivar numpy.array points: All points (Nx9)
     :ivar numpy.array normals: Normals for this mesh, calculated automatically
@@ -89,14 +90,16 @@ class BaseMesh(logger.Logged, collections.Mapping):
     ])
 
     def __init__(self, data, calculate_normals=True,
-                 remove_empty_areas=False, remove_duplicate_polygons=False):
-        super(BaseMesh, self).__init__()
+                 remove_empty_areas=False, remove_duplicate_polygons=False,
+                 name='', **kwargs):
+        super(BaseMesh, self).__init__(**kwargs)
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
 
         if remove_duplicate_polygons:
             data = self.remove_duplicate_polygons(data)
 
+        self.name = name
         self.data = data
 
         points = self.points = data['vectors']
