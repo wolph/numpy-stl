@@ -38,28 +38,30 @@ Quickstart
 
 .. code-block:: python
 
+   import numpy
    from stl import mesh
 
    # Using an existing stl file:
-   mesh = mesh.Mesh.from_file('some_file.stl')
+   your_mesh = mesh.Mesh.from_file('some_file.stl')
 
-   # Or creating a new mesh:
+   # Or creating a new mesh (make sure not to overwrite the `mesh` import by
+   # naming it `mesh`):
    VERTICE_COUNT = 100
-   data = numpy.zeros(VERTICE_COUNT, dtype=Mesh.dtype)
-   mesh = mesh.Mesh(data, remove_empty_areas=False)
+   data = numpy.zeros(VERTICE_COUNT, dtype=mesh.Mesh.dtype)
+   your_mesh = mesh.Mesh(data, remove_empty_areas=False)
 
    # The mesh normals (calculated automatically)
-   mesh.normals
+   your_mesh.normals
    # The mesh vectors
-   mesh.v0, mesh.v1, mesh.v2
+   your_mesh.v0, your_mesh.v1, your_mesh.v2
    # Accessing individual points (concatenation of v0, v1 and v2 in triplets)
-   mesh.points[0] == mesh.v0[0]
-   mesh.points[1] == mesh.v1[0]
-   mesh.points[2] == mesh.v2[0]
-   mesh.points[3] == mesh.v0[1]
-   
-   mesh.save('new_stl_file.stl')
-   
+   assert (your_mesh.points[0][0:3] == your_mesh.v0[0]).all()
+   assert (your_mesh.points[0][3:6] == your_mesh.v1[0]).all()
+   assert (your_mesh.points[0][6:9] == your_mesh.v2[0]).all()
+   assert (your_mesh.points[1][0:3] == your_mesh.v0[1]).all()
+
+   your_mesh.save('new_stl_file.stl')
+
 
 .. _numpy: http://numpy.org/
 .. _python-utils: https://github.com/WoLpH/python-utils 
