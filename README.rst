@@ -18,8 +18,8 @@ Links
 Requirements for installing:
 ==============================================================================
 
- - `numpy_` any recent version
- - `python-utils_` version 1.6 or greater
+ - `numpy`_ any recent version
+ - `python-utils`_ version 1.6 or greater
 
 Installation:
 ==============================================================================
@@ -62,7 +62,7 @@ Quickstart
 
    your_mesh.save('new_stl_file.stl')
 
-Plotting using `matplotlib_` is equally easy:
+Plotting using `matplotlib`_ is equally easy:
 
 .. code-block:: python
 
