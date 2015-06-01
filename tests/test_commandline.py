@@ -25,7 +25,7 @@ def test_args(tmpdir):
     parser = main._get_parser('')
 
     def _get_name(*args):
-        return main._get_name(parser.parse_args(map(str, args)))
+        return main._get_name(parser.parse_args(list(map(str, args))))
 
     assert _get_name('--name', 'foobar') == 'foobar'
     assert _get_name('-', tmpdir.join('binary.stl')).endswith('binary.stl')
@@ -36,7 +36,7 @@ def test_args(tmpdir):
 def test_ascii(tmpdir):
     original_argv = sys.argv[:]
     try:
-        print str(tmpdir.join('ascii.stl'))
+        print(str(tmpdir.join('ascii.stl')))
         sys.argv[:] = ['stl', binary_file, str(tmpdir.join('ascii.stl'))]
         try:
             main.to_ascii()

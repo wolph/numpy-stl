@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
 import numpy
 import struct
@@ -5,6 +8,7 @@ import datetime
 
 from . import base
 from . import metadata
+from .utils import b
 
 #: Automatically detect whether the output is a TTY, if so, write ASCII
 #: otherwise write BINARY
@@ -40,13 +44,14 @@ class BaseStl(base.BaseMesh):
 
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and header.startswith('solid'):
+        if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
             try:
                 data = cls._load_ascii(fh, header)
 
                 # Get the name from the first line
                 name = header.split('\n', 1)[0][5:].strip()
-            except RuntimeError, (recoverable, e):
+            except RuntimeError as xxx_todo_changeme:
+                (recoverable, e) = xxx_todo_changeme.args
                 if recoverable:  # Recoverable?
                     data = cls._load_binary(fh, header, check_size=False)
                 else:
@@ -77,7 +82,7 @@ class BaseStl(base.BaseMesh):
                 # Check the size of the file
                 fh.seek(0, os.SEEK_END)
                 raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
-                expected_count = raw_size / cls.dtype.itemsize
+                expected_count = int(raw_size / cls.dtype.itemsize)
                 assert expected_count == count, ('Expected %d vectors but '
                                                  'header indicates %d') % (
                                                      expected_count, count)
@@ -90,10 +95,12 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _ascii_reader(cls, fh, header):
-        lines = header.split('\n')
+        lines = header.split(b('\n'))
         recoverable = [True]
 
         def get(prefix=''):
+            prefix = b(prefix)
+
             if lines:
                 line = lines.pop(0)
             else:
@@ -102,14 +109,14 @@ class BaseStl(base.BaseMesh):
                 recoverable[0] = False
 
                 # Read more lines and make sure we prepend any old data
-                lines[:] = fh.read(BUFFER_SIZE).split('\n')
+                lines[:] = fh.read(BUFFER_SIZE).split(b('\n'))
                 line += lines.pop(0)
 
             line = line.lower().strip()
             if prefix:
                 if line.startswith(prefix):
-                    values = line.replace(prefix, '', 1).strip().split()
-                elif line.startswith('endsolid'):
+                    values = line.replace(prefix, b(''), 1).strip().split()
+                elif line.startswith(b('endsolid')):
                     raise StopIteration()
                 else:
                     raise RuntimeError(recoverable[0],
@@ -125,7 +132,8 @@ class BaseStl(base.BaseMesh):
                 return line
 
         line = get()
-        if not line.startswith('solid ') and line.startswith('solid'):
+        if not line.startswith(b('solid ')) and \
+                line.startswith(b('solid')):
             cls.warning('ASCII STL files should start with solid <space>. '
                         'The application that produced this STL file may be '
                         'faulty, please report this error. The erroneous '
@@ -152,7 +160,7 @@ class BaseStl(base.BaseMesh):
                 assert get() == 'endfacet'
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
-            except AssertionError, e:
+            except AssertionError as e:
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
                 if any(lines):
@@ -202,19 +210,19 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        print >>fh, 'solid %s' % name
+        print('solid %s' % name, file=fh)
 
         for row in self.data:
             vectors = row['vectors']
-            print >>fh, 'facet normal %f %f %f' % tuple(row['normals'])
-            print >>fh, '  outer loop'
-            print >>fh, '    vertex %f %f %f' % tuple(vectors[0])
-            print >>fh, '    vertex %f %f %f' % tuple(vectors[1])
-            print >>fh, '    vertex %f %f %f' % tuple(vectors[2])
-            print >>fh, '  endloop'
-            print >>fh, 'endfacet'
+            print('facet normal %f %f %f' % tuple(row['normals']), file=fh)
+            print('  outer loop', file=fh)
+            print('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
+            print('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
+            print('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
+            print('  endloop', file=fh)
+            print('endfacet', file=fh)
 
-        print >>fh, 'endsolid %s' % name
+        print('endsolid %s' % name, file=fh)
 
     def _write_binary(self, fh, name):
         fh.write(('%s (%s) %s %s' % (

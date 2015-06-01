@@ -1,7 +1,11 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 import numpy
 import collections
 
 from python_utils import logger
+
+from .utils import b
 
 #: When removing empty areas, remove areas that are smaller than this
 AREA_SIZE_THRESHOLD = 0
@@ -84,9 +88,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
     dtype = numpy.dtype([
-        ('normals', numpy.float32, (3, )),
-        ('vectors', numpy.float32, (3, 3)),
-        ('attr', numpy.uint16, (1, )),
+        (b('normals'), numpy.float32, (3, )),
+        (b('vectors'), numpy.float32, (3, 3)),
+        (b('attr'), numpy.uint16, (1, )),
     ])
 
     def __init__(self, data, calculate_normals=True,
@@ -164,7 +168,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if non_zero_areas.any():
             non_zero_areas.shape = non_zero_areas.shape[0]
             areas = numpy.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
-            units[non_zero_areas] /= areas
+            units[non_zero_areas] //= areas
 
         self.units = units
 

@@ -14,3 +14,9 @@ script:
 
 after_success:
         - coveralls
+
+before_script: flake8 --ignore=W391 progressbar tests
+
+after_success:
+    - coveralls
+

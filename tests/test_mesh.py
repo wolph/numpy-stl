@@ -83,8 +83,8 @@ def test_duplicate_polygons():
     mesh = Mesh(data, remove_duplicate_polygons=True)
     assert mesh.data.size == 3
 
-    print 'vectors'
-    print mesh.vectors
+    print('vectors')
+    print(mesh.vectors)
     assert (mesh.vectors[0] == numpy.array([[1, 0, 0],
                                             [0, 0, 0],
                                             [0, 0, 0]])).all()

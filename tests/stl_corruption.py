@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 import struct
 
@@ -71,7 +72,7 @@ def test_corrupt_ascii_file(tmpdir):
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
         fh.seek(40)
-        print >>fh, '####\n' * 100
+        print('####\n' * 100, file=fh)
         fh.seek(0)
         with pytest.raises(AssertionError):
             mesh.Mesh.from_file(str(tmp_file), fh=fh)
@@ -79,7 +80,7 @@ def test_corrupt_ascii_file(tmpdir):
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
         fh.seek(40)
-        print >>fh, ' ' * 100
+        print(' ' * 100, file=fh)
         fh.seek(80)
         fh.write(struct.pack('@i', 10))
         fh.seek(0)
