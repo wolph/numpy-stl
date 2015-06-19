@@ -11,3 +11,10 @@ def b(s, encoding='ascii', errors='replace'):  # pragma: no cover
         return bytes(s)
     else:
         return bytes(s, encoding, errors)
+
+
+def s(s):  # pragma: no cover
+    if IS_PYTHON2:
+        return bytes(s)
+    else:
+        return s

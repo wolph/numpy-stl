@@ -5,7 +5,7 @@ import collections
 
 from python_utils import logger
 
-from .utils import b
+from .utils import s
 
 #: When removing empty areas, remove areas that are smaller than this
 AREA_SIZE_THRESHOLD = 0
@@ -88,9 +88,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
     dtype = numpy.dtype([
-        (b('normals'), numpy.float32, (3, )),
-        (b('vectors'), numpy.float32, (3, 3)),
-        (b('attr'), numpy.uint16, (1, )),
+        (s('normals'), numpy.float32, (3, )),
+        (s('vectors'), numpy.float32, (3, 3)),
+        (s('attr'), numpy.uint16, (1, )),
     ])
 
     def __init__(self, data, calculate_normals=True,

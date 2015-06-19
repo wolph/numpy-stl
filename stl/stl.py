@@ -38,7 +38,7 @@ class BaseStl(base.BaseMesh):
         :param file fh: The file handle to open
         :param int mode: Automatically detect the filetype or force binary
         '''
-        header = fh.read(HEADER_SIZE).lower()
+        header = b(fh.read(HEADER_SIZE).lower())
         if not header.strip():
             return
 
@@ -72,7 +72,10 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
-        count, = struct.unpack('@i', fh.read(COUNT_SIZE))
+        x = (fh.read(COUNT_SIZE))
+        count, = struct.unpack('@i', b(x))
+        print('count: %r' % x)
+        print('count: %r' % count)
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
                                        count, MAX_COUNT)
