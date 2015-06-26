@@ -30,7 +30,7 @@ def _get_name(args):
         'numpy-stl-%06d' % random.randint(0, 1e6),
     ]
 
-    for name in names:
+    for name in names:  # pragma: no branch
         if name and isinstance(name, str) and not name.startswith('<'):
             return name
 

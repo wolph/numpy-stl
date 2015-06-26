@@ -43,16 +43,16 @@ class BaseStl(base.BaseMesh):
         if not header.strip():
             return
 
+        if isinstance(header, str):  # pragma: no branch
+            header = b(header)
+
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and b(header).startswith(b('solid')):
+        if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
             try:
                 data = cls._load_ascii(fh, header)
 
                 # Get the name from the first line
-                if isinstance(header, str):
-                    header = b(header)
-
                 name = header.split(b('\n'), 1)[0][5:].strip()
             except RuntimeError as exception:
                 (recoverable, e) = exception.args
@@ -168,12 +168,6 @@ class BaseStl(base.BaseMesh):
             except AssertionError as e:
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
-                if any(lines):
-                    # Seek back to where the next solid should begin
-                    position = -len(b('\n').join(lines))
-                    print('position: %s' % position)
-                    print('fh: %s' % fh)
-                    fh.seek(-len(b('\n').join(lines)), os.SEEK_CUR)
                 raise
 
     @classmethod
@@ -251,7 +245,7 @@ class BaseStl(base.BaseMesh):
         header = header[:80].ljust(80, ' ')
         packed = struct.pack('@i', self.data.size)
 
-        if isinstance(fh, io.TextIOWrapper):
+        if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
             packed = str(packed)
         else:
             header = b(header)
