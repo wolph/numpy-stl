@@ -29,7 +29,7 @@ def _test_conversion(from_, to, mode):
         expected_file = os.path.join(to, name)
 
         mesh = stl.StlMesh(source_file)
-        with open(expected_file) as expected_fh:
+        with open(expected_file, 'rb') as expected_fh:
             expected = expected_fh.read()
             # For binary files, skip the header
             if mode is stl.BINARY:

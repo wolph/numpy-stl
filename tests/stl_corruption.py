@@ -82,7 +82,7 @@ def test_corrupt_ascii_file(tmpdir):
         fh.seek(40)
         print(' ' * 100, file=fh)
         fh.seek(80)
-        fh.write(struct.pack('@i', 10))
+        fh.write(struct.pack('@i', 10).decode('utf-8'))
         fh.seek(0)
         with pytest.raises(AssertionError):
             mesh.Mesh.from_file(str(tmp_file), fh=fh)

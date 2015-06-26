@@ -7,9 +7,9 @@ from . import stl
 
 def _get_parser(description):
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('infile', nargs='?', type=argparse.FileType('r'),
+    parser.add_argument('infile', nargs='?', type=argparse.FileType('rb'),
                         default=sys.stdin, help='STL file to read')
-    parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
+    parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'),
                         default=sys.stdout, help='STL file to write')
     parser.add_argument('--name', nargs='?', help='Name of the mesh')
     parser.add_argument(
@@ -23,15 +23,16 @@ def _get_parser(description):
 
 
 def _get_name(args):
-    if args.name:
-        name = args.name
-    elif not getattr(args.outfile, 'name', '<').startswith('<'):
-        name = args.outfile.name
-    elif not getattr(args.infile, 'name', '<').startswith('<'):
-        name = args.infile.name
-    else:
-        name = 'numpy-stl-%06d' % random.randint(0, 1e6)
-    return name
+    names = [
+        args.name,
+        getattr(args.outfile, 'name', None),
+        getattr(args.infile, 'name', None),
+        'numpy-stl-%06d' % random.randint(0, 1e6),
+    ]
+
+    for name in names:
+        if name and isinstance(name, str) and not name.startswith('<'):
+            return name
 
 
 def main():
