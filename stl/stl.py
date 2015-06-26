@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import io
 import os
 import numpy
 import struct
@@ -38,9 +39,12 @@ class BaseStl(base.BaseMesh):
         :param file fh: The file handle to open
         :param int mode: Automatically detect the filetype or force binary
         '''
-        header = b(fh.read(HEADER_SIZE).lower())
+        header = fh.read(HEADER_SIZE).lower()
         if not header.strip():
             return
+
+        if isinstance(header, str):  # pragma: no branch
+            header = b(header)
 
         name = ''
 
@@ -49,9 +53,9 @@ class BaseStl(base.BaseMesh):
                 data = cls._load_ascii(fh, header)
 
                 # Get the name from the first line
-                name = header.split('\n', 1)[0][5:].strip()
-            except RuntimeError as xxx_todo_changeme:
-                (recoverable, e) = xxx_todo_changeme.args
+                name = header.split(b('\n'), 1)[0][5:].strip()
+            except RuntimeError as exception:
+                (recoverable, e) = exception.args
                 if recoverable:  # Recoverable?
                     data = cls._load_binary(fh, header, check_size=False)
                 else:
@@ -72,10 +76,8 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
-        x = (fh.read(COUNT_SIZE))
-        count, = struct.unpack('@i', b(x))
-        print('count: %r' % x)
-        print('count: %r' % count)
+        count, = struct.unpack('@i', b(fh.read(COUNT_SIZE)))
+        # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
                                        count, MAX_COUNT)
@@ -98,7 +100,7 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _ascii_reader(cls, fh, header):
-        lines = header.split(b('\n'))
+        lines = b(header).split(b('\n'))
         recoverable = [True]
 
         def get(prefix=''):
@@ -112,7 +114,7 @@ class BaseStl(base.BaseMesh):
                 recoverable[0] = False
 
                 # Read more lines and make sure we prepend any old data
-                lines[:] = fh.read(BUFFER_SIZE).split(b('\n'))
+                lines[:] = b(fh.read(BUFFER_SIZE)).split(b('\n'))
                 line += lines.pop(0)
 
             line = line.lower().strip()
@@ -132,7 +134,7 @@ class BaseStl(base.BaseMesh):
                     raise RuntimeError(recoverable[0],
                                        'Incorrect value %r' % line)
             else:
-                return line
+                return b(line)
 
         line = get()
         if not line.startswith(b('solid ')) and \
@@ -155,20 +157,17 @@ class BaseStl(base.BaseMesh):
             # buffer and/or StringIO does not work.
             try:
                 normals = get('facet normal')
-                assert get() == 'outer loop'
+                assert get() == b('outer loop')
                 v0 = get('vertex')
                 v1 = get('vertex')
                 v2 = get('vertex')
-                assert get() == 'endloop'
-                assert get() == 'endfacet'
+                assert get() == b('endloop')
+                assert get() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
             except AssertionError as e:
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
-                if any(lines):
-                    # Seek back to where the next solid should begin
-                    fh.seek(-len('\n'.join(lines)), os.SEEK_CUR)
                 raise
 
     @classmethod
@@ -213,28 +212,47 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        print('solid %s' % name, file=fh)
+        print(fh)
+        print(type(fh))
+
+        def p(s, file):
+            file.write(b('%s\n' % s))
+
+        p('solid %s' % name, file=fh)
 
         for row in self.data:
             vectors = row['vectors']
-            print('facet normal %f %f %f' % tuple(row['normals']), file=fh)
-            print('  outer loop', file=fh)
-            print('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
-            print('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
-            print('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
-            print('  endloop', file=fh)
-            print('endfacet', file=fh)
+            p('facet normal %f %f %f' % tuple(row['normals']), file=fh)
+            p('  outer loop', file=fh)
+            p('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
+            p('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
+            p('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
+            p('  endloop', file=fh)
+            p('endfacet', file=fh)
 
-        print('endsolid %s' % name, file=fh)
+        p('endsolid %s' % name, file=fh)
 
     def _write_binary(self, fh, name):
-        fh.write(('%s (%s) %s %s' % (
+        # Create the header
+        header = '%s (%s) %s %s' % (
             metadata.__package_name__,
             metadata.__version__,
             datetime.datetime.now(),
             name,
-        ))[:80].ljust(80, ' '))
-        fh.write(struct.pack('@i', self.data.size))
+        )
+
+        # Make it exactly 80 characters
+        header = header[:80].ljust(80, ' ')
+        packed = struct.pack('@i', self.data.size)
+
+        if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
+            packed = str(packed)
+        else:
+            header = b(header)
+            packed = b(packed)
+
+        fh.write(header)
+        fh.write(packed)
         self.data.tofile(fh)
 
     @classmethod

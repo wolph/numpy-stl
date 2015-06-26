@@ -10,7 +10,11 @@ def b(s, encoding='ascii', errors='replace'):  # pragma: no cover
     if IS_PYTHON2:
         return bytes(s)
     else:
-        return bytes(s, encoding, errors)
+        if isinstance(s, str):
+            return bytes(s, encoding, errors)
+        else:
+            return s
+        # return bytes(s, encoding, errors)
 
 
 def s(s):  # pragma: no cover
