@@ -10,6 +10,7 @@ import datetime
 from . import base
 from . import metadata
 from .utils import b
+from .utils import s
 
 #: Automatically detect whether the output is a TTY, if so, write ASCII
 #: otherwise write BINARY
@@ -76,7 +77,7 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
-        count, = struct.unpack('@i', b(fh.read(COUNT_SIZE)))
+        count, = struct.unpack(s('@i'), b(fh.read(COUNT_SIZE)))
         # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
