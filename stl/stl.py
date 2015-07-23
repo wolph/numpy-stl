@@ -207,7 +207,7 @@ class BaseStl(base.BaseMesh):
             if fh:
                 write(fh, name)
             else:
-                with open(name, 'wb') as fh:
+                with open(filename, 'wb') as fh:
                     write(fh, filename)
         except IOError:  # pragma: no cover
             pass
