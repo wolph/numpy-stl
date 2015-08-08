@@ -1,5 +1,5 @@
 stl-numpy
-------------------------------------------------------------------------------
+==============================================================================
 
 Simple library to make working with STL files (and 3D objects in general) fast
 and easy.
@@ -17,25 +17,25 @@ Links
  - My blog: http://w.wol.ph/
 
 Requirements for installing:
-==============================================================================
+------------------------------------------------------------------------------
 
  - `numpy`_ any recent version
  - `python-utils`_ version 1.6 or greater
 
 Installation:
-==============================================================================
+------------------------------------------------------------------------------
 
 `pip install numpy-stl`
 
 Initial usage:
-==============================================================================
+------------------------------------------------------------------------------
 
  - `stl2bin your_ascii_stl_file.stl new_binary_stl_file.stl`
  - `stl2ascii your_binary_stl_file.stl new_ascii_stl_file.stl`
  - `stl your_ascii_stl_file.stl new_binary_stl_file.stl`
 
 Quickstart
-==============================================================================
+------------------------------------------------------------------------------
 
 .. code-block:: python
 
@@ -90,3 +90,153 @@ Plotting using `matplotlib`_ is equally easy:
 .. _matplotlib: http://matplotlib.org/
 .. _python-utils: https://github.com/WoLpH/python-utils 
 
+Modifying Mesh objects
+------------------------------------------------------------------------------
+
+.. code-block:: python
+
+    from stl import mesh
+    import math
+    import numpy
+
+    # Create 3 faces of a cube
+    data = numpy.zeros(6, dtype=mesh.Mesh.dtype)
+
+    # Top of the cube
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+    data['vectors'][1] = numpy.array([[1, 0, 1],
+                                      [0, 1, 1],
+                                      [1, 1, 1]])
+    # Right face
+    data['vectors'][2] = numpy.array([[1, 0, 0],
+                                      [1, 0, 1],
+                                      [1, 1, 0]])
+    data['vectors'][3] = numpy.array([[1, 1, 1],
+                                      [1, 0, 1],
+                                      [1, 1, 0]])
+    # Left face
+    data['vectors'][4] = numpy.array([[0, 0, 0],
+                                      [1, 0, 0],
+                                      [1, 0, 1]])
+    data['vectors'][5] = numpy.array([[0, 0, 0],
+                                      [0, 0, 1],
+                                      [1, 0, 1]])
+
+    # Since the cube faces are from 0 to 1 we can move it to the middle by 
+    # substracting .5
+    data['vectors'] -= .5
+
+    # Generate 4 different meshes so we can rotate them later
+    meshes = []
+    for _ in range(4):
+        meshes.append(mesh.Mesh(data.copy()))
+
+    # Rotate 90 degrees over the X axis
+    meshes[0].rotate([0.0, 0.5, 0.0], math.radians(90))
+
+    # Translate 2 points over the X axis
+    meshes[1].x += 2
+
+    # Rotate 90 degrees over the Z axis
+    meshes[2].rotate([0.5, 0.0, 0.0], math.radians(90))
+    # Translate 2 points over the X and Y points
+    meshes[2].x += 2
+    meshes[2].y += 2
+
+    # Rotate 90 degrees over the X and Y axis
+    meshes[3].rotate([0.5, 0.0, 0.0], math.radians(90))
+    meshes[3].rotate([0.0, 0.5, 0.0], math.radians(90))
+    # Translate 2 points over the Y axis
+    meshes[3].y += 2
+
+
+    # Optionally render the rotated cube faces
+    from matplotlib import pyplot
+    from mpl_toolkits import mplot3d
+
+    # Create a new plot
+    figure = pyplot.figure()
+    axes = mplot3d.Axes3D(figure)
+
+    # Render the cube faces
+    for m in meshes:
+        axes.add_collection3d(mplot3d.art3d.Poly3DCollection(m.vectors))
+
+    # Auto scale to the mesh size
+    scale = numpy.concatenate([m.points for m in meshes]).flatten(-1)
+    axes.auto_scale_xyz(scale, scale, scale)
+
+    # Show the plot to the screen
+    pyplot.show()
+
+Extending Mesh objects
+------------------------------------------------------------------------------
+
+.. code-block:: python
+
+    from stl import mesh
+    import math
+    import numpy
+
+    # Create 3 faces of a cube
+    data = numpy.zeros(6, dtype=mesh.Mesh.dtype)
+
+    # Top of the cube
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+    data['vectors'][1] = numpy.array([[1, 0, 1],
+                                      [0, 1, 1],
+                                      [1, 1, 1]])
+    # Right face
+    data['vectors'][2] = numpy.array([[1, 0, 0],
+                                      [1, 0, 1],
+                                      [1, 1, 0]])
+    data['vectors'][3] = numpy.array([[1, 1, 1],
+                                      [1, 0, 1],
+                                      [1, 1, 0]])
+    # Left face
+    data['vectors'][4] = numpy.array([[0, 0, 0],
+                                      [1, 0, 0],
+                                      [1, 0, 1]])
+    data['vectors'][5] = numpy.array([[0, 0, 0],
+                                      [0, 0, 1],
+                                      [1, 0, 1]])
+
+    # Since the cube faces are from 0 to 1 we can move it to the middle by
+    # substracting .5
+    data['vectors'] -= .5
+
+    cube_back = mesh.Mesh(data.copy())
+    cube_front = mesh.Mesh(data.copy())
+
+    # Rotate 90 degrees over the X axis followed by the Y axis followed by the X
+    # axis
+    cube_back.rotate([0.5, 0.0, 0.0], math.radians(90))
+    cube_back.rotate([0.0, 0.5, 0.0], math.radians(90))
+    cube_back.rotate([0.5, 0.0, 0.0], math.radians(90))
+
+    cube = mesh.Mesh(numpy.concatenate([
+        cube_back.data.copy(),
+        cube_front.data.copy(),
+    ]))
+
+    # Optionally render the rotated cube faces
+    from matplotlib import pyplot
+    from mpl_toolkits import mplot3d
+
+    # Create a new plot
+    figure = pyplot.figure()
+    axes = mplot3d.Axes3D(figure)
+
+    # Render the cube
+    axes.add_collection3d(mplot3d.art3d.Poly3DCollection(cube.vectors))
+
+    # Auto scale to the mesh size
+    scale = cube_back.points.flatten(-1)
+    axes.auto_scale_xyz(scale, scale, scale)
+
+    # Show the plot to the screen
+    pyplot.show()

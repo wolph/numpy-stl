@@ -1,5 +1,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+import math
 import numpy
 import collections
 
@@ -171,6 +172,58 @@ class BaseMesh(logger.Logged, collections.Mapping):
             units[non_zero_areas] //= areas
 
         self.units = units
+
+    @classmethod
+    def rotation_matrix(cls, axis, theta):
+        '''
+        Rotate the matrix over the given axis by the given theta (angle)
+
+        Uses the Euler-Rodrigues formula for fast rotations:
+        `https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula`_
+
+        :param numpy.array axis:
+        :param float theta: Rotation angle in radians, use `math.radians` to
+        convert degrees to radians if needed.
+        '''
+        axis = numpy.asarray(axis)
+        # No need to rotate if there is no actual rotation
+        if not axis.any():
+            return numpy.zeros((3, 3))
+
+        theta = numpy.asarray(theta)
+        theta /= 2.
+
+        axis = axis / math.sqrt(numpy.dot(axis, axis))
+
+        a = math.cos(theta)
+        b, c, d = - axis * math.sin(theta)
+        angles = a, b, c, d
+        powers = [x * y for x in angles for y in angles]
+        aa, ab, ac, ad = powers[0:4]
+        bb, bb, bc, bd = powers[4:8]
+        cc, cb, cc, cd = powers[8:12]
+        dd, db, dc, dd = powers[12:16]
+
+        return numpy.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                            [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                            [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+    def rotate(self, axis, theta):
+        # No need to rotate if there is no actual rotation
+        if not theta:
+            return
+
+        rotation_matrix = self.rotation_matrix(axis, theta)
+
+        # No need to rotate if there is no actual rotation
+        if not rotation_matrix.any():
+            return
+
+        def _rotate(matrix):
+            return numpy.dot(matrix, rotation_matrix)
+
+        for i in range(3):
+            self.vectors[:, i] = _rotate(self.vectors[:, i])
 
     def _get_or_update(key):
         def _get(self):
