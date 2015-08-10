@@ -4,9 +4,9 @@ python:
 
 # command to install dependencies
 install:
-    - pip install . --use-mirrors
-    - pip install -r test_requirements.txt --use-mirrors
-    - pip install coveralls --use-mirrors
+    - pip install . 
+    - pip install -r test_requirements.txt 
+    - pip install coveralls 
 
 # command to run tests
 script:
