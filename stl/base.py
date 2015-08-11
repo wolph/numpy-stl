@@ -200,9 +200,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
         angles = a, b, c, d
         powers = [x * y for x in angles for y in angles]
         aa, ab, ac, ad = powers[0:4]
-        bb, bb, bc, bd = powers[4:8]
-        cc, cb, cc, cd = powers[8:12]
-        dd, db, dc, dd = powers[12:16]
+        ba, bb, bc, bd = powers[4:8]
+        ca, cb, cc, cd = powers[8:12]
+        da, db, dc, dd = powers[12:16]
 
         return numpy.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
                             [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
