@@ -169,7 +169,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if non_zero_areas.any():
             non_zero_areas.shape = non_zero_areas.shape[0]
             areas = numpy.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
-            units[non_zero_areas] //= areas
+            units[non_zero_areas] /= areas
 
         self.units = units
 
