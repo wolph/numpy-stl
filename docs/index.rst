@@ -8,6 +8,7 @@ Contents:
 
    usage
    stl
+   tests
 
 Indices and tables
 ==================

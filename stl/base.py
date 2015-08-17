@@ -169,19 +169,20 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if non_zero_areas.any():
             non_zero_areas.shape = non_zero_areas.shape[0]
             areas = numpy.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
-            units[non_zero_areas] //= areas
+            units[non_zero_areas] /= areas
 
         self.units = units
 
     @classmethod
     def rotation_matrix(cls, axis, theta):
         '''
-        Rotate the matrix over the given axis by the given theta (angle)
+        Generate a rotation matrix to Rotate the matrix over the given axis by
+        the given theta (angle)
 
         Uses the Euler-Rodrigues formula for fast rotations:
         `https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula`_
 
-        :param numpy.array axis:
+        :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
         convert degrees to radians if needed.
         '''
@@ -200,19 +201,31 @@ class BaseMesh(logger.Logged, collections.Mapping):
         angles = a, b, c, d
         powers = [x * y for x in angles for y in angles]
         aa, ab, ac, ad = powers[0:4]
-        bb, bb, bc, bd = powers[4:8]
-        cc, cb, cc, cd = powers[8:12]
-        dd, db, dc, dd = powers[12:16]
+        ba, bb, bc, bd = powers[4:8]
+        ca, cb, cc, cd = powers[8:12]
+        da, db, dc, dd = powers[12:16]
 
         return numpy.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
                             [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                             [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
-    def rotate(self, axis, theta):
+    def rotate(self, axis, theta, point=None):
+        '''
+        Rotate the matrix over the given axis by the given theta (angle)
+
+        Uses the `rotation_matrix`_ in the background.
+
+        :param numpy.array axis: Axis to rotate over (x, y, z)
+        :param float theta: Rotation angle in radians, use `math.radians` to
+        convert degrees to radians if needed.
+        :param numpy.array point: Rotation point so manual translation is not
+        required
+        '''
         # No need to rotate if there is no actual rotation
         if not theta:
             return
 
+        point = numpy.asarray(point or [0] * 3)
         rotation_matrix = self.rotation_matrix(axis, theta)
 
         # No need to rotate if there is no actual rotation
@@ -220,7 +233,12 @@ class BaseMesh(logger.Logged, collections.Mapping):
             return
 
         def _rotate(matrix):
-            return numpy.dot(matrix, rotation_matrix)
+            if point.any():
+                # Translate while rotating
+                return (matrix + point).dot(rotation_matrix) - point
+            else:
+                # Simply apply the rotation
+                return matrix.dot(rotation_matrix)
 
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])

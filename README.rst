@@ -133,13 +133,13 @@ Modifying Mesh objects
     for _ in range(4):
         meshes.append(mesh.Mesh(data.copy()))
 
-    # Rotate 90 degrees over the X axis
+    # Rotate 90 degrees over the Y axis
     meshes[0].rotate([0.0, 0.5, 0.0], math.radians(90))
 
     # Translate 2 points over the X axis
     meshes[1].x += 2
 
-    # Rotate 90 degrees over the Z axis
+    # Rotate 90 degrees over the X axis
     meshes[2].rotate([0.5, 0.0, 0.0], math.radians(90))
     # Translate 2 points over the X and Y points
     meshes[2].x += 2
@@ -212,8 +212,8 @@ Extending Mesh objects
     cube_back = mesh.Mesh(data.copy())
     cube_front = mesh.Mesh(data.copy())
 
-    # Rotate 90 degrees over the X axis followed by the Y axis followed by the X
-    # axis
+    # Rotate 90 degrees over the X axis followed by the Y axis followed by the
+    # X axis
     cube_back.rotate([0.5, 0.0, 0.0], math.radians(90))
     cube_back.rotate([0.0, 0.5, 0.0], math.radians(90))
     cube_back.rotate([0.5, 0.0, 0.0], math.radians(90))

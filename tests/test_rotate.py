@@ -56,6 +56,22 @@ def test_rotation():
     ])).all()
 
 
+def test_rotation_over_point():
+    # Create 3 faces of a cube
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+
+    data['vectors'][0] = numpy.array([[1, 0, 0],
+                                      [0, 1, 0],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+
+    mesh.rotate([1, 0, 0], math.radians(180), point=[1, 2, 3])
+    assert (mesh.vectors == numpy.array([[1, -4, -6],
+                                         [0, -5, -6],
+                                         [0, -4, -7]])).all()
+
+
 def test_no_rotation():
     # Create 3 faces of a cube
     data = numpy.zeros(3, dtype=Mesh.dtype)
