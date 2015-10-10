@@ -213,9 +213,6 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        print(fh)
-        print(type(fh))
-
         def p(s, file):
             file.write(b('%s\n' % s))
 

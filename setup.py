@@ -46,6 +46,7 @@ setup(
     install_requires=[
         'numpy',
         'nine',
+        'enum34',
         'python-utils>=1.6.2',
     ],
 )
