@@ -171,12 +171,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
             # We need to return both items of the shifted diff
             diff_a = numpy.concatenate(([True], diff))
             diff_b = numpy.concatenate((diff, [True]))
-            diff = diff_a & diff_b
 
-            if len(data[numpy.sort(idx[diff])]) <= len(polygons) / 2:
-                return data[numpy.sort(idx[diff_a])]
             # Combine both unique lists
-            return data[numpy.sort(idx[diff])]
+            filtered_data = data[numpy.sort(idx[diff_a & diff_b])]
+            if len(filtered_data) <= len(data) / 2:
+                return data[numpy.sort(idx[diff_a])]
+            else:
+                return data[numpy.sort(idx[diff])]
         else:
             return data
 
