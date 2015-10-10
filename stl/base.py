@@ -1,5 +1,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+import enum
 import math
 import numpy
 import collections
@@ -14,12 +15,41 @@ AREA_SIZE_THRESHOLD = 0
 VECTORS = 3
 #: Dimensions used in a vector
 DIMENSIONS = 3
-#: X index (for example, `mesh.v0[0][X]`)
-X = 0
-#: Y index (for example, `mesh.v0[0][Y]`)
-Y = 1
-#: Z index (for example, `mesh.v0[0][Z]`)
-Z = 2
+
+
+class Dimension(enum.IntEnum):
+    #: X index (for example, `mesh.v0[0][X]`)
+    X = 0
+    #: Y index (for example, `mesh.v0[0][Y]`)
+    Y = 1
+    #: Z index (for example, `mesh.v0[0][Z]`)
+    Z = 2
+
+# For backwards compatibility, leave the original references
+X = Dimension.X
+Y = Dimension.Y
+Z = Dimension.Z
+
+
+class RemoveDuplicates(enum.Enum):
+    '''
+    Choose whether to remove no duplicates, leave only a single of the
+    duplicates or remove all duplicates (leaving holes).
+    '''
+    NONE = 0
+    SINGLE = 1
+    ALL = 2
+
+    @classmethod
+    def map(cls, value):
+        if value and value in cls:
+            pass
+        elif value:
+            value = cls.SINGLE
+        else:
+            value = cls.NONE
+
+        return value
 
 
 class BaseMesh(logger.Logged, collections.Mapping):
@@ -95,23 +125,25 @@ class BaseMesh(logger.Logged, collections.Mapping):
     ])
 
     def __init__(self, data, calculate_normals=True,
-                 remove_empty_areas=False, remove_duplicate_polygons=False,
+                 remove_empty_areas=False,
+                 remove_duplicate_polygons=RemoveDuplicates.NONE,
                  name='', **kwargs):
         super(BaseMesh, self).__init__(**kwargs)
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
 
-        if remove_duplicate_polygons:
-            data = self.remove_duplicate_polygons(data)
+        if RemoveDuplicates.map(remove_duplicate_polygons).value:
+            data = self.remove_duplicate_polygons(data,
+                                                  remove_duplicate_polygons)
 
         self.name = name
         self.data = data
 
         points = self.points = data['vectors']
         self.points.shape = data.size, 9
-        self.x = points[:, X::3]
-        self.y = points[:, Y::3]
-        self.z = points[:, Z::3]
+        self.x = points[:, Dimension.X::3]
+        self.y = points[:, Dimension.Y::3]
+        self.z = points[:, Dimension.Z::3]
         self.v0 = data['vectors'][:, 0]
         self.v1 = data['vectors'][:, 1]
         self.v2 = data['vectors'][:, 2]
@@ -123,15 +155,30 @@ class BaseMesh(logger.Logged, collections.Mapping):
             self.update_normals()
 
     @classmethod
-    def remove_duplicate_polygons(cls, data):
+    def remove_duplicate_polygons(cls, data, value=RemoveDuplicates.SINGLE):
+        value = RemoveDuplicates.map(value)
         polygons = data['vectors'].sum(axis=1)
         # Get a sorted list of indices
         idx = numpy.lexsort(polygons.T)
         # Get the indices of all different indices
         diff = numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
-        # Only return the unique data, the True is so we always get at least
-        # the originals
-        return data[numpy.sort(idx[numpy.concatenate(([True], diff))])]
+
+        if value is RemoveDuplicates.SINGLE:
+            # Only return the unique data, the True is so we always get at
+            # least the originals
+            return data[numpy.sort(idx[numpy.concatenate(([True], diff))])]
+        elif value is RemoveDuplicates.ALL:
+            # We need to return both items of the shifted diff
+            diff_a = numpy.concatenate(([True], diff))
+            diff_b = numpy.concatenate((diff, [True]))
+            diff = diff_a & diff_b
+
+            if len(data[numpy.sort(idx[diff])]) <= len(polygons) / 2:
+                return data[numpy.sort(idx[diff_a])]
+            # Combine both unique lists
+            return data[numpy.sort(idx[diff])]
+        else:
+            return data
 
     @classmethod
     def remove_empty_areas(cls, data):
