@@ -10,6 +10,18 @@ else:
     long_description = 'See http://pypi.python.org/pypi/%s/' % (
         metadata.__package_name__)
 
+install_requires = [
+    'numpy',
+    'nine',
+    'python-utils>=1.6.2',
+]
+
+try:
+    import enum
+    assert enum
+except ImportError:
+    install_requires.append('enum34')
+
 
 class PyTest(TestCommand):
     def finalize_options(self):
@@ -43,11 +55,6 @@ setup(
         ],
     },
     classifiers=['License :: OSI Approved :: BSD License'],
-    install_requires=[
-        'numpy',
-        'nine',
-        'enum34',
-        'python-utils>=1.6.2',
-    ],
+    install_requires=install_requires,
 )
 
