@@ -88,7 +88,7 @@ Plotting using `matplotlib`_ is equally easy:
 
 .. _numpy: http://numpy.org/
 .. _matplotlib: http://matplotlib.org/
-.. _python-utils: https://github.com/WoLpH/python-utils 
+.. _python-utils: https://github.com/WoLpH/python-utils
 
 Modifying Mesh objects
 ------------------------------------------------------------------------------
@@ -124,7 +124,7 @@ Modifying Mesh objects
                                       [0, 0, 1],
                                       [1, 0, 1]])
 
-    # Since the cube faces are from 0 to 1 we can move it to the middle by 
+    # Since the cube faces are from 0 to 1 we can move it to the middle by
     # substracting .5
     data['vectors'] -= .5
 
