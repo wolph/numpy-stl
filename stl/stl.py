@@ -120,6 +120,9 @@ class BaseStl(base.BaseMesh):
 
             line = line.lower().strip()
             if prefix:
+                if line == b(''):
+                    return get(prefix)
+
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
                 elif line.startswith(b('endsolid')):
