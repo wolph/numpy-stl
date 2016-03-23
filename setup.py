@@ -1,14 +1,19 @@
 import os
-import sys
-from stl import metadata
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
+
+
+# To prevent importing about and thereby breaking the coverage info we use this
+# exec hack
+about = {}
+with open('stl/__about__.py') as fp:
+    exec(fp.read(), about)
+
 
 if os.path.isfile('README.rst'):
     long_description = open('README.rst').read()
 else:
     long_description = 'See http://pypi.python.org/pypi/%s/' % (
-        metadata.__package_name__)
+        about['__package_name__'])
 
 install_requires = [
     'numpy',
@@ -23,38 +28,27 @@ except ImportError:
     install_requires.append('enum34')
 
 
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
-
-setup(
-    name=metadata.__package_name__,
-    version=metadata.__version__,
-    author=metadata.__author__,
-    author_email=metadata.__author_email__,
-    description=metadata.__description__,
-    url=metadata.__url__,
-    license='BSD',
-    packages=find_packages(),
-    long_description=long_description,
-    tests_require=['pytest'],
-    cmdclass={'test': PyTest},
-    entry_points={
-        'console_scripts': [
-            'stl = %s.main:main' % metadata.__import_name__,
-            'stl2ascii = %s.main:to_ascii' % metadata.__import_name__,
-            'stl2bin = %s.main:to_binary' % metadata.__import_name__,
-        ],
-    },
-    classifiers=['License :: OSI Approved :: BSD License'],
-    install_requires=install_requires,
-)
+if __name__ == '__main__':
+    setup(
+        name=about['__package_name__'],
+        version=about['__version__'],
+        author=about['__author__'],
+        author_email=about['__author_email__'],
+        description=about['__description__'],
+        url=about['__url__'],
+        license='BSD',
+        packages=find_packages(),
+        long_description=long_description,
+        tests_require=['pytest'],
+        setup_requires=['pytest-runner'],
+        entry_points={
+            'console_scripts': [
+                'stl = %s.main:main' % about['__import_name__'],
+                'stl2ascii = %s.main:to_ascii' % about['__import_name__'],
+                'stl2bin = %s.main:to_binary' % about['__import_name__'],
+            ],
+        },
+        classifiers=['License :: OSI Approved :: BSD License'],
+        install_requires=install_requires,
+    )
 
