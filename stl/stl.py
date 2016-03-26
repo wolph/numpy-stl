@@ -119,6 +119,9 @@ class BaseStl(base.BaseMesh):
                 line += lines.pop(0)
 
             line = line.lower().strip()
+            if line == b(''):
+                return get(prefix)
+
             if prefix:
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()

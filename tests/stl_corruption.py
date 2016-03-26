@@ -40,6 +40,34 @@ def test_ascii_with_missing_name(tmpdir):
         mesh.Mesh.from_file(str(tmp_file), fh=fh)
 
 
+def test_ascii_with_blank_lines(tmpdir):
+    _stl_file = '''
+    solid test.stl
+
+
+      facet normal -0.014565 0.073223 -0.002897
+
+        outer loop
+
+          vertex 0.399344 0.461940 1.044090
+          vertex 0.500000 0.500000 1.500000
+
+          vertex 0.576120 0.500000 1.117320
+
+        endloop
+
+      endfacet
+
+    endsolid test.stl
+    '''.lstrip()
+
+    tmp_file = tmpdir.join('tmp.stl')
+    with tmp_file.open('w+') as fh:
+        fh.write(_stl_file)
+        fh.seek(0)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+
+
 def test_incomplete_ascii_file(tmpdir):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
