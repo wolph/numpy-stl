@@ -1,0 +1,13 @@
+# Include all documentation files
+include-recursive *.rst
+
+# Include docs and tests
+graft tests
+graft docs
+
+# Skip compiled python files
+global-exclude *.py[co]
+
+# Remove all build directories
+prune docs/_build
+

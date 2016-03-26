@@ -8,7 +8,7 @@ import struct
 import datetime
 
 from . import base
-from . import metadata
+from . import __about__ as metadata
 from .utils import b
 from .utils import s
 
