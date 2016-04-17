@@ -206,7 +206,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def get_mass_properties(self):
-        # returns:
+        # returns a tuple with the following elements:
         #    - the volume
         #    - the position of the center of gravity (COG)
         #    - the inertia matrix expressed at the COG
@@ -224,9 +224,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
             g2 = f2 + w2 * (f1 + w2)
             return f1,f2,f3,g0,g1,g2
 
-        x0,x1,x2 = self.x[:,0],self.x[:,1],self.x[:,2]
-        y0,y1,y2 = self.y[:,0],self.y[:,1],self.y[:,2]
-        z0,z1,z2 = self.z[:,0],self.z[:,1],self.z[:,2]
+        x0,x1,x2 = self.x[:,0], self.x[:,1], self.x[:,2]
+        y0,y1,y2 = self.y[:,0], self.y[:,1], self.y[:,2]
+        z0,z1,z2 = self.z[:,0], self.z[:,1], self.z[:,2]
         a1,b1,c1 = x1 - x0, y1 - y0, z1 - z0
         a2,b2,c2 = x2 - x0, y2 - y0, z2 - z0
         d0,d1,d2 = b1*c2-b2*c1, a2*c1-a1*c2, a1*b2-a2*b1
@@ -246,9 +246,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
         volume = intg[0]
         cog = intg[1:4]/volume
         inertia = np.zeros((3,3))
-        inertia[0,0] = intg[5]+intg[6]-volume*(cog[1]*cog[1]+cog[2]*cog[2])
-        inertia[1,1] = intg[4]+intg[6]-volume*(cog[2]*cog[2]+cog[0]*cog[0])
-        inertia[2,2] = intg[4]+intg[5]-volume*(cog[0]*cog[0]+cog[1]*cog[1])
+        inertia[0,0] = intg[5] + intg[6] - volume * (cog[1] * cog[1] + cog[2] * cog[2])
+        inertia[1,1] = intg[4] + intg[6] - volume * (cog[2] * cog[2] + cog[0] * cog[0])
+        inertia[2,2] = intg[4] + intg[5] - volume * (cog[0] * cog[0] + cog[1] * cog[1])
         inertia[0,1] = inertia[1,0] = -(intg[7]-volume*cog[0]*cog[1])
         inertia[1,2] = inertia[2,1] = -(intg[8]-volume*cog[1]*cog[2])
         inertia[0,2] = inertia[2,0] = -(intg[9]-volume*cog[2]*cog[0])
