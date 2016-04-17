@@ -3,5 +3,8 @@ dist
 docs/_build
 cover
 *.egg-info
+.cache
+.coverage
+**/htmlcov
 **/*.pyc
 **/*.pyo
