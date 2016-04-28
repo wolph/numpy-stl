@@ -129,14 +129,14 @@ class BaseStl(base.BaseMesh):
                     raise StopIteration()
                 else:
                     raise RuntimeError(recoverable[0],
-                                       '%r should start with %r' % (line,
+                                       '{0!r} should start with {1!r}'.format(line,
                                                                     prefix))
 
                 if len(values) == 3:
                     return [float(v) for v in values]
                 else:  # pragma: no cover
                     raise RuntimeError(recoverable[0],
-                                       'Incorrect value %r' % line)
+                                       'Incorrect value {0!r}'.format(line))
             else:
                 return b(line)
 
@@ -203,7 +203,7 @@ class BaseStl(base.BaseMesh):
         elif mode is ASCII:
             write = self._write_ascii
         else:
-            raise ValueError('Mode %r is invalid' % mode)
+            raise ValueError('Mode {0!r} is invalid'.format(mode))
 
         name = os.path.split(filename)[-1]
         try:
@@ -217,29 +217,29 @@ class BaseStl(base.BaseMesh):
 
     def _write_ascii(self, fh, name):
         def p(s, file):
-            file.write(b('%s\n' % s))
+            file.write(b('{0!s}\n'.format(s)))
 
-        p('solid %s' % name, file=fh)
+        p('solid {0!s}'.format(name), file=fh)
 
         for row in self.data:
             vectors = row['vectors']
-            p('facet normal %f %f %f' % tuple(row['normals']), file=fh)
+            p('facet normal {0:f} {1:f} {2:f}'.format(*tuple(row['normals'])), file=fh)
             p('  outer loop', file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
+            p('    vertex {0:f} {1:f} {2:f}'.format(*tuple(vectors[0])), file=fh)
+            p('    vertex {0:f} {1:f} {2:f}'.format(*tuple(vectors[1])), file=fh)
+            p('    vertex {0:f} {1:f} {2:f}'.format(*tuple(vectors[2])), file=fh)
             p('  endloop', file=fh)
             p('endfacet', file=fh)
 
-        p('endsolid %s' % name, file=fh)
+        p('endsolid {0!s}'.format(name), file=fh)
 
     def _write_binary(self, fh, name):
         # Create the header
-        header = '%s (%s) %s %s' % (
+        header = '{0!s} ({1!s}) {2!s} {3!s}'.format(
             metadata.__package_name__,
             metadata.__version__,
             datetime.datetime.now(),
-            name,
+            name
         )
 
         # Make it exactly 80 characters

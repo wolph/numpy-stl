@@ -27,7 +27,7 @@ def _get_name(args):
         args.name,
         getattr(args.outfile, 'name', None),
         getattr(args.infile, 'name', None),
-        'numpy-stl-%06d' % random.randint(0, 1e6),
+        'numpy-stl-{0:06d}'.format(random.randint(0, 1e6)),
     ]
 
     for name in names:  # pragma: no branch
