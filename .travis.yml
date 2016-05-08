@@ -17,7 +17,7 @@ script:
     - py.test stl tests
 
 after_success:
-        - coveralls
+    - coveralls
 
 before_script: flake8 --ignore=W391 stl tests
 
