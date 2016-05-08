@@ -235,17 +235,17 @@ class BaseMesh(logger.Logged, collections.Mapping):
         f1y,f2y,f3y,g0y,g1y,g2y = Subexpression(self.y)
         f1z,f2z,f3z,g0z,g1z,g2z = Subexpression(self.z)
 
-        intg = np.zeros((10))
+        intg = numpy.zeros((10))
         intg[0] = sum(d0*f1x)
         intg[1:4] = sum(d0*f2x), sum(d1*f2y), sum(d2*f2z)
         intg[4:7] = sum(d0*f3x), sum(d1*f3y), sum(d2*f3z)
         intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
         intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
         intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
-        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         volume = intg[0]
         cog = intg[1:4]/volume
-        inertia = np.zeros((3,3))
+        inertia = numpy.zeros((3,3))
         inertia[0,0] = intg[5] + intg[6] - volume * (cog[1] * cog[1] + cog[2] * cog[2])
         inertia[1,1] = intg[4] + intg[6] - volume * (cog[2] * cog[2] + cog[0] * cog[0])
         inertia[2,2] = intg[4] + intg[5] - volume * (cog[0] * cog[0] + cog[1] * cog[1])
