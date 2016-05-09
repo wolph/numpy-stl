@@ -211,7 +211,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         #    - the position of the center of gravity (COG)
         #    - the inertia matrix expressed at the COG
         # http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
-        def Subexpression(x):
+        def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
             f1 = temp0 + w2
@@ -231,9 +231,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
         a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
         d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
 
-        f1x, f2x, f3x, g0x, g1x, g2x = Subexpression(self.x)
-        f1y, f2y, f3y, g0y, g1y, g2y = Subexpression(self.y)
-        f1z, f2z, f3z, g0z, g1z, g2z = Subexpression(self.z)
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(self.x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)
 
         intg = numpy.zeros((10))
         intg[0] = sum(d0 * f1x)
