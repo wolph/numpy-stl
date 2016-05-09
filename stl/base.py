@@ -206,11 +206,15 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def get_mass_properties(self):
-        # returns a tuple with the following elements:
-        #    - the volume
-        #    - the position of the center of gravity (COG)
-        #    - the inertia matrix expressed at the COG
-        # http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+        '''
+        Evaluate and return a tuple with the following elements:
+          - the volume
+          - the position of the center of gravity (COG)
+          - the inertia matrix expressed at the COG
+
+        Documentation can be found here:
+        http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+        '''
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
