@@ -7,8 +7,12 @@ tolerance = 1e-6
 
 
 def test_mass_properties_for_half_donut():
-    # One checks the results obtained with stl
-    # with the ones obtained with meshlab
+    """
+    Checks the results of method get_mass_properties() on
+    STL Ascii file HalfDonut.stl
+    One checks the results obtained with stl
+    with the ones obtained with meshlab
+    """
     ascii_file = 'tests/stl_ascii/HalfDonut.stl'
     mesh = stl.StlMesh(ascii_file)
     volume, cog, inertia = mesh.get_mass_properties()
@@ -24,8 +28,12 @@ def test_mass_properties_for_half_donut():
 
 
 def test_mass_properties_for_moon():
-    # One checks the results obtained with stl
-    # with the ones obtained with meshlab
+    """
+    Checks the results of method get_mass_properties() on
+    STL Ascii file Moon.stl
+    One checks the results obtained with stl
+    with the ones obtained with meshlab
+    """
     ascii_file = 'tests/stl_ascii/Moon.stl'
     mesh = stl.StlMesh(ascii_file)
     volume, cog, inertia = mesh.get_mass_properties()
@@ -41,8 +49,12 @@ def test_mass_properties_for_moon():
 
 
 def test_mass_properties_for_star():
-    # One checks the results obtained with stl
-    # with the ones obtained with meshlab
+    """
+    Checks the results of method get_mass_properties() on
+    STL Ascii file Star.stl
+    One checks the results obtained with stl
+    with the ones obtained with meshlab
+    """
     ascii_file = 'tests/stl_ascii/Star.stl'
     mesh = stl.StlMesh(ascii_file)
     volume, cog, inertia = mesh.get_mass_properties()
