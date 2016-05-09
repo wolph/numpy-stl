@@ -6,7 +6,7 @@ from stl import stl
 tolerance = 1e-6
 
 
-def test_mass_properties_for_HalfDonut():
+def test_mass_properties_for_half_donut():
     # One checks the results obtained with stl
     # with the ones obtained with meshlab
     ascii_file = 'tests/stl_ascii/HalfDonut.stl'
@@ -23,7 +23,7 @@ def test_mass_properties_for_HalfDonut():
            atol=tolerance))
 
 
-def test_mass_properties_for_Moon():
+def test_mass_properties_for_moon():
     # One checks the results obtained with stl
     # with the ones obtained with meshlab
     ascii_file = 'tests/stl_ascii/Moon.stl'
@@ -40,7 +40,7 @@ def test_mass_properties_for_Moon():
            atol=tolerance))
 
 
-def test_mass_properties_for_Star():
+def test_mass_properties_for_star():
     # One checks the results obtained with stl
     # with the ones obtained with meshlab
     ascii_file = 'tests/stl_ascii/Star.stl'
