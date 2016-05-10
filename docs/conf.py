@@ -69,9 +69,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = metadata.__package_name__.replace('-', ' ').capitalize()
-copyright = u'%s,  <a href="http://wol.ph/">%s</a>' % (
+copyright = u'{0!s},  <a href="http://wol.ph/">{1!s}</a>'.format(
     datetime.date.today().year,
-    metadata.__author__,
+    metadata.__author__
 )
 
 # The version info for the project you're documenting, acts as replacement for
@@ -224,8 +224,8 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [(
     'index',
-    '%s.tex' % metadata.__package_name__,
-    u'%s Documentation' % metadata.__package_name__.replace('-', ' ').capitalize(),
+    '{0!s}.tex'.format(metadata.__package_name__),
+    u'{0!s} Documentation'.format(metadata.__package_name__.replace('-', ' ').capitalize()),
    metadata.__author__,
    'manual',
 )]
@@ -258,7 +258,7 @@ latex_documents = [(
 man_pages = [(
     'index',
     metadata.__package_name__,
-    u'%s Documentation' % metadata.__package_name__.replace('-', ' ').capitalize(),
+    u'{0!s} Documentation'.format(metadata.__package_name__.replace('-', ' ').capitalize()),
     [metadata.__author__],
     1,
 )]
@@ -275,7 +275,7 @@ man_pages = [(
 texinfo_documents = [(
     'index',
     metadata.__package_name__,
-    u'%s Documentation' % metadata.__package_name__.replace('-', ' ').capitalize(),
+    u'{0!s} Documentation'.format(metadata.__package_name__.replace('-', ' ').capitalize()),
     metadata.__author__,
     metadata.__package_name__,
     metadata.__description__,

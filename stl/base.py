@@ -346,15 +346,15 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
     def _get_or_update(key):
         def _get(self):
-            if not hasattr(self, '_%s' % key):
-                getattr(self, 'update_%s' % key)()
-            return getattr(self, '_%s' % key)
+            if not hasattr(self, '_{0!s}'.format(key)):
+                getattr(self, 'update_{0!s}'.format(key))()
+            return getattr(self, '_{0!s}'.format(key))
 
         return _get
 
     def _set(key):
         def _set(self, value):
-            setattr(self, '_%s' % key, value)
+            setattr(self, '_{0!s}'.format(key), value)
 
         return _set
 

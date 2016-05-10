@@ -12,8 +12,8 @@ with open('stl/__about__.py') as fp:
 if os.path.isfile('README.rst'):
     long_description = open('README.rst').read()
 else:
-    long_description = 'See http://pypi.python.org/pypi/%s/' % (
-        about['__package_name__'])
+    long_description = 'See http://pypi.python.org/pypi/{0!s}/'.format((
+        about['__package_name__']))
 
 install_requires = [
     'numpy',
@@ -43,9 +43,9 @@ if __name__ == '__main__':
         setup_requires=['pytest-runner'],
         entry_points={
             'console_scripts': [
-                'stl = %s.main:main' % about['__import_name__'],
-                'stl2ascii = %s.main:to_ascii' % about['__import_name__'],
-                'stl2bin = %s.main:to_binary' % about['__import_name__'],
+                'stl = {0!s}.main:main'.format(about['__import_name__']),
+                'stl2ascii = {0!s}.main:to_ascii'.format(about['__import_name__']),
+                'stl2bin = {0!s}.main:to_binary'.format(about['__import_name__']),
             ],
         },
         classifiers=['License :: OSI Approved :: BSD License'],
