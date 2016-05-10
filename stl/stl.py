@@ -41,8 +41,6 @@ class BaseStl(base.BaseMesh):
         :param int mode: Automatically detect the filetype or force binary
         '''
         header = fh.read(HEADER_SIZE).lower()
-        if not header.strip():
-            return
 
         if isinstance(header, str):  # pragma: no branch
             header = b(header)
