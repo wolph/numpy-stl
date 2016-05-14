@@ -173,7 +173,7 @@ class BaseStl(base.BaseMesh):
                 assert get() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
-            except AssertionError as e:
+            except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
                 raise
