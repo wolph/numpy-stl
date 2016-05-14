@@ -41,7 +41,7 @@ class BaseStl(base.BaseMesh):
         :param int mode: Automatically detect the filetype or force binary
         '''
         header = fh.read(HEADER_SIZE).lower()
-        if not header.strip():
+        if not header:
             return
 
         if isinstance(header, str):  # pragma: no branch
@@ -77,7 +77,11 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
-        count, = struct.unpack(s('@i'), b(fh.read(COUNT_SIZE)))
+        count_data = fh.read(COUNT_SIZE)
+        if len(count_data) != COUNT_SIZE:
+            count = 0
+        else:
+            count, = struct.unpack(s('@i'), b(count_data))
         # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
@@ -169,7 +173,7 @@ class BaseStl(base.BaseMesh):
                 assert get() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
-            except AssertionError as e:
+            except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
                 raise
