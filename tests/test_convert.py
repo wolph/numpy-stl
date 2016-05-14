@@ -27,6 +27,8 @@ def _test_conversion(from_, to, mode):
     for name in os.listdir(from_):
         source_file = os.path.join(from_, name)
         expected_file = os.path.join(to, name)
+        if not os.path.exists(expected_file):
+            continue
 
         mesh = stl.StlMesh(source_file)
         with open(expected_file, 'rb') as expected_fh:
