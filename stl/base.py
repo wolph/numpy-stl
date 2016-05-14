@@ -249,10 +249,11 @@ class BaseMesh(logger.Logged, collections.Mapping):
         intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         volume = intg[0]
         cog = intg[1:4] / volume
+        cogsq = cog ** 2
         inertia = numpy.zeros((3, 3))
-        inertia[0, 0] = intg[5] + intg[6] - volume * (cog[1]**2 + cog[2]**2)
-        inertia[1, 1] = intg[4] + intg[6] - volume * (cog[2]**2 + cog[0]**2)
-        inertia[2, 2] = intg[4] + intg[5] - volume * (cog[0]**2 + cog[1]**2)
+        inertia[0, 0] = intg[5] + intg[6] - volume * (cogsq[1] + cogsq[2])
+        inertia[1, 1] = intg[4] + intg[6] - volume * (cogsq[2] + cogsq[0])
+        inertia[2, 2] = intg[4] + intg[5] - volume * (cogsq[0] + cogsq[1])
         inertia[0, 1] = inertia[1, 0] = -(intg[7] - volume * cog[0] * cog[1])
         inertia[1, 2] = inertia[2, 1] = -(intg[8] - volume * cog[1] * cog[2])
         inertia[0, 2] = inertia[2, 0] = -(intg[9] - volume * cog[2] * cog[0])
