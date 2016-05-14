@@ -73,26 +73,15 @@ def test_incomplete_ascii_file(tmpdir):
     with tmp_file.open('w+') as fh:
         fh.write('solid some_file.stl')
         fh.seek(0)
-        with pytest.raises(struct.error):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
-
-    with tmp_file.open('w+') as fh:
-        fh.write(_STL_FILE[:-20])
-        fh.seek(0)
         with pytest.raises(AssertionError):
             mesh.Mesh.from_file(str(tmp_file), fh=fh)
 
-    with tmp_file.open('w+') as fh:
-        fh.write(_STL_FILE[:82])
-        fh.seek(0)
-        with pytest.raises(struct.error):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
-
-    with tmp_file.open('w+') as fh:
-        fh.write(_STL_FILE[:100])
-        fh.seek(0)
-        with pytest.raises(AssertionError):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
+    for offset in (-20, 82, 100):
+        with tmp_file.open('w+') as fh:
+            fh.write(_STL_FILE[:-offset])
+            fh.seek(0)
+            with pytest.raises(AssertionError):
+                mesh.Mesh.from_file(str(tmp_file), fh=fh)
 
 
 def test_corrupt_ascii_file(tmpdir):
