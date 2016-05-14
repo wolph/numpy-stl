@@ -54,12 +54,15 @@ def test_mass_properties_for_moon():
 def test_mass_properties_for_star():
     """
     Checks the results of method get_mass_properties() on
-    STL ASCII and binary files Star.stl
+    STL ASCII and binary files Star.stl and
+    STL binary file StarWithEmptyHeader.stl (with no header)
     One checks the results obtained with stl
     with the ones obtained with meshlab
     """
-    for m in ('stl_ascii', 'stl_binary'):
-        filename = join('tests', m, 'Star.stl')
+    for m in (join('stl_ascii', 'Star.stl'),
+              join('stl_binary', 'Star.stl'),
+              join('stl_binary', 'StarWithEmptyHeader.stl')):
+        filename = join('tests', m)
         mesh = stl.StlMesh(filename)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 1.416599) < tolerance)
