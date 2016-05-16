@@ -293,10 +293,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if not axis.any():
             return numpy.zeros((3, 3))
 
-        theta = numpy.asarray(theta)
-        theta /= 2.
+        theta = 0.5 * numpy.asarray(theta)
 
-        axis = axis / math.sqrt(numpy.dot(axis, axis))
+        axis = axis / numpy.linalg.norm(axis)
 
         a = math.cos(theta)
         b, c, d = - axis * math.sin(theta)
