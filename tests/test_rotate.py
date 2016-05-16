@@ -92,3 +92,36 @@ def test_no_rotation():
     assert (mesh.vectors == numpy.array([
         [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
 
+
+def test_no_translation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Translate mesh with a zero vector
+    mesh.translate([0.0, 0.0, 0.0])
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+
+def test_translation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Translate mesh with vector [1, 2, 3]
+    mesh.translate([1.0, 2.0, 3.0])
+    assert (mesh.vectors == numpy.array([
+        [[1, 3, 4], [2, 2, 4], [1, 2, 4]]])).all()
