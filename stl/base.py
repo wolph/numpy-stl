@@ -188,8 +188,8 @@ class BaseMesh(logger.Logged, collections.Mapping):
         v1 = vectors[:, 1]
         v2 = vectors[:, 2]
         normals = numpy.cross(v1 - v0, v2 - v0)
-        areas = numpy.sqrt((normals ** 2).sum(axis=1))
-        return data[areas > AREA_SIZE_THRESHOLD]
+        squared_areas = (normals ** 2).sum(axis=1)
+        return data[squared_areas > AREA_SIZE_THRESHOLD ** 2]
 
     def update_normals(self):
         '''Update the normals for all points'''
