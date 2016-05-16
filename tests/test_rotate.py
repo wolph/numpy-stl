@@ -5,7 +5,7 @@ from stl.mesh import Mesh
 
 
 def test_rotation():
-    # Create 3 faces of a cube
+    # Create 6 faces of a cube
     data = numpy.zeros(6, dtype=Mesh.dtype)
 
     # Top of the cube
@@ -57,7 +57,7 @@ def test_rotation():
 
 
 def test_rotation_over_point():
-    # Create 3 faces of a cube
+    # Create a single face
     data = numpy.zeros(1, dtype=Mesh.dtype)
 
     data['vectors'][0] = numpy.array([[1, 0, 0],
@@ -73,10 +73,9 @@ def test_rotation_over_point():
 
 
 def test_no_rotation():
-    # Create 3 faces of a cube
-    data = numpy.zeros(3, dtype=Mesh.dtype)
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
 
-    # Top of the cube
     data['vectors'][0] = numpy.array([[0, 1, 1],
                                       [1, 0, 1],
                                       [0, 0, 1]])
@@ -85,7 +84,11 @@ def test_no_rotation():
 
     # Rotate by 0 degrees
     mesh.rotate([0.5, 0.0, 0.0], math.radians(0))
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
 
     # Use a zero rotation matrix
     mesh.rotate([0.0, 0.0, 0.0], math.radians(90))
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
 
