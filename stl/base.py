@@ -281,12 +281,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         Generate a rotation matrix to Rotate the matrix over the given axis by
         the given theta (angle)
 
-        Uses the Euler-Rodrigues formula for fast rotations:
-        `https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula`_
+        Uses the `Euler-Rodrigues
+        <https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula>`_
+        formula for fast rotations.
 
         :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
-        convert degrees to radians if needed.
+                     convert degrees to radians if needed.
         '''
         axis = numpy.asarray(axis)
         # No need to rotate if there is no actual rotation
@@ -314,13 +315,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         '''
         Rotate the matrix over the given axis by the given theta (angle)
 
-        Uses the `rotation_matrix`_ in the background.
+        Uses the :py:func:`rotation_matrix` in the background.
 
         :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
-        convert degrees to radians if needed.
+                            convert degrees to radians if needed.
         :param numpy.array point: Rotation point so manual translation is not
-        required
+                                  required
         '''
         # No need to rotate if there is no actual rotation
         if not theta:
@@ -361,8 +362,10 @@ class BaseMesh(logger.Logged, collections.Mapping):
         single 4x4 matrix
 
         :param numpy.array matrix: Transform matrix with shape (4, 4), where
-        matrix[0:3, 0:3] represents the rotation part of the transformation
-        matrix[0:3, 3] represents the translation part of the transformation
+                                   matrix[0:3, 0:3] represents the rotation
+                                   part of the transformation
+                                   matrix[0:3, 3] represents the translation
+                                   part of the transformation
         '''
         is_a_4x4_matrix = matrix.shape == (4, 4)
         assert is_a_4x4_matrix, "Transformation matrix must be of shape (4, 4)"
