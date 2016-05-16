@@ -355,6 +355,26 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.y += translation[1]
         self.z += translation[2]
 
+    def transform(self, matrix):
+        '''
+        Transform the mesh with a rotation and a translation stored in a
+        single 4x4 matrix
+
+        :param numpy.array matrix: Transform matrix with shape (4, 4), where
+        matrix[0:3, 0:3] represents the rotation part of the transformation
+        matrix[0:3, 3] represents the translation part of the transformation
+        '''
+        is_a_4x4_matrix = matrix.shape == (4, 4)
+        assert is_a_4x4_matrix, "Transformation matrix must be of shape (4, 4)"
+        rotation = matrix[0:3, 0:3]
+        unit_det_rotation = numpy.allclose(numpy.linalg.det(rotation), 1.0)
+        assert unit_det_rotation, "Rotation matrix has not a unit determinant"
+        for i in range(3):
+            self.vectors[:, i] = numpy.dot(rotation, self.vectors[:, i].T).T
+        self.x += matrix[0, 3]
+        self.y += matrix[1, 3]
+        self.z += matrix[2, 3]
+
     def _get_or_update(key):
         def _get(self):
             if not hasattr(self, '_%s' % key):
