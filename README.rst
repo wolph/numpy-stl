@@ -129,9 +129,7 @@ Modifying Mesh objects
     data['vectors'] -= .5
 
     # Generate 4 different meshes so we can rotate them later
-    meshes = []
-    for _ in range(4):
-        meshes.append(mesh.Mesh(data.copy()))
+    meshes = [mesh.Mesh(data.copy()) for _ in range(4)]
 
     # Rotate 90 degrees over the Y axis
     meshes[0].rotate([0.0, 0.5, 0.0], math.radians(90))
