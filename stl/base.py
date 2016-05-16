@@ -345,6 +345,17 @@ class BaseMesh(logger.Logged, collections.Mapping):
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
 
+    def translate(self, translation):
+        '''
+        Translate the mesh in the three directions
+
+        :param numpy.array translation: Translation vector (x, y, z)
+        '''
+        assert len(translation) == 3, "Translation vector must be of length 3"
+        self.x += translation[0]
+        self.y += translation[1]
+        self.z += translation[2]
+
     def _get_or_update(key):
         def _get(self):
             if not hasattr(self, '_%s' % key):
