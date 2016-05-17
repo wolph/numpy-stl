@@ -130,6 +130,11 @@ class BaseStl(base.BaseMesh):
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
                 elif line.startswith(b('endsolid')):
+                    # go back to the beginning of new solid part
+                    size_unprocessedlines = sum(len(l) + 1 for l in lines) - 1
+                    if size_unprocessedlines > 0:
+                        position = fh.tell()
+                        fh.seek(position - size_unprocessedlines)
                     raise StopIteration()
                 else:
                     raise RuntimeError(recoverable[0],
