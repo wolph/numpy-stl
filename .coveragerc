@@ -1,5 +1,5 @@
 [report]
-# fail_under = 100
+fail_under = 100
 exclude_lines =
     pragma: no cover
     def __repr__
