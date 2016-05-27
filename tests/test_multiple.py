@@ -25,11 +25,13 @@ def test_single_stl(tmpdir):
 def test_multiple_stl(tmpdir):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
-        fh.write(_STL_FILE)
-        fh.write(_STL_FILE)
+        for _ in range(10):
+            fh.write(_STL_FILE)
         fh.seek(0)
-        for m in mesh.Mesh.from_multi_file(str(tmp_file), fh=fh):
-            pass
+        for i, m in enumerate(mesh.Mesh.from_multi_file(str(tmp_file), fh=fh)):
+            assert m.name == b'test.stl'
+
+        assert i == 9
 
 
 def test_single_stl_file(tmpdir):
@@ -44,10 +46,13 @@ def test_single_stl_file(tmpdir):
 def test_multiple_stl_file(tmpdir):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
-        fh.write(_STL_FILE)
-        fh.write(_STL_FILE)
+        for _ in range(10):
+            fh.write(_STL_FILE)
+
         fh.seek(0)
-        for m in mesh.Mesh.from_multi_file(str(tmp_file)):
-            pass
+        for i, m in enumerate(mesh.Mesh.from_multi_file(str(tmp_file))):
+            assert m.name == b'test.stl'
+
+        assert i == 9
 
 

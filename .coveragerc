@@ -1,5 +1,5 @@
 [report]
-fail_under = 100
+# fail_under = 100
 exclude_lines =
     pragma: no cover
     def __repr__
@@ -11,6 +11,6 @@ exclude_lines =
     if __name__ == .__main__.:
 
 [run]
-source = zfs_utils_osx
+source = stl
 branch = True
 

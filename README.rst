@@ -14,7 +14,7 @@ Links
  - Project page: https://pypi.python.org/pypi/numpy-stl
  - Reporting bugs: https://github.com/WoLpH/numpy-stl/issues
  - Documentation: http://numpy-stl.readthedocs.org/en/latest/
- - My blog: http://w.wol.ph/
+ - My blog: https://wol.ph/
 
 Requirements for installing:
 ------------------------------------------------------------------------------
@@ -39,29 +39,29 @@ Quickstart
 
 .. code-block:: python
 
-   import numpy
-   from stl import mesh
+    import numpy
+    from stl import mesh
 
-   # Using an existing stl file:
-   your_mesh = mesh.Mesh.from_file('some_file.stl')
+    # Using an existing stl file:
+    your_mesh = mesh.Mesh.from_file('some_file.stl')
 
-   # Or creating a new mesh (make sure not to overwrite the `mesh` import by
-   # naming it `mesh`):
-   VERTICE_COUNT = 100
-   data = numpy.zeros(VERTICE_COUNT, dtype=mesh.Mesh.dtype)
-   your_mesh = mesh.Mesh(data, remove_empty_areas=False)
+    # Or creating a new mesh (make sure not to overwrite the `mesh` import by
+    # naming it `mesh`):
+    VERTICE_COUNT = 100
+    data = numpy.zeros(VERTICE_COUNT, dtype=mesh.Mesh.dtype)
+    your_mesh = mesh.Mesh(data, remove_empty_areas=False)
 
-   # The mesh normals (calculated automatically)
-   your_mesh.normals
-   # The mesh vectors
-   your_mesh.v0, your_mesh.v1, your_mesh.v2
-   # Accessing individual points (concatenation of v0, v1 and v2 in triplets)
-   assert (your_mesh.points[0][0:3] == your_mesh.v0[0]).all()
-   assert (your_mesh.points[0][3:6] == your_mesh.v1[0]).all()
-   assert (your_mesh.points[0][6:9] == your_mesh.v2[0]).all()
-   assert (your_mesh.points[1][0:3] == your_mesh.v0[1]).all()
+    # The mesh normals (calculated automatically)
+    your_mesh.normals
+    # The mesh vectors
+    your_mesh.v0, your_mesh.v1, your_mesh.v2
+    # Accessing individual points (concatenation of v0, v1 and v2 in triplets)
+    assert (your_mesh.points[0][0:3] == your_mesh.v0[0]).all()
+    assert (your_mesh.points[0][3:6] == your_mesh.v1[0]).all()
+    assert (your_mesh.points[0][6:9] == your_mesh.v2[0]).all()
+    assert (your_mesh.points[1][0:3] == your_mesh.v0[1]).all()
 
-   your_mesh.save('new_stl_file.stl')
+    your_mesh.save('new_stl_file.stl')
 
 Plotting using `matplotlib`_ is equally easy:
 
@@ -129,9 +129,7 @@ Modifying Mesh objects
     data['vectors'] -= .5
 
     # Generate 4 different meshes so we can rotate them later
-    meshes = []
-    for _ in range(4):
-        meshes.append(mesh.Mesh(data.copy()))
+    meshes = [mesh.Mesh(data.copy()) for _ in range(4)]
 
     # Rotate 90 degrees over the Y axis
     meshes[0].rotate([0.0, 0.5, 0.0], math.radians(90))
@@ -283,3 +281,21 @@ Creating Mesh objects from a list of vertices and faces
     # Write the mesh to file "cube.stl"
     cube.save('cube.stl')
 
+
+Evaluating Mesh properties (Volume, Center of gravity, Inertia)
+------------------------------------------------------------------------------
+
+.. code-block:: python
+
+    import numpy as np
+    from stl import mesh
+
+    # Using an existing closed stl file:
+    your_mesh = mesh.Mesh.from_file('some_file.stl')
+
+    volume, cog, inertia = your_mesh.get_mass_properties()
+    print("Volume                                  = {0}".format(volume))
+    print("Position of the center of gravity (COG) = {0}".format(cog))
+    print("Inertia matrix at expressed at the COG  = {0}".format(inertia[0,:]))
+    print("                                          {0}".format(inertia[1,:]))
+    print("                                          {0}".format(inertia[2,:]))

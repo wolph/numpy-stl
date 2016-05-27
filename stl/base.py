@@ -188,8 +188,8 @@ class BaseMesh(logger.Logged, collections.Mapping):
         v1 = vectors[:, 1]
         v2 = vectors[:, 2]
         normals = numpy.cross(v1 - v0, v2 - v0)
-        areas = numpy.sqrt((normals ** 2).sum(axis=1))
-        return data[areas > AREA_SIZE_THRESHOLD]
+        squared_areas = (normals ** 2).sum(axis=1)
+        return data[squared_areas > AREA_SIZE_THRESHOLD ** 2]
 
     def update_normals(self):
         '''Update the normals for all points'''
@@ -204,6 +204,60 @@ class BaseMesh(logger.Logged, collections.Mapping):
     def update_areas(self):
         areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
+
+    def get_mass_properties(self):
+        '''
+        Evaluate and return a tuple with the following elements:
+          - the volume
+          - the position of the center of gravity (COG)
+          - the inertia matrix expressed at the COG
+
+        Documentation can be found here:
+        http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+        '''
+        def subexpression(x):
+            w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
+            temp0 = w0 + w1
+            f1 = temp0 + w2
+            temp1 = w0 * w0
+            temp2 = temp1 + w1 * temp0
+            f2 = temp2 + w2 * f1
+            f3 = w0 * temp1 + w1 * temp2 + w2 * f2
+            g0 = f2 + w0 * (f1 + w0)
+            g1 = f2 + w1 * (f1 + w1)
+            g2 = f2 + w2 * (f1 + w2)
+            return f1, f2, f3, g0, g1, g2
+
+        x0, x1, x2 = self.x[:, 0], self.x[:, 1], self.x[:, 2]
+        y0, y1, y2 = self.y[:, 0], self.y[:, 1], self.y[:, 2]
+        z0, z1, z2 = self.z[:, 0], self.z[:, 1], self.z[:, 2]
+        a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
+        a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
+        d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
+
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(self.x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)
+
+        intg = numpy.zeros((10))
+        intg[0] = sum(d0 * f1x)
+        intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
+        intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
+        intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
+        intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
+        intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
+        intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        volume = intg[0]
+        cog = intg[1:4] / volume
+        cogsq = cog ** 2
+        inertia = numpy.zeros((3, 3))
+        inertia[0, 0] = intg[5] + intg[6] - volume * (cogsq[1] + cogsq[2])
+        inertia[1, 1] = intg[4] + intg[6] - volume * (cogsq[2] + cogsq[0])
+        inertia[2, 2] = intg[4] + intg[5] - volume * (cogsq[0] + cogsq[1])
+        inertia[0, 1] = inertia[1, 0] = -(intg[7] - volume * cog[0] * cog[1])
+        inertia[1, 2] = inertia[2, 1] = -(intg[8] - volume * cog[1] * cog[2])
+        inertia[0, 2] = inertia[2, 0] = -(intg[9] - volume * cog[2] * cog[0])
+        return volume, cog, inertia
 
     def update_units(self):
         units = self.normals.copy()
@@ -227,22 +281,22 @@ class BaseMesh(logger.Logged, collections.Mapping):
         Generate a rotation matrix to Rotate the matrix over the given axis by
         the given theta (angle)
 
-        Uses the Euler-Rodrigues formula for fast rotations:
-        `https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula`_
+        Uses the `Euler-Rodrigues
+        <https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula>`_
+        formula for fast rotations.
 
         :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
-        convert degrees to radians if needed.
+                     convert degrees to radians if needed.
         '''
         axis = numpy.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis.any():
             return numpy.zeros((3, 3))
 
-        theta = numpy.asarray(theta)
-        theta /= 2.
+        theta = 0.5 * numpy.asarray(theta)
 
-        axis = axis / math.sqrt(numpy.dot(axis, axis))
+        axis = axis / numpy.linalg.norm(axis)
 
         a = math.cos(theta)
         b, c, d = - axis * math.sin(theta)
@@ -261,13 +315,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         '''
         Rotate the matrix over the given axis by the given theta (angle)
 
-        Uses the `rotation_matrix`_ in the background.
+        Uses the :py:func:`rotation_matrix` in the background.
 
         :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
-        convert degrees to radians if needed.
+                            convert degrees to radians if needed.
         :param numpy.array point: Rotation point so manual translation is not
-        required
+                                  required
         '''
         # No need to rotate if there is no actual rotation
         if not theta:
@@ -290,6 +344,39 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
+
+    def translate(self, translation):
+        '''
+        Translate the mesh in the three directions
+
+        :param numpy.array translation: Translation vector (x, y, z)
+        '''
+        assert len(translation) == 3, "Translation vector must be of length 3"
+        self.x += translation[0]
+        self.y += translation[1]
+        self.z += translation[2]
+
+    def transform(self, matrix):
+        '''
+        Transform the mesh with a rotation and a translation stored in a
+        single 4x4 matrix
+
+        :param numpy.array matrix: Transform matrix with shape (4, 4), where
+                                   matrix[0:3, 0:3] represents the rotation
+                                   part of the transformation
+                                   matrix[0:3, 3] represents the translation
+                                   part of the transformation
+        '''
+        is_a_4x4_matrix = matrix.shape == (4, 4)
+        assert is_a_4x4_matrix, "Transformation matrix must be of shape (4, 4)"
+        rotation = matrix[0:3, 0:3]
+        unit_det_rotation = numpy.allclose(numpy.linalg.det(rotation), 1.0)
+        assert unit_det_rotation, "Rotation matrix has not a unit determinant"
+        for i in range(3):
+            self.vectors[:, i] = numpy.dot(rotation, self.vectors[:, i].T).T
+        self.x += matrix[0, 3]
+        self.y += matrix[1, 3]
+        self.z += matrix[2, 3]
 
     def _get_or_update(key):
         def _get(self):

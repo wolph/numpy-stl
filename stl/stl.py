@@ -31,6 +31,7 @@ MAX_COUNT = 1e6
 
 
 class BaseStl(base.BaseMesh):
+
     @classmethod
     def load(cls, fh, mode=AUTOMATIC):
         '''Load Mesh from STL file
@@ -41,7 +42,7 @@ class BaseStl(base.BaseMesh):
         :param int mode: Automatically detect the filetype or force binary
         '''
         header = fh.read(HEADER_SIZE).lower()
-        if not header.strip():
+        if not header:
             return
 
         if isinstance(header, str):  # pragma: no branch
@@ -51,14 +52,13 @@ class BaseStl(base.BaseMesh):
 
         if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
             try:
-                data = cls._load_ascii(fh, header)
-
-                # Get the name from the first line
-                name = header.split(b('\n'), 1)[0][5:].strip()
+                name, data = cls._load_ascii(fh, header)
             except RuntimeError as exception:
                 (recoverable, e) = exception.args
-                if recoverable:  # Recoverable?
-                    data = cls._load_binary(fh, header, check_size=False)
+                # If we didn't read beyond the header the stream is still
+                # readable through the binary reader
+                if recoverable:
+                    name, data = cls._load_binary(fh, header, check_size=False)
                 else:
                     # Apparently we've read beyond the header. Let's try
                     # seeking :)
@@ -68,16 +68,20 @@ class BaseStl(base.BaseMesh):
 
                     # Since we know this is a seekable file now and we're not
                     # 100% certain it's binary, check the size while reading
-                    data = cls._load_binary(fh, header, check_size=True)
+                    name, data = cls._load_binary(fh, header, check_size=True)
         else:
-            data = cls._load_binary(fh, header)
+            name, data = cls._load_binary(fh, header)
 
         return name, data
 
     @classmethod
     def _load_binary(cls, fh, header, check_size=False):
         # Read the triangle count
-        count, = struct.unpack(s('@i'), b(fh.read(COUNT_SIZE)))
+        count_data = fh.read(COUNT_SIZE)
+        if len(count_data) != COUNT_SIZE:
+            count = 0
+        else:
+            count, = struct.unpack(s('@i'), b(count_data))
         # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
@@ -96,13 +100,20 @@ class BaseStl(base.BaseMesh):
             except IOError:  # pragma: no cover
                 pass
 
+        name = header.strip()
+
         # Read the rest of the binary data
-        return numpy.fromfile(fh, dtype=cls.dtype, count=count)
+        return name, numpy.fromfile(fh, dtype=cls.dtype, count=count)
 
     @classmethod
     def _ascii_reader(cls, fh, header):
+        if b'\n' in header:
+            recoverable = [True]
+        else:
+            recoverable = [False]
+            header += b(fh.read(BUFFER_SIZE))
+
         lines = b(header).split(b('\n'))
-        recoverable = [True]
 
         def get(prefix=''):
             prefix = b(prefix)
@@ -126,6 +137,11 @@ class BaseStl(base.BaseMesh):
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
                 elif line.startswith(b('endsolid')):
+                    # go back to the beginning of new solid part
+                    size_unprocessedlines = sum(len(l) + 1 for l in lines) - 1
+                    if size_unprocessedlines > 0:
+                        position = fh.tell()
+                        fh.seek(position - size_unprocessedlines)
                     raise StopIteration()
                 else:
                     raise RuntimeError(recoverable[0],
@@ -141,8 +157,7 @@ class BaseStl(base.BaseMesh):
                 return b(line)
 
         line = get()
-        if not line.startswith(b('solid ')) and \
-                line.startswith(b('solid')):
+        if not line.startswith(b('solid ')) and line.startswith(b('solid')):
             cls.warning('ASCII STL files should start with solid <space>. '
                         'The application that produced this STL file may be '
                         'faulty, please report this error. The erroneous '
@@ -151,6 +166,9 @@ class BaseStl(base.BaseMesh):
         if not lines:
             raise RuntimeError(recoverable[0],
                                'No lines found, impossible to read')
+
+        # Yield the name
+        yield line[5:].strip()
 
         while True:
             # Read from the header lines first, until that point we can recover
@@ -169,14 +187,16 @@ class BaseStl(base.BaseMesh):
                 assert get() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
-            except AssertionError as e:
+            except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
                 raise
 
     @classmethod
     def _load_ascii(cls, fh, header):
-        return numpy.fromiter(cls._ascii_reader(fh, header), dtype=cls.dtype)
+        iterator = cls._ascii_reader(fh, header)
+        name = next(iterator)
+        return name, numpy.fromiter(iterator, dtype=cls.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
         '''Save the STL to a (binary) file

@@ -5,7 +5,7 @@ from stl.mesh import Mesh
 
 
 def test_rotation():
-    # Create 3 faces of a cube
+    # Create 6 faces of a cube
     data = numpy.zeros(6, dtype=Mesh.dtype)
 
     # Top of the cube
@@ -57,7 +57,7 @@ def test_rotation():
 
 
 def test_rotation_over_point():
-    # Create 3 faces of a cube
+    # Create a single face
     data = numpy.zeros(1, dtype=Mesh.dtype)
 
     data['vectors'][0] = numpy.array([[1, 0, 0],
@@ -73,10 +73,9 @@ def test_rotation_over_point():
 
 
 def test_no_rotation():
-    # Create 3 faces of a cube
-    data = numpy.zeros(3, dtype=Mesh.dtype)
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
 
-    # Top of the cube
     data['vectors'][0] = numpy.array([[0, 1, 1],
                                       [1, 0, 1],
                                       [0, 0, 1]])
@@ -85,7 +84,83 @@ def test_no_rotation():
 
     # Rotate by 0 degrees
     mesh.rotate([0.5, 0.0, 0.0], math.radians(0))
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
 
     # Use a zero rotation matrix
     mesh.rotate([0.0, 0.0, 0.0], math.radians(90))
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
 
+
+def test_no_translation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Translate mesh with a zero vector
+    mesh.translate([0.0, 0.0, 0.0])
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+
+def test_translation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Translate mesh with vector [1, 2, 3]
+    mesh.translate([1.0, 2.0, 3.0])
+    assert (mesh.vectors == numpy.array([
+        [[1, 3, 4], [2, 2, 4], [1, 2, 4]]])).all()
+
+
+def test_no_transformation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Transform mesh with identity matrix
+    mesh.transform(numpy.eye(4))
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+    assert numpy.all(mesh.areas == 0.5)
+
+
+def test_transformation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 1, 1],
+                                      [1, 0, 1],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+    assert (mesh.vectors == numpy.array([
+        [[0, 1, 1], [1, 0, 1], [0, 0, 1]]])).all()
+
+    # Transform mesh with identity matrix
+    tr = numpy.zeros((4, 4))
+    tr[0:3, 0:3] = Mesh.rotation_matrix([0, 0, 1], 0.5 * numpy.pi)
+    tr[0:3, 3] = [1, 2, 3]
+    mesh.transform(tr)
+    assert (mesh.vectors == numpy.array([
+        [[0, 2, 4], [1, 3, 4], [1, 2, 4]]])).all()
+    assert numpy.all(mesh.areas == 0.5)
