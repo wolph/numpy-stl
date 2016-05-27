@@ -107,11 +107,11 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _ascii_reader(cls, fh, header):
-        if '\n' in header:
+        if b'\n' in header:
             recoverable = [True]
         else:
             recoverable = [False]
-            header += fh.read(BUFFER_SIZE)
+            header += b(fh.read(BUFFER_SIZE))
 
         lines = b(header).split(b('\n'))
 

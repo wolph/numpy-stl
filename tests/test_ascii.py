@@ -2,9 +2,9 @@ from stl import mesh
 
 
 def test_long_name(tmpdir):
-    name = 'just some very long name which will not fit within the standard'
+    name = b'just some very long name which will not fit within the standard'
     name += name
-    _stl_file = ('''
+    _stl_file = (b'''
     solid %s
       facet normal -0.014565 0.073223 -0.002897
         outer loop
@@ -17,11 +17,10 @@ def test_long_name(tmpdir):
     ''' % name).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
-    with tmp_file.open('w+') as fh:
+    with tmp_file.open('wb+') as fh:
         fh.write(_stl_file)
         fh.seek(0)
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh)
-        print test_mesh
         assert test_mesh.name == name
 
 
