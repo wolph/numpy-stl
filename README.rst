@@ -14,7 +14,7 @@ Links
  - Project page: https://pypi.python.org/pypi/numpy-stl
  - Reporting bugs: https://github.com/WoLpH/numpy-stl/issues
  - Documentation: http://numpy-stl.readthedocs.org/en/latest/
- - My blog: http://w.wol.ph/
+ - My blog: https://wol.ph/
 
 Requirements for installing:
 ------------------------------------------------------------------------------
