@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import io
 import os
+import enum
 import numpy
 import struct
 import datetime
@@ -12,13 +13,20 @@ from . import __about__ as metadata
 from .utils import b
 from .utils import s
 
-#: Automatically detect whether the output is a TTY, if so, write ASCII
-#: otherwise write BINARY
-AUTOMATIC = 0
-#: Force writing ASCII
-ASCII = 1
-#: Force writing BINARY
-BINARY = 2
+
+class Mode(enum.IntEnum):
+    #: Automatically detect whether the output is a TTY, if so, write ASCII
+    #: otherwise write BINARY
+    AUTOMATIC = 0
+    #: Force writing ASCII
+    ASCII = 1
+    #: Force writing BINARY
+    BINARY = 2
+
+# For backwards compatibility, leave the original references
+AUTOMATIC = Mode.AUTOMATIC
+ASCII = Mode.ASCII
+BINARY = Mode.BINARY
 
 #: Amount of bytes to read while using buffered reading
 BUFFER_SIZE = 4096
