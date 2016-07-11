@@ -1,35 +1,32 @@
 sudo: false
 language: python
 python: 2.7
-
 env:
-    - TOX_ENV=docs
-    - TOX_ENV=flake8
-    - TOX_ENV=py27
-    - TOX_ENV=py33
-    - TOX_ENV=py34
-    - TOX_ENV=py35
-
-# command to install dependencies
+- TOX_ENV=docs
+- TOX_ENV=flake8
+- TOX_ENV=py27
+- TOX_ENV=py33
+- TOX_ENV=py34
+- TOX_ENV=py35
 install:
-    - pip install . 
-    - pip install -r tests/requirements.txt 
-    - pip install coveralls flake8 tox
-
-# command to run tests
+- pip install .
+- pip install -r tests/requirements.txt
+- pip install coveralls flake8 tox
 script:
-    - tox -e $TOX_ENV
-
+- tox -e $TOX_ENV
 after_success:
-    - coveralls
-
+- coveralls
 before_script: flake8 --ignore=W391 stl tests
-
-after_success:
-    - coveralls
-
 notifications:
   email:
     on_success: never
     on_failure: change
-
+deploy:
+  provider: pypi
+  user: WoLpH
+  password:
+    secure: HVxDUJ6ns7G7xypuibu01ruDfO4orV5lNr1Mor003MX3HVivvKsTwWqY5K1J+J+C4mgK6ahyvanD5GahYvcWia/Y2xeH2VnytnAgo+W3AI+h72+1oaRpvQHynJ7Fz6Mc0zad0GcbQh3QuA7Pu3IOWs7buUL+MQM6d9QLTkerOvs=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: WoLpH/numpy-stl
