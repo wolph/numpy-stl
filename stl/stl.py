@@ -35,7 +35,7 @@ HEADER_SIZE = 80
 #: The amount of bytes in the count field
 COUNT_SIZE = 4
 #: The maximum amount of triangles we can read from binary files
-MAX_COUNT = 1e6
+MAX_COUNT = 1e8
 
 
 class BaseStl(base.BaseMesh):
