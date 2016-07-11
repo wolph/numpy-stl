@@ -7,8 +7,8 @@ Contents:
    :maxdepth: 4
 
    usage
-   stl
    tests
+   stl
 
 Indices and tables
 ==================
