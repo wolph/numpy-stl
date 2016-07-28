@@ -67,6 +67,8 @@ class BaseStl(base.BaseMesh):
             try:
                 name, data = cls._load_ascii(fh, header)
             except RuntimeError as exception:
+                import traceback
+                traceback.print_exc()
                 (recoverable, e) = exception.args
                 # If we didn't read beyond the header the stream is still
                 # readable through the binary reader
@@ -253,7 +255,7 @@ class BaseStl(base.BaseMesh):
 
     def _write_ascii(self, fh, name):
         if stlascii is not None:
-            stlascii.write(fh, name.encode('ascii'), self.data)
+            stlascii.write(fh, b(name), self.data)
         else:
             def p(s, file):
                 file.write(b('%s\n' % s))
