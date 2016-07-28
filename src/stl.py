@@ -67,8 +67,6 @@ class BaseStl(base.BaseMesh):
             try:
                 name, data = cls._load_ascii(fh, header)
             except RuntimeError as exception:
-                import traceback
-                traceback.print_exc()
                 (recoverable, e) = exception.args
                 # If we didn't read beyond the header the stream is still
                 # readable through the binary reader

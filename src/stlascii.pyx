@@ -129,7 +129,7 @@ def read(fh, buf):
                 facet = <Facet*>arr.data + offset
 
     finally:
-        pos = ftell(state.fp)
+        pos = ftell(state.fp) - state.size + state.pos
         fclose(state.fp)
         fh.seek(pos, SEEK_SET)
 
