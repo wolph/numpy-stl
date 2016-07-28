@@ -3,6 +3,7 @@ coverage
 docutils
 execnet
 numpy
+cython
 pep8
 py
 pyflakes

@@ -1,11 +1,30 @@
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
+setup_kwargs = {}
+
+try:
+    import numpy
+    from Cython.Distutils import build_ext
+    from distutils.extension import Extension
+
+    setup_kwargs.update(dict(
+        cmdclass={'build_ext': build_ext},
+        ext_modules=[Extension(
+            "stl.stlascii", ["src/stlascii.pyx"],
+            include_dirs=[numpy.get_include()])
+        ]
+    ))
+
+except ImportError:
+    print("WARNING")
+    print("Cython and Numpy is required for building extension.")
+    print("Falling back to pure Python implementation.")
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
 about = {}
-with open('stl/__about__.py') as fp:
+with open('src/__about__.py') as fp:
     exec(fp.read(), about)
 
 
@@ -30,6 +49,7 @@ except ImportError:
 
 if __name__ == '__main__':
     setup(
+        package_dir={'stl': 'src'},
         name=about['__package_name__'],
         version=about['__version__'],
         author=about['__author__'],
@@ -37,7 +57,7 @@ if __name__ == '__main__':
         description=about['__description__'],
         url=about['__url__'],
         license='BSD',
-        packages=find_packages(),
+        packages=['stl'],
         long_description=long_description,
         tests_require=['pytest'],
         setup_requires=['pytest-runner'],
@@ -50,5 +70,6 @@ if __name__ == '__main__':
         },
         classifiers=['License :: OSI Approved :: BSD License'],
         install_requires=install_requires,
+        **setup_kwargs
     )
 

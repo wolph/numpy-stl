@@ -13,6 +13,11 @@ from . import __about__ as metadata
 from .utils import b
 from .utils import s
 
+try:
+    from . import stlascii
+except ImportError:
+    stlascii = None
+
 
 class Mode(enum.IntEnum):
     #: Automatically detect whether the output is a TTY, if so, write ASCII
@@ -202,9 +207,12 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _load_ascii(cls, fh, header):
-        iterator = cls._ascii_reader(fh, header)
-        name = next(iterator)
-        return name, numpy.fromiter(iterator, dtype=cls.dtype)
+        if stlascii is not None:
+            return stlascii.read(fh, header)
+        else:
+            iterator = cls._ascii_reader(fh, header)
+            name = next(iterator)
+            return name, numpy.fromiter(iterator, dtype=cls.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
         '''Save the STL to a (binary) file
@@ -244,22 +252,25 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        def p(s, file):
-            file.write(b('%s\n' % s))
+        if stlascii is not None:
+            stlascii.write(fh, name.encode('ascii'), self.data)
+        else:
+            def p(s, file):
+                file.write(b('%s\n' % s))
 
-        p('solid %s' % name, file=fh)
+            p('solid %s' % name, file=fh)
 
-        for row in self.data:
-            vectors = row['vectors']
-            p('facet normal %f %f %f' % tuple(row['normals']), file=fh)
-            p('  outer loop', file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
-            p('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
-            p('  endloop', file=fh)
-            p('endfacet', file=fh)
+            for row in self.data:
+                vectors = row['vectors']
+                p('facet normal %f %f %f' % tuple(row['normals']), file=fh)
+                p('  outer loop', file=fh)
+                p('    vertex %f %f %f' % tuple(vectors[0]), file=fh)
+                p('    vertex %f %f %f' % tuple(vectors[1]), file=fh)
+                p('    vertex %f %f %f' % tuple(vectors[2]), file=fh)
+                p('  endloop', file=fh)
+                p('endfacet', file=fh)
 
-        p('endsolid %s' % name, file=fh)
+            p('endsolid %s' % name, file=fh)
 
     def _write_binary(self, fh, name):
         # Create the header
