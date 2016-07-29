@@ -2,8 +2,12 @@
 from libc.stdio cimport *                                                                
 from libc.string cimport memcpy, strcmp, strstr, strcpy
 
-cdef extern from "io.h":
-    int dup(int fd)
+IF UNAME_SYSNAME == u"Windows":
+    cdef extern from "io.h":
+        int dup(int fd)
+ELSE:
+    cdef extern from "unistd.h":
+        int dup(int fd)
 
 import numpy as np
 cimport numpy as np
