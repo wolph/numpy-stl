@@ -44,6 +44,9 @@ cdef char* readline(State* state) except NULL:
         if state.pos == state.size:
 
             if feof(state.fp):
+                if line_pos != 0:
+                    state.line[line_pos] = '\0'
+                    return state.line
                 raise RuntimeError(state.recoverable,
                     "Unexpected EOF")
 
