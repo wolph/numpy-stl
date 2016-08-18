@@ -136,9 +136,10 @@ def read(fh, buf):
                 facet = <Facet*>arr.data + offset
 
     finally:
-        pos = ftell(state.fp) - state.size + state.pos
-        fclose(state.fp)
-        fh.seek(pos, SEEK_SET)
+        if state.recoverable == 0:
+            pos = ftell(state.fp) - state.size + state.pos
+            fclose(state.fp)
+            fh.seek(pos, SEEK_SET)
 
 def write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
     cdef FILE* fp
