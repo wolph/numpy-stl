@@ -1,30 +1,32 @@
+from __future__ import print_function
+
 import os
-from setuptools import setup
+import sys
+from setuptools import setup, extension
 
 setup_kwargs = {}
 
 try:
     import numpy
-    from Cython.Distutils import build_ext
-    from distutils.extension import Extension
+    from Cython import Build
 
-    setup_kwargs.update(dict(
-        cmdclass={'build_ext': build_ext},
-        ext_modules=[Extension(
-            "stl.stlascii", ["src/stlascii.pyx"],
-            include_dirs=[numpy.get_include()])
-        ]
-    ))
-
+    setup_kwargs['ext_modules'] = Build.cythonize([
+        extension.Extension(
+            'stl._speedups',
+            ['stl/_speedups.pyx'],
+            include_dirs=[numpy.get_include()],
+        ),
+    ])
 except ImportError:
-    print("WARNING")
-    print("Cython and Numpy is required for building extension.")
-    print("Falling back to pure Python implementation.")
+    print('WARNING', file=sys.stderr)
+    print('Cython and Numpy is required for building extension.',
+          file=sys.stderr)
+    print('Falling back to pure Python implementation.', file=sys.stderr)
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
 about = {}
-with open('src/__about__.py') as fp:
+with open('stl/__about__.py') as fp:
     exec(fp.read(), about)
 
 
@@ -49,7 +51,6 @@ except ImportError:
 
 if __name__ == '__main__':
     setup(
-        package_dir={'stl': 'src'},
         name=about['__package_name__'],
         version=about['__version__'],
         author=about['__author__'],

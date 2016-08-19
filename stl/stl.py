@@ -14,9 +14,9 @@ from .utils import b
 from .utils import s
 
 try:
-    from . import stlascii
+    from . import _speedups
 except ImportError:
-    stlascii = None
+    _speedups = None
 
 
 class Mode(enum.IntEnum):
@@ -46,7 +46,7 @@ MAX_COUNT = 1e8
 class BaseStl(base.BaseMesh):
 
     @classmethod
-    def load(cls, fh, mode=AUTOMATIC):
+    def load(cls, fh, mode=AUTOMATIC, enable_speedups=True):
         '''Load Mesh from STL file
 
         Automatically detects binary versus ascii STL files.
@@ -65,7 +65,8 @@ class BaseStl(base.BaseMesh):
 
         if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
             try:
-                name, data = cls._load_ascii(fh, header)
+                name, data = cls._load_ascii(
+                    fh, header, enable_speedups=enable_speedups)
             except RuntimeError as exception:
                 (recoverable, e) = exception.args
                 # If we didn't read beyond the header the stream is still
@@ -206,9 +207,9 @@ class BaseStl(base.BaseMesh):
                 raise
 
     @classmethod
-    def _load_ascii(cls, fh, header):
-        if stlascii is not None:
-            return stlascii.read(fh, header)
+    def _load_ascii(cls, fh, header, enable_speedups=True):
+        if _speedups and enable_speedups:
+            return _speedups.ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
@@ -252,8 +253,8 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        if stlascii is not None:
-            stlascii.write(fh, b(name), self.data)
+        if _speedups and self.enable_speedups:
+            _speedups.ascii_write(fh, b(name), self.data)
         else:
             def p(s, file):
                 file.write(b('%s\n' % s))
@@ -297,7 +298,7 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def from_file(cls, filename, calculate_normals=True, fh=None,
-                  mode=AUTOMATIC, **kwargs):
+                  mode=AUTOMATIC, enable_speedups=True, **kwargs):
         '''Load a mesh from a STL file
 
         :param str filename: The file to load
@@ -307,16 +308,19 @@ class BaseStl(base.BaseMesh):
 
         '''
         if fh:
-            name, data = cls.load(fh, mode=mode)
+            name, data = cls.load(
+                fh, mode=mode, enable_speedups=enable_speedups)
         else:
             with open(filename, 'rb') as fh:
-                name, data = cls.load(fh, mode=mode)
+                name, data = cls.load(
+                    fh, mode=mode, enable_speedups=enable_speedups)
 
-        return cls(data, calculate_normals, name=name, **kwargs)
+        return cls(data, calculate_normals, name=name,
+                   enable_speedups=enable_speedups, **kwargs)
 
     @classmethod
     def from_multi_file(cls, filename, calculate_normals=True, fh=None,
-                        mode=ASCII, **kwargs):
+                        mode=ASCII, enable_speedups=True, **kwargs):
         '''Load multiple meshes from a STL file
 
         :param str filename: The file to load
@@ -331,11 +335,13 @@ class BaseStl(base.BaseMesh):
             close = True
 
         try:
-            raw_data = cls.load(fh, mode=mode)
+            raw_data = cls.load(fh, mode=mode, enable_speedups=enable_speedups)
             while raw_data:
                 name, data = raw_data
-                yield cls(data, calculate_normals, name=name, **kwargs)
-                raw_data = cls.load(fh, mode=mode)
+                yield cls(data, calculate_normals, name=name,
+                          enable_speedups=enable_speedups, **kwargs)
+                raw_data = cls.load(fh, mode=mode,
+                                    enable_speedups=enable_speedups)
 
         finally:
             if close:

@@ -14,3 +14,4 @@ pytest-flakes
 pytest-pep8
 python-utils
 Sphinx
+cython

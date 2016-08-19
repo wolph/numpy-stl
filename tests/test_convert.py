@@ -23,14 +23,14 @@ def binary_path(current_path):
     return os.path.join(current_path, 'stl_binary')
 
 
-def _test_conversion(from_, to, mode):
+def _test_conversion(from_, to, mode, enable_speedups):
     for name in os.listdir(from_):
         source_file = os.path.join(from_, name)
         expected_file = os.path.join(to, name)
         if not os.path.exists(expected_file):
             continue
 
-        mesh = stl.StlMesh(source_file)
+        mesh = stl.StlMesh(source_file, enable_speedups=enable_speedups)
         with open(expected_file, 'rb') as expected_fh:
             expected = expected_fh.read()
             # For binary files, skip the header
@@ -49,18 +49,20 @@ def _test_conversion(from_, to, mode):
                 assert dest.strip() == expected.strip()
 
 
-def test_ascii_to_binary(ascii_path, binary_path):
-    _test_conversion(ascii_path, binary_path, mode=stl.BINARY)
+def test_ascii_to_binary(ascii_path, binary_path, enable_speedups):
+    _test_conversion(ascii_path, binary_path, mode=stl.BINARY,
+                     enable_speedups=enable_speedups)
 
 
-def test_binary_to_ascii(ascii_path, binary_path):
-    _test_conversion(binary_path, ascii_path, mode=stl.ASCII)
+def test_binary_to_ascii(ascii_path, binary_path, enable_speedups):
+    _test_conversion(binary_path, ascii_path, mode=stl.ASCII,
+                     enable_speedups=enable_speedups)
 
 
-def test_stl_mesh(tmpdir):
+def test_stl_mesh(tmpdir, enable_speedups):
     tmp_file = tmpdir.join('tmp.stl')
 
-    mesh = stl.StlMesh(ascii_file)
+    mesh = stl.StlMesh(ascii_file, enable_speedups=enable_speedups)
     with pytest.raises(ValueError):
         mesh.save(filename=str(tmp_file), mode='test')
 

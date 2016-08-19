@@ -19,6 +19,8 @@ def _get_parser(description):
         '-r', '--remove-empty-areas', action='store_true',
         help='Remove areas with 0 surface areas to prevent errors during '
         'normal calculation')
+    parser.add_argument('-s', '--disable-speedups', action='store_true',
+                        help='Disable Cython speedups')
     return parser
 
 
@@ -46,7 +48,8 @@ def main():
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
-                           remove_empty_areas=args.remove_empty_areas)
+                           remove_empty_areas=args.remove_empty_areas,
+                           enable_speedups=not args.disable_speedups)
 
     if args.binary:
         mode = stl.BINARY
@@ -65,7 +68,8 @@ def to_ascii():
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
-                           remove_empty_areas=args.remove_empty_areas)
+                           remove_empty_areas=args.remove_empty_areas,
+                           enable_speedups=not args.disable_speedups)
     stl_file.save(name, args.outfile, mode=stl.ASCII,
                   update_normals=not args.use_file_normals)
 
@@ -76,7 +80,8 @@ def to_binary():
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
-                           remove_empty_areas=args.remove_empty_areas)
+                           remove_empty_areas=args.remove_empty_areas,
+                           enable_speedups=not args.disable_speedups)
     stl_file.save(name, args.outfile, mode=stl.BINARY,
                   update_normals=not args.use_file_normals)
 

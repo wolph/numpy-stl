@@ -20,25 +20,32 @@ cdef packed struct Facet:
     np.uint16_t attr
 
 dtype = np.dtype([
-        ('normals', np.float32, 3),
-        ('vectors', np.float32, (3, 3)),
-        ('attr', np.uint16, 1),
-    ])
+    ('normals', np.float32, 3),
+    ('vectors', np.float32, (3, 3)),
+    ('attr', np.uint16, 1),
+])
 
 DEF ALLOC_SIZE = 200000
 DEF BUF_SIZE = 8192
-DEF LINE_SIZE = 1024
+DEF LINE_SIZE = 8192
 
 cdef struct s_State:
     FILE* fp
     char buf[BUF_SIZE]
     char line[LINE_SIZE]
+    char line_lower[LINE_SIZE]
     size_t pos
     size_t size
     size_t line_num
     int recoverable
 
 ctypedef s_State State
+
+cdef char tolower(char c):
+    if c > 0x40 and c < 0x5b:
+        return c | 0x60
+    else:
+        return c
 
 cdef char* readline(State* state) except NULL:
 
@@ -71,11 +78,13 @@ cdef char* readline(State* state) except NULL:
                     return state.line
             else:
                 state.line[line_pos] = current
+                state.line_lower[line_pos] = tolower(current)
                 line_pos += 1
 
 
-def read(fh, buf):
+def ascii_read(fh, buf):
     cdef char* line
+    cdef char* line_lower
     cdef char name[LINE_SIZE]
     cdef np.ndarray[Facet, cast=True] arr = np.zeros(ALLOC_SIZE, dtype = dtype)
     cdef size_t offset;
@@ -93,24 +102,22 @@ def read(fh, buf):
         fseek(state.fp, fh.tell(), SEEK_SET)
 
         line = readline(&state)
-        if strstr(line, "solid") == NULL \
-                and strstr(line, "SOLID") == NULL:
+        line_lower = state.line_lower
+
+        if strstr(line_lower, "solid") == NULL:
             raise RuntimeError(state.recoverable,
                     "Solid name not found (%i:%s)" % (state.line_num, line))
-
-        strcpy(name, line+5)
 
         while True:
 
             line = readline(&state)
+            line_lower = state.line_lower
 
-            if strstr(line, "ENDSOLID") != NULL or \
-                    strstr(line, "endsolid") != NULL:
+            if strstr(line_lower, "endsolid") != NULL:
                 arr.resize(facet - <Facet*>arr.data, refcheck=False)
                 return (<object>name).strip(), arr
 
-            if strcmp(line, "COLOR") == 0 or \
-                    strcmp(line, "color") == 0:
+            if strcmp(line_lower, "color") == 0:
                 readline(&state)
             elif sscanf(line, "%*s %*s %f %f %f",
                     facet.n, facet.n+1, facet.n+2) != 3:
@@ -141,7 +148,7 @@ def read(fh, buf):
             fclose(state.fp)
             fh.seek(pos, SEEK_SET)
 
-def write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
+def ascii_write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
     cdef FILE* fp
     cdef Facet* facet = <Facet*>arr.data
     cdef Facet* end = <Facet*>arr.data + arr.shape[0]

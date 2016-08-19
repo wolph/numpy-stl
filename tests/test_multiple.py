@@ -13,44 +13,48 @@ endsolid test.stl
 '''.lstrip()
 
 
-def test_single_stl(tmpdir):
+def test_single_stl(tmpdir, enable_speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
-        for m in mesh.Mesh.from_multi_file(str(tmp_file), fh=fh):
+        for m in mesh.Mesh.from_multi_file(
+                str(tmp_file), fh=fh, enable_speedups=enable_speedups):
             pass
 
 
-def test_multiple_stl(tmpdir):
+def test_multiple_stl(tmpdir, enable_speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
         fh.seek(0)
-        for i, m in enumerate(mesh.Mesh.from_multi_file(str(tmp_file), fh=fh)):
+        for i, m in enumerate(mesh.Mesh.from_multi_file(
+                str(tmp_file), fh=fh, enable_speedups=enable_speedups)):
             assert m.name == b'test.stl'
 
         assert i == 9
 
 
-def test_single_stl_file(tmpdir):
+def test_single_stl_file(tmpdir, enable_speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
-        for m in mesh.Mesh.from_multi_file(str(tmp_file)):
+        for m in mesh.Mesh.from_multi_file(
+                str(tmp_file), fh=fh, enable_speedups=enable_speedups):
             pass
 
 
-def test_multiple_stl_file(tmpdir):
+def test_multiple_stl_file(tmpdir, enable_speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
 
         fh.seek(0)
-        for i, m in enumerate(mesh.Mesh.from_multi_file(str(tmp_file))):
+        for i, m in enumerate(mesh.Mesh.from_multi_file(
+                str(tmp_file), fh=fh, enable_speedups=enable_speedups)):
             assert m.name == b'test.stl'
 
         assert i == 9
