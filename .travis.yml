@@ -9,9 +9,9 @@ env:
 - TOX_ENV=py34
 - TOX_ENV=py35
 install:
-- pip install .
 - pip install -r tests/requirements.txt
 - pip install coveralls flake8 tox
+- pip install .
 script:
 - tox -e $TOX_ENV
 after_success:
