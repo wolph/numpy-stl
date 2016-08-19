@@ -3,16 +3,37 @@ environment:
   # /E:ON and /V:ON options are not enabled in the batch script intepreter
   # See: http://stackoverflow.com/a/13751649/163740
   CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
-  TOX_ENV: "py27"
 
   matrix:
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.8"
+      PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
+      TOXENV: py27
 
     - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.8"
+      PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
+      TOXENV: py27
+
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "3.4"
+      PYTHON_ARCH: "32"
+      TOXENV: py34
+
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "3.4"
+      PYTHON_ARCH: "64"
+      TOXENV: py34
+
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "3.5"
+      PYTHON_ARCH: "32"
+      TOXENV: py35
+
+    - PYTHON: "C:\\Python27-x65"
+      PYTHON_VERSION: "3.5"
+      PYTHON_ARCH: "64"
+      TOXENV: py35
 
 install:
   # Download setup scripts and unzip
