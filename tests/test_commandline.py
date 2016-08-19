@@ -6,12 +6,12 @@ ascii_file = 'tests/stl_ascii/HalfDonut.stl'
 binary_file = 'tests/stl_binary/HalfDonut.stl'
 
 
-def test_main(tmpdir, enable_speedups):
+def test_main(tmpdir, speedups):
     original_argv = sys.argv[:]
     args_pre = ['stl']
     args_post = [str(tmpdir.join('binary.stl'))]
 
-    if not enable_speedups:
+    if not speedups:
         args_pre.append('-s')
 
     try:
@@ -39,12 +39,12 @@ def test_args(tmpdir):
     assert _get_name('-', '-')
 
 
-def test_ascii(tmpdir, enable_speedups):
+def test_ascii(tmpdir, speedups):
     original_argv = sys.argv[:]
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not enable_speedups else '',
+            '-s' if not speedups else '',
             binary_file,
             str(tmpdir.join('ascii.stl')),
         ]
@@ -56,12 +56,12 @@ def test_ascii(tmpdir, enable_speedups):
         sys.argv[:] = original_argv
 
 
-def test_binary(tmpdir, enable_speedups):
+def test_binary(tmpdir, speedups):
     original_argv = sys.argv[:]
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not enable_speedups else '',
+            '-s' if not speedups else '',
             ascii_file,
             str(tmpdir.join('binary.stl')),
         ]

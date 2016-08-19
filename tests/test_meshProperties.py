@@ -7,7 +7,7 @@ from stl import stl
 tolerance = 1e-6
 
 
-def test_mass_properties_for_half_donut():
+def test_mass_properties_for_half_donut(speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files HalfDonut.stl
@@ -16,7 +16,7 @@ def test_mass_properties_for_half_donut():
     """
     for m in ('stl_ascii', 'stl_binary'):
         filename = join('tests', m, 'HalfDonut.stl')
-        mesh = stl.StlMesh(filename)
+        mesh = stl.StlMesh(filename, speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 2.343149) < tolerance)
         assert(numpy.allclose(cog,
@@ -29,7 +29,7 @@ def test_mass_properties_for_half_donut():
                atol=tolerance))
 
 
-def test_mass_properties_for_moon():
+def test_mass_properties_for_moon(speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files Moon.stl
@@ -38,7 +38,7 @@ def test_mass_properties_for_moon():
     """
     for m in ('stl_ascii', 'stl_binary'):
         filename = join('tests', m, 'Moon.stl')
-        mesh = stl.StlMesh(filename)
+        mesh = stl.StlMesh(filename, speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 0.888723) < tolerance)
         assert(numpy.allclose(cog,
@@ -51,7 +51,7 @@ def test_mass_properties_for_moon():
                atol=tolerance))
 
 
-def test_mass_properties_for_star():
+def test_mass_properties_for_star(speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files Star.stl and
@@ -63,7 +63,7 @@ def test_mass_properties_for_star():
               join('stl_binary', 'Star.stl'),
               join('stl_binary', 'StarWithEmptyHeader.stl')):
         filename = join('tests', m)
-        mesh = stl.StlMesh(filename)
+        mesh = stl.StlMesh(filename, speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 1.416599) < tolerance)
         assert(numpy.allclose(cog,

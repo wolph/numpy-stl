@@ -27,13 +27,12 @@ dtype = np.dtype([
 
 DEF ALLOC_SIZE = 200000
 DEF BUF_SIZE = 8192
-DEF LINE_SIZE = 8192
+DEF LINE_SIZE = 1024
 
 cdef struct s_State:
     FILE* fp
     char buf[BUF_SIZE]
     char line[LINE_SIZE]
-    char line_lower[LINE_SIZE]
     size_t pos
     size_t size
     size_t line_num
@@ -41,7 +40,7 @@ cdef struct s_State:
 
 ctypedef s_State State
 
-cdef char tolower(char c):
+cdef inline char tolower(char c):
     if c > 0x40 and c < 0x5b:
         return c | 0x60
     else:
@@ -77,14 +76,12 @@ cdef char* readline(State* state) except NULL:
                     state.line[line_pos] = '\0'
                     return state.line
             else:
-                state.line[line_pos] = current
-                state.line_lower[line_pos] = tolower(current)
+                state.line[line_pos] = tolower(current)
                 line_pos += 1
 
 
 def ascii_read(fh, buf):
     cdef char* line
-    cdef char* line_lower
     cdef char name[LINE_SIZE]
     cdef np.ndarray[Facet, cast=True] arr = np.zeros(ALLOC_SIZE, dtype = dtype)
     cdef size_t offset;
@@ -102,9 +99,8 @@ def ascii_read(fh, buf):
         fseek(state.fp, fh.tell(), SEEK_SET)
 
         line = readline(&state)
-        line_lower = state.line_lower
 
-        if strstr(line_lower, "solid") == NULL:
+        if strstr(line, "solid") == NULL:
             raise RuntimeError(state.recoverable,
                     "Solid name not found (%i:%s)" % (state.line_num, line))
 
@@ -113,13 +109,13 @@ def ascii_read(fh, buf):
         while True:
 
             line = readline(&state)
-            line_lower = state.line_lower
+            line = state.line
 
-            if strstr(line_lower, "endsolid") != NULL:
+            if strstr(line, "endsolid") != NULL:
                 arr.resize(facet - <Facet*>arr.data, refcheck=False)
                 return (<object>name).strip(), arr
 
-            if strcmp(line_lower, "color") == 0:
+            if strcmp(line, "color") == 0:
                 readline(&state)
             elif sscanf(line, "%*s %*s %f %f %f",
                     facet.n, facet.n+1, facet.n+2) != 3:

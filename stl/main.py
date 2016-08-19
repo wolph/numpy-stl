@@ -49,7 +49,7 @@ def main():
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
                            remove_empty_areas=args.remove_empty_areas,
-                           enable_speedups=not args.disable_speedups)
+                           speedups=not args.disable_speedups)
 
     if args.binary:
         mode = stl.BINARY
@@ -69,7 +69,7 @@ def to_ascii():
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
                            remove_empty_areas=args.remove_empty_areas,
-                           enable_speedups=not args.disable_speedups)
+                           speedups=not args.disable_speedups)
     stl_file.save(name, args.outfile, mode=stl.ASCII,
                   update_normals=not args.use_file_normals)
 
@@ -81,7 +81,7 @@ def to_binary():
     stl_file = stl.StlMesh(filename=name, fh=args.infile,
                            calculate_normals=False,
                            remove_empty_areas=args.remove_empty_areas,
-                           enable_speedups=not args.disable_speedups)
+                           speedups=not args.disable_speedups)
     stl_file.save(name, args.outfile, mode=stl.BINARY,
                   update_normals=not args.use_file_normals)
 

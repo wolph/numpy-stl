@@ -127,9 +127,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
     def __init__(self, data, calculate_normals=True,
                  remove_empty_areas=False,
                  remove_duplicate_polygons=RemoveDuplicates.NONE,
-                 name='', enable_speedups=True, **kwargs):
+                 name='', speedups=True, **kwargs):
         super(BaseMesh, self).__init__(**kwargs)
-        self.enable_speedups = enable_speedups
+        self.speedups = speedups
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
 

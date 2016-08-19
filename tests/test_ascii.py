@@ -2,7 +2,7 @@ from stl.utils import b
 from stl import mesh
 
 
-def test_long_name(tmpdir, enable_speedups):
+def test_long_name(tmpdir, speedups):
     name = 'just some very long name which will not fit within the standard'
     name += name
     _stl_file = ('''
@@ -22,7 +22,7 @@ def test_long_name(tmpdir, enable_speedups):
         fh.write(b(_stl_file))
         fh.seek(0)
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
-                                        enable_speedups=enable_speedups)
+                                        speedups=speedups)
         assert test_mesh.name == b(name)
 
 
