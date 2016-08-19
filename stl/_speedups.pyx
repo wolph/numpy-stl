@@ -108,6 +108,8 @@ def ascii_read(fh, buf):
             raise RuntimeError(state.recoverable,
                     "Solid name not found (%i:%s)" % (state.line_num, line))
 
+        strcpy(name, line+5)		
+
         while True:
 
             line = readline(&state)
