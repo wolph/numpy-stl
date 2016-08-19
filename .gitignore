@@ -9,6 +9,5 @@ cover
 **/*.pyc
 **/*.pyo
 **/*.so
-**/*.c
 /*.stl
 /.tox
