@@ -27,7 +27,7 @@ dtype = np.dtype([
 
 DEF ALLOC_SIZE = 200000
 DEF BUF_SIZE = 8192
-DEF LINE_SIZE = 1024
+DEF LINE_SIZE = 8192
 
 cdef struct s_State:
     FILE* fp
