@@ -1,5 +1,4 @@
 import numpy
-from os.path import join
 
 from stl import stl
 
@@ -7,16 +6,16 @@ from stl import stl
 tolerance = 1e-6
 
 
-def test_mass_properties_for_half_donut(speedups):
+def test_mass_properties_for_half_donut(ascii_path, binary_path, speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files HalfDonut.stl
     One checks the results obtained with stl
     with the ones obtained with meshlab
     """
-    for m in ('stl_ascii', 'stl_binary'):
-        filename = join('tests', m, 'HalfDonut.stl')
-        mesh = stl.StlMesh(filename, speedups=speedups)
+    for path in (ascii_path, binary_path):
+        filename = path.join('HalfDonut.stl')
+        mesh = stl.StlMesh(str(filename), speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 2.343149) < tolerance)
         assert(numpy.allclose(cog,
@@ -29,16 +28,16 @@ def test_mass_properties_for_half_donut(speedups):
                atol=tolerance))
 
 
-def test_mass_properties_for_moon(speedups):
+def test_mass_properties_for_moon(ascii_path, binary_path, speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files Moon.stl
     One checks the results obtained with stl
     with the ones obtained with meshlab
     """
-    for m in ('stl_ascii', 'stl_binary'):
-        filename = join('tests', m, 'Moon.stl')
-        mesh = stl.StlMesh(filename, speedups=speedups)
+    for path in (ascii_path, binary_path):
+        filename = path.join('Moon.stl')
+        mesh = stl.StlMesh(str(filename), speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 0.888723) < tolerance)
         assert(numpy.allclose(cog,
@@ -51,7 +50,7 @@ def test_mass_properties_for_moon(speedups):
                atol=tolerance))
 
 
-def test_mass_properties_for_star(speedups):
+def test_mass_properties_for_star(ascii_path, binary_path, speedups):
     """
     Checks the results of method get_mass_properties() on
     STL ASCII and binary files Star.stl and
@@ -59,11 +58,10 @@ def test_mass_properties_for_star(speedups):
     One checks the results obtained with stl
     with the ones obtained with meshlab
     """
-    for m in (join('stl_ascii', 'Star.stl'),
-              join('stl_binary', 'Star.stl'),
-              join('stl_binary', 'StarWithEmptyHeader.stl')):
-        filename = join('tests', m)
-        mesh = stl.StlMesh(filename, speedups=speedups)
+    for filename in (ascii_path.join('Star.stl'),
+                     binary_path.join('Star.stl'),
+                     binary_path.join('StarWithEmptyHeader.stl')):
+        mesh = stl.StlMesh(str(filename), speedups=speedups)
         volume, cog, inertia = mesh.get_mass_properties()
         assert(abs(volume - 1.416599) < tolerance)
         assert(numpy.allclose(cog,

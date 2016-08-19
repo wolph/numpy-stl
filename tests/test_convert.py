@@ -1,37 +1,20 @@
-import os
+# import os
 import pytest
 import tempfile
 
 from stl import stl
 
-ascii_file = 'tests/stl_ascii/HalfDonut.stl'
-binary_file = 'tests/stl_binary/HalfDonut.stl'
-
-
-@pytest.fixture
-def current_path():
-    return os.path.dirname(os.path.abspath(__file__))
-
-
-@pytest.fixture
-def ascii_path(current_path):
-    return os.path.join(current_path, 'stl_ascii')
-
-
-@pytest.fixture
-def binary_path(current_path):
-    return os.path.join(current_path, 'stl_binary')
-
 
 def _test_conversion(from_, to, mode, speedups):
-    for name in os.listdir(from_):
-        source_file = os.path.join(from_, name)
-        expected_file = os.path.join(to, name)
-        if not os.path.exists(expected_file):
+
+    for name in from_.listdir():
+        source_file = from_.join(name)
+        expected_file = to.join(name)
+        if not expected_file.exists():
             continue
 
         mesh = stl.StlMesh(source_file, speedups=speedups)
-        with open(expected_file, 'rb') as expected_fh:
+        with open(str(expected_file), 'rb') as expected_fh:
             expected = expected_fh.read()
             # For binary files, skip the header
             if mode is stl.BINARY:
@@ -59,7 +42,7 @@ def test_binary_to_ascii(ascii_path, binary_path, speedups):
                      speedups=speedups)
 
 
-def test_stl_mesh(tmpdir, speedups):
+def test_stl_mesh(ascii_file, tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
 
     mesh = stl.StlMesh(ascii_file, speedups=speedups)

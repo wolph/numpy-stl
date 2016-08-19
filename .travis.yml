@@ -3,6 +3,8 @@ language: python
 python: 3.5
 cache:
 - pip
+- directory:
+  - .tox
 env:
 - TOX_ENV=docs
 - TOX_ENV=flake8

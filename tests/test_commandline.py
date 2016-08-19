@@ -2,17 +2,17 @@ import sys
 
 from stl import main
 
-ascii_file = 'tests/stl_ascii/HalfDonut.stl'
-binary_file = 'tests/stl_binary/HalfDonut.stl'
 
-
-def test_main(tmpdir, speedups):
+def test_main(ascii_file, binary_file, tmpdir, speedups):
     original_argv = sys.argv[:]
     args_pre = ['stl']
-    args_post = [str(tmpdir.join('binary.stl'))]
+    args_post = [str(tmpdir.join('output.stl'))]
 
     if not speedups:
         args_pre.append('-s')
+
+    print('a', ascii_file)
+    print('b', binary_file)
 
     try:
         sys.argv[:] = args_pre + [ascii_file] + args_post
@@ -27,7 +27,7 @@ def test_main(tmpdir, speedups):
         sys.argv[:] = original_argv
 
 
-def test_args(tmpdir):
+def test_args(ascii_file, tmpdir):
     parser = main._get_parser('')
 
     def _get_name(*args):
@@ -39,7 +39,7 @@ def test_args(tmpdir):
     assert _get_name('-', '-')
 
 
-def test_ascii(tmpdir, speedups):
+def test_ascii(binary_file, tmpdir, speedups):
     original_argv = sys.argv[:]
     try:
         sys.argv[:] = [
@@ -56,7 +56,7 @@ def test_ascii(tmpdir, speedups):
         sys.argv[:] = original_argv
 
 
-def test_binary(tmpdir, speedups):
+def test_binary(ascii_file, tmpdir, speedups):
     original_argv = sys.argv[:]
     try:
         sys.argv[:] = [

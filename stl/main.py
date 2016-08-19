@@ -46,7 +46,8 @@ def main():
 
     args = parser.parse_args()
     name = _get_name(args)
-    stl_file = stl.StlMesh(filename=name, fh=args.infile,
+    stl_file = stl.StlMesh(filename=name,
+                           fh=args.infile,
                            calculate_normals=False,
                            remove_empty_areas=args.remove_empty_areas,
                            speedups=not args.disable_speedups)
