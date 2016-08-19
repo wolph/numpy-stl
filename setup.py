@@ -8,26 +8,15 @@ setup_kwargs = {}
 
 try:
     import numpy
+    from Cython import Build
 
-    use_cython = not os.path.exists('stl/_speedups.c')
-    if use_cython:
-        ext = 'pyx'
-    else:
-        ext = 'c'
-
-    extensions = [
+    setup_kwargs['ext_modules'] = Build.cythonize([
         extension.Extension(
             'stl._speedups',
-            ['stl/_speedups.%s' % ext],
+            ['stl/_speedups.pyx'],
             include_dirs=[numpy.get_include()],
         ),
-    ]
-
-    if use_cython:
-        from Cython import Build
-        extensions = Build.cythonize(extensions)
-
-    setup_kwargs['ext_modules'] = extensions
+    ])
 except ImportError:
     print('WARNING', file=sys.stderr)
     print('Cython and Numpy is required for building extension.',
