@@ -8,4 +8,7 @@ cover
 **/htmlcov
 **/*.pyc
 **/*.pyo
-*.tox
+**/*.so
+**/*.c
+/*.stl
+/.tox
