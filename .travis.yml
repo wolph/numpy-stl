@@ -32,5 +32,5 @@ deploy:
     secure: HVxDUJ6ns7G7xypuibu01ruDfO4orV5lNr1Mor003MX3HVivvKsTwWqY5K1J+J+C4mgK6ahyvanD5GahYvcWia/Y2xeH2VnytnAgo+W3AI+h72+1oaRpvQHynJ7Fz6Mc0zad0GcbQh3QuA7Pu3IOWs7buUL+MQM6d9QLTkerOvs=
   on:
     tags: true
-    distributions: sdist bdist_wheel
+    distributions: bdist_wheel
     repo: WoLpH/numpy-stl
