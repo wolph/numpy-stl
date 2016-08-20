@@ -22,7 +22,6 @@ except ImportError:
     print('Cython and Numpy is required for building extension.',
           file=sys.stderr)
     print('Falling back to pure Python implementation.', file=sys.stderr)
-    raise
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack

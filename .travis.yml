@@ -9,9 +9,9 @@ cache:
 env:
 - TOX_ENV=docs
 - TOX_ENV=flake8
-- TOX_ENV=py27-linux
-- TOX_ENV=py34-linux
-- TOX_ENV=py35-linux
+- TOX_ENV=py27-nix
+- TOX_ENV=py34-nix
+- TOX_ENV=py35-nix
 install:
 - pip install -r tests/requirements.txt
 - pip install coveralls flake8 tox
