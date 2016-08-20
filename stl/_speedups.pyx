@@ -100,7 +100,7 @@ def ascii_read(fh, buf):
 
         line = readline(&state)
 
-        if strstr(line, "solid") == NULL:
+        if strstr(line, "solid") != line:
             raise RuntimeError(state.recoverable,
                     "Solid name not found (%i:%s)" % (state.line_num, line))
 
@@ -117,6 +117,7 @@ def ascii_read(fh, buf):
 
             if strcmp(line, "color") == 0:
                 readline(&state)
+                continue
             elif sscanf(line, "%*s %*s %f %f %f",
                     facet.n, facet.n+1, facet.n+2) != 3:
                 raise RuntimeError(state.recoverable,
