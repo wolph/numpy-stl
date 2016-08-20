@@ -8,32 +8,32 @@ environment:
     - PYTHON: "C:\\Python27-x32"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
-      TOXENV: py27-win32
+      TOXENV: py27-windows-32
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
-      TOXENV: py27-win64
+      TOXENV: py27-windows-64
 
     - PYTHON: "C:\\Python34-x32"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "32"
-      TOXENV: py34-win32
+      TOXENV: py34-windows-32
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "64"
-      TOXENV: py34-win64
+      TOXENV: py34-windows-64
 
     - PYTHON: "C:\\Python35-x32"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "32"
-      TOXENV: py35-win32
+      TOXENV: py35-windows-32
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "64"
-      TOXENV: py35-win64
+      TOXENV: py35-windows-64
 
 install:
   # Download setup scripts and unzip
