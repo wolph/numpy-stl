@@ -1,5 +1,7 @@
 # Include all documentation files
 include-recursive *.rst
+include stl/*.pyx
+include stl/*.c
 
 # Include docs and tests
 graft tests

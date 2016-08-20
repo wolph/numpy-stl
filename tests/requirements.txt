@@ -3,6 +3,7 @@ coverage
 docutils
 execnet
 numpy
+cython
 pep8
 py
 pyflakes
@@ -13,3 +14,4 @@ pytest-flakes
 pytest-pep8
 python-utils
 Sphinx
+flake8

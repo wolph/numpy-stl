@@ -17,15 +17,15 @@ endsolid test.stl
 '''.lstrip()
 
 
-def test_valid_ascii(tmpdir):
+def test_valid_ascii(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
-        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
-def test_ascii_with_missing_name(tmpdir):
+def test_ascii_with_missing_name(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         # Split the file into lines
@@ -37,10 +37,10 @@ def test_ascii_with_missing_name(tmpdir):
         # Join the lines to test files that start with solid without space
         fh.write('\n'.join(lines))
         fh.seek(0)
-        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
-def test_ascii_with_blank_lines(tmpdir):
+def test_ascii_with_blank_lines(tmpdir, speedups):
     _stl_file = '''
     solid test.stl
 
@@ -65,26 +65,26 @@ def test_ascii_with_blank_lines(tmpdir):
     with tmp_file.open('w+') as fh:
         fh.write(_stl_file)
         fh.seek(0)
-        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
-def test_incomplete_ascii_file(tmpdir):
+def test_incomplete_ascii_file(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write('solid some_file.stl')
         fh.seek(0)
         with pytest.raises(AssertionError):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
+            mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
     for offset in (-20, 82, 100):
         with tmp_file.open('w+') as fh:
             fh.write(_STL_FILE[:-offset])
             fh.seek(0)
             with pytest.raises(AssertionError):
-                mesh.Mesh.from_file(str(tmp_file), fh=fh)
+                mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
-def test_corrupt_ascii_file(tmpdir):
+def test_corrupt_ascii_file(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
@@ -92,7 +92,7 @@ def test_corrupt_ascii_file(tmpdir):
         print('####\n' * 100, file=fh)
         fh.seek(0)
         with pytest.raises(AssertionError):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
+            mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
@@ -102,22 +102,22 @@ def test_corrupt_ascii_file(tmpdir):
         fh.write(struct.pack('@i', 10).decode('utf-8'))
         fh.seek(0)
         with pytest.raises(AssertionError):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
+            mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
-def test_corrupt_binary_file(tmpdir):
+def test_corrupt_binary_file(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
         fh.write('#########\n' * 8)
         fh.write('#\0\0\0')
         fh.seek(0)
-        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
     with tmp_file.open('w+') as fh:
         fh.write('#########\n' * 9)
         fh.seek(0)
         with pytest.raises(AssertionError):
-            mesh.Mesh.from_file(str(tmp_file), fh=fh)
+            mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
     with tmp_file.open('w+') as fh:
         fh.write('#########\n' * 8)
@@ -125,5 +125,5 @@ def test_corrupt_binary_file(tmpdir):
         fh.seek(0)
         fh.write('solid test.stl')
         fh.seek(0)
-        mesh.Mesh.from_file(str(tmp_file), fh=fh)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 

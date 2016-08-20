@@ -1,17 +1,21 @@
 sudo: false
 language: python
-python: 2.7
+python: 3.5
+cache:
+- pip
+- directory:
+  - .tox/dist
+  - .tox/distshare
 env:
 - TOX_ENV=docs
 - TOX_ENV=flake8
-- TOX_ENV=py27
-- TOX_ENV=py33
-- TOX_ENV=py34
-- TOX_ENV=py35
+- TOX_ENV=py27-nix
+- TOX_ENV=py34-nix
+- TOX_ENV=py35-nix
 install:
-- pip install .
 - pip install -r tests/requirements.txt
 - pip install coveralls flake8 tox
+- pip install -e .
 script:
 - tox -e $TOX_ENV
 after_success:
