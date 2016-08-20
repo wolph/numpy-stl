@@ -56,7 +56,7 @@ install:
 build: false  # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - "%CMD_IN_ENV% pip install tox"
+  - "%CMD_IN_ENV% pip install tox numpy cython"
 
 test_script:
   - "%CMD_IN_ENV% tox -e %TOXENV%"
