@@ -15,7 +15,7 @@ endsolid test.stl
 
 def test_single_stl(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
-    with tmp_file.open('w+') as fh:
+    with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
         for m in mesh.Mesh.from_multi_file(
@@ -25,7 +25,7 @@ def test_single_stl(tmpdir, speedups):
 
 def test_multiple_stl(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
-    with tmp_file.open('w+') as fh:
+    with tmp_file.open('wb+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
         fh.seek(0)
@@ -38,7 +38,7 @@ def test_multiple_stl(tmpdir, speedups):
 
 def test_single_stl_file(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
-    with tmp_file.open('w+') as fh:
+    with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
         for m in mesh.Mesh.from_multi_file(
@@ -48,7 +48,7 @@ def test_single_stl_file(tmpdir, speedups):
 
 def test_multiple_stl_file(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
-    with tmp_file.open('w+') as fh:
+    with tmp_file.open('wb+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
 
