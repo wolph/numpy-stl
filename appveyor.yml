@@ -15,22 +15,22 @@ environment:
       PYTHON_ARCH: "64"
       TOXENV: py27
 
-    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "32"
       TOXENV: py34
 
-    - PYTHON: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "64"
       TOXENV: py34
 
-    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "32"
       TOXENV: py35
 
-    - PYTHON: "C:\\Python27-x65"
+    - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "64"
       TOXENV: py35
