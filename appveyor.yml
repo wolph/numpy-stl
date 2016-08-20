@@ -5,35 +5,35 @@ environment:
   CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
   matrix:
-    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python27-x32"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
-      TOXENV: py27
+      TOXENV: py27-win32
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
-      TOXENV: py27
+      TOXENV: py27-win64
 
-    - PYTHON: "C:\\Python34"
+    - PYTHON: "C:\\Python34-x32"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "32"
-      TOXENV: py34
+      TOXENV: py34-win32
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "64"
-      TOXENV: py34
+      TOXENV: py34-win64
 
-    - PYTHON: "C:\\Python35"
+    - PYTHON: "C:\\Python35-x32"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "32"
-      TOXENV: py35
+      TOXENV: py35-win32
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "64"
-      TOXENV: py35
+      TOXENV: py35-win64
 
 install:
   # Download setup scripts and unzip
@@ -59,4 +59,5 @@ before_test:
   - "%CMD_IN_ENV% pip install tox numpy cython"
 
 test_script:
+  - 
   - "%CMD_IN_ENV% tox -e %TOXENV%"
