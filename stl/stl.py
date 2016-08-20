@@ -17,6 +17,7 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
+    raise
 
 
 class Mode(enum.IntEnum):
