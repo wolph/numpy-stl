@@ -11,9 +11,6 @@ def test_main(ascii_file, binary_file, tmpdir, speedups):
     if not speedups:
         args_pre.append('-s')
 
-    print('a', ascii_file)
-    print('b', binary_file)
-
     try:
         sys.argv[:] = args_pre + [ascii_file] + args_post
         main.main()

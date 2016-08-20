@@ -17,11 +17,6 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
-    import sys
-    print('Path:', sys.path)
-    print('Current file:', __file__)
-    print('Env', os.environ)
-    raise
 
 
 class Mode(enum.IntEnum):
