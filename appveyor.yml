@@ -5,7 +5,7 @@ environment:
   CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
   matrix:
-    - PYTHON: "C:\\Python27-x32"
+    - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
       TOXENV: py27-windows-32
@@ -15,7 +15,7 @@ environment:
       PYTHON_ARCH: "64"
       TOXENV: py27-windows-64
 
-    - PYTHON: "C:\\Python34-x32"
+    - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "32"
       TOXENV: py34-windows-32
@@ -25,7 +25,7 @@ environment:
       PYTHON_ARCH: "64"
       TOXENV: py34-windows-64
 
-    - PYTHON: "C:\\Python35-x32"
+    - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "32"
       TOXENV: py35-windows-32
