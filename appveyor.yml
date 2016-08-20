@@ -57,8 +57,7 @@ install:
 build: false  # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - python -m pip install tox numpy cython"
+  - %PYTHON%\\python.exe -m pip install tox"
 
 test_script:
-  - 
-  - python -m tox -e %TOXENV%"
+  - build.cmd %PYTHON%\\python.exe -m tox -e %TOXENV%"
