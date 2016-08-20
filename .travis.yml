@@ -4,7 +4,8 @@ python: 3.5
 cache:
 - pip
 - directory:
-  - .tox
+  - .tox/dist
+  - .tox/distshare
 env:
 - TOX_ENV=docs
 - TOX_ENV=flake8
