@@ -1,4 +1,3 @@
-
 from libc.stdio cimport *                                                                
 from libc.string cimport memcpy, strcmp, strstr, strcpy
 
@@ -40,12 +39,6 @@ cdef struct s_State:
 
 ctypedef s_State State
 
-cdef inline char tolower(char c):
-    if c > 0x40 and c < 0x5b:
-        return c | 0x60
-    else:
-        return c
-
 cdef char* readline(State* state) except NULL:
 
     cdef size_t line_pos = 0
@@ -75,8 +68,12 @@ cdef char* readline(State* state) except NULL:
                 if line_pos != 0:
                     state.line[line_pos] = '\0'
                     return state.line
+            elif 0x40 < current < 0x5b:
+                # Change all ascii characters to lower case
+                state.line[line_pos] = current | 0x60
+                line_pos += 1
             else:
-                state.line[line_pos] = tolower(current)
+                state.line[line_pos] = current
                 line_pos += 1
 
 
