@@ -34,6 +34,12 @@ Initial usage:
  - `stl2ascii your_binary_stl_file.stl new_ascii_stl_file.stl`
  - `stl your_ascii_stl_file.stl new_binary_stl_file.stl`
 
+Contributing:
+------------------------------------------------------------------------------
+
+Contributions are always welcome. Please view the guidelines to get started:
+https://github.com/WoLpH/numpy-stl/blob/develop/CONTRIBUTING.rst
+
 Quickstart
 ------------------------------------------------------------------------------
 
