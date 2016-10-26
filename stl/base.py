@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function,
 import enum
 import math
 import numpy
+import logging
 import collections
 
 from python_utils import logger
@@ -52,6 +53,26 @@ class RemoveDuplicates(enum.Enum):
         return value
 
 
+def logged(class_):
+    # For some reason the Logged baseclass is not properly initiated on Linux
+    # systems while this works on OS X. Please let me know if you can tell me
+    # what silly mistake I made here
+
+    logger_name = logger.Logged._Logged__get_name(
+        __name__,
+        class_.__name__,
+    )
+
+    class_.logger = logging.getLogger(logger_name)
+
+    for key in dir(logger.Logged):
+        if not key.startswith('__'):
+            setattr(class_, key, getattr(class_, key))
+
+    return class_
+
+
+@logged
 class BaseMesh(logger.Logged, collections.Mapping):
     '''
     Mesh object with easy access to the vectors through v0, v1 and v2.
