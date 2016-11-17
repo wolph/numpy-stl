@@ -26,6 +26,7 @@ class Dimension(enum.IntEnum):
     #: Z index (for example, `mesh.v0[0][Z]`)
     Z = 2
 
+
 # For backwards compatibility, leave the original references
 X = Dimension.X
 Y = Dimension.Y

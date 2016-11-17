@@ -28,10 +28,12 @@ class Mode(enum.IntEnum):
     #: Force writing BINARY
     BINARY = 2
 
+
 # For backwards compatibility, leave the original references
 AUTOMATIC = Mode.AUTOMATIC
 ASCII = Mode.ASCII
 BINARY = Mode.BINARY
+
 
 #: Amount of bytes to read while using buffered reading
 BUFFER_SIZE = 4096
