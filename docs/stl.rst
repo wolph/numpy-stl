@@ -1,8 +1,14 @@
 stl package
 ===========
 
-Submodules
-----------
+stl.Mesh
+--------
+
+.. autoclass:: stl.Mesh
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
 
 stl.main module
 ---------------
@@ -10,6 +16,7 @@ stl.main module
 .. automodule:: stl.main
     :members:
     :undoc-members:
+    :inherited-members:
     :show-inheritance:
 
 stl.base module
@@ -18,6 +25,7 @@ stl.base module
 .. automodule:: stl.base
     :members:
     :undoc-members:
+    :inherited-members:
     :show-inheritance:
 
 stl.mesh module
@@ -26,6 +34,7 @@ stl.mesh module
 .. automodule:: stl.mesh
     :members:
     :undoc-members:
+    :inherited-members:
     :show-inheritance:
 
 stl.stl module
@@ -34,5 +43,6 @@ stl.stl module
 .. automodule:: stl.stl
     :members:
     :undoc-members:
+    :inherited-members:
     :show-inheritance:
 
