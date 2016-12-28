@@ -28,10 +28,12 @@ class Mode(enum.IntEnum):
     #: Force writing BINARY
     BINARY = 2
 
+
 # For backwards compatibility, leave the original references
 AUTOMATIC = Mode.AUTOMATIC
 ASCII = Mode.ASCII
 BINARY = Mode.BINARY
+
 
 #: Amount of bytes to read while using buffered reading
 BUFFER_SIZE = 4096
@@ -284,7 +286,7 @@ class BaseStl(base.BaseMesh):
 
         # Make it exactly 80 characters
         header = header[:80].ljust(80, ' ')
-        packed = struct.pack('@i', self.data.size)
+        packed = struct.pack(s('@i'), self.data.size)
 
         if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
             packed = str(packed)
