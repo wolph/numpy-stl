@@ -2,6 +2,7 @@
 include-recursive *.rst
 include stl/*.pyx
 include stl/*.c
+include LICENSE
 
 # Include docs and tests
 graft tests
