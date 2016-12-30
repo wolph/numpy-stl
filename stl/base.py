@@ -145,6 +145,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         (s('vectors'), numpy.float32, (3, 3)),
         (s('attr'), numpy.uint16, (1, )),
     ])
+    dtype = dtype.newbyteorder('<')  # Even on big endian arches, use little e.
 
     def __init__(self, data, calculate_normals=True,
                  remove_empty_areas=False,
