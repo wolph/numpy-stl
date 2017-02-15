@@ -298,6 +298,11 @@ class BaseStl(base.BaseMesh):
         fh.write(packed)
         self.data.tofile(fh)
 
+        if self.data.size:
+            assert fh.tell() > 84, (
+                'numpy silently refused to write our file. Note that writing '
+                'to `StringIO` objects is not supported by `numpy`')
+
     @classmethod
     def from_file(cls, filename, calculate_normals=True, fh=None,
                   mode=AUTOMATIC, speedups=True, **kwargs):
