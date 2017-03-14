@@ -134,6 +134,25 @@ class BaseMesh(logger.Logged, collections.Mapping):
     >>> mesh.v0[:] = mesh.v1[:] = mesh.v2[:] = 0
     >>> mesh.points.sum()
     0.0
+
+    >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
+    >>> mesh.x = mesh.y = mesh.z = 0
+
+    >>> mesh.attr = 1
+    >>> (mesh.attr == 1).all()
+    True
+
+    >>> mesh.normals = 2
+    >>> (mesh.normals == 2).all()
+    True
+
+    >>> mesh.vectors = 3
+    >>> (mesh.vectors == 3).all()
+    True
+
+    >>> mesh.points = 4
+    >>> (mesh.points == 4).all()
+    True
     '''
     #: - normals: :func:`numpy.float32`, `(3, )`
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
