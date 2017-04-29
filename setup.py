@@ -49,6 +49,14 @@ except ImportError:
     install_requires.append('enum34')
 
 
+if '--no-pytest-runner' in sys.argv:
+    tests_require = []
+    setup_requires = []
+else:
+    tests_require = ['pytest']
+    setup_requires = ['pytest-runner']
+
+
 if __name__ == '__main__':
     setup(
         name=about['__package_name__'],
@@ -60,8 +68,8 @@ if __name__ == '__main__':
         license='BSD',
         packages=['stl'],
         long_description=long_description,
-        tests_require=['pytest'],
-        setup_requires=['pytest-runner'],
+        tests_require=tests_require,
+        setup_requires=setup_requires,
         entry_points={
             'console_scripts': [
                 'stl = %s.main:main' % about['__import_name__'],
