@@ -49,7 +49,7 @@ except ImportError:
     install_requires.append('enum34')
 
 
-if '--no-pytest-runner' in sys.argv:
+if os.environ.get('PYTEST_RUNNER', '').lower() == 'false':
     tests_require = []
     setup_requires = []
 else:
