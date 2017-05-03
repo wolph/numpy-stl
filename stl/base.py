@@ -116,9 +116,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
     >>> mesh.points[0]
     array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
     >>> mesh.data[0] # doctest: +NORMALIZE_WHITESPACE
-    ([0.0, 0.0, 0.0],
-    [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
-    [0])
+    ([ 0.,  0.,  0.], [[ 1.,  1.,  1.], [ 2.,  2.,  2.], [ 0.,  0.,  0.]], [0])
     >>> mesh.x[0]
     array([ 1.,  2.,  0.], dtype=float32)
 
@@ -136,6 +134,25 @@ class BaseMesh(logger.Logged, collections.Mapping):
     >>> mesh.v0[:] = mesh.v1[:] = mesh.v2[:] = 0
     >>> mesh.points.sum()
     0.0
+
+    >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
+    >>> mesh.x = mesh.y = mesh.z = 0
+
+    >>> mesh.attr = 1
+    >>> (mesh.attr == 1).all()
+    True
+
+    >>> mesh.normals = 2
+    >>> (mesh.normals == 2).all()
+    True
+
+    >>> mesh.vectors = 3
+    >>> (mesh.vectors == 3).all()
+    True
+
+    >>> mesh.points = 4
+    >>> (mesh.points == 4).all()
+    True
     '''
     #: - normals: :func:`numpy.float32`, `(3, )`
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
@@ -163,20 +180,88 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.name = name
         self.data = data
 
-        points = self.points = data['vectors']
-        self.points.shape = data.size, 9
-        self.x = points[:, Dimension.X::3]
-        self.y = points[:, Dimension.Y::3]
-        self.z = points[:, Dimension.Z::3]
-        self.v0 = data['vectors'][:, 0]
-        self.v1 = data['vectors'][:, 1]
-        self.v2 = data['vectors'][:, 2]
-        self.normals = data['normals']
-        self.vectors = data['vectors']
-        self.attr = data['attr']
-
         if calculate_normals:
             self.update_normals()
+
+    @property
+    def attr(self):
+        return self.data['attr']
+
+    @attr.setter
+    def attr(self, value):
+        self.data['attr'] = value
+
+    @property
+    def normals(self):
+        return self.data['normals']
+
+    @normals.setter
+    def normals(self, value):
+        self.data['normals'] = value
+
+    @property
+    def vectors(self):
+        return self.data['vectors']
+
+    @vectors.setter
+    def vectors(self, value):
+        self.data['vectors'] = value
+
+    @property
+    def points(self):
+        return self.vectors.reshape(self.data.size, 9)
+
+    @points.setter
+    def points(self, value):
+        self.points[:] = value
+
+    @property
+    def v0(self):
+        return self.vectors[:, 0]
+
+    @v0.setter
+    def v0(self, value):
+        self.vectors[:, 0] = value
+
+    @property
+    def v1(self):
+        return self.vectors[:, 1]
+
+    @v1.setter
+    def v1(self, value):
+        self.vectors[:, 1] = value
+
+    @property
+    def v2(self):
+        return self.vectors[:, 2]
+
+    @v2.setter
+    def v2(self, value):
+        self.vectors[:, 2] = value
+
+    @property
+    def x(self):
+        return self.points[:, Dimension.X::3]
+
+    @x.setter
+    def x(self, value):
+        self.points[:, Dimension.X::3] = value
+
+    @property
+    def y(self):
+        return self.points[:, Dimension.Y::3]
+
+    @y.setter
+    def y(self, value):
+        self.points[:, Dimension.Y::3] = value
+
+    @property
+    def z(self):
+        return self.points[:, Dimension.Z::3]
+
+    @z.setter
+    def z(self, value):
+        self.points[:, Dimension.Z::3] = value
 
     @classmethod
     def remove_duplicate_polygons(cls, data, value=RemoveDuplicates.SINGLE):

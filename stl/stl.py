@@ -211,7 +211,12 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
         if _speedups and speedups:
-            return _speedups.ascii_read(fh, header)
+            try:
+                return _speedups.ascii_read(fh, header)
+            except RuntimeError:
+                # We got an unexpected error, retrying without speedups
+                # Related to bug #52
+                return cls._load_ascii(fh, header, speedups=False)
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
@@ -297,6 +302,11 @@ class BaseStl(base.BaseMesh):
         fh.write(header)
         fh.write(packed)
         self.data.tofile(fh)
+
+        if self.data.size:  # pragma: no cover
+            assert fh.tell() > 84, (
+                'numpy silently refused to write our file. Note that writing '
+                'to `StringIO` objects is not supported by `numpy`')
 
     @classmethod
     def from_file(cls, filename, calculate_normals=True, fh=None,
