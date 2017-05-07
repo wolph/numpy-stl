@@ -211,12 +211,7 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
         if _speedups and speedups:
-            try:
-                return _speedups.ascii_read(fh, header)
-            except RuntimeError:
-                # We got an unexpected error, retrying without speedups
-                # Related to bug #52
-                return cls._load_ascii(fh, header, speedups=False)
+            return _speedups.ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
