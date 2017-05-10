@@ -6,6 +6,7 @@ import os
 import enum
 import numpy
 import struct
+import logging
 import datetime
 
 from . import base
@@ -17,6 +18,9 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
+
+
+logger = logging.getLogger(__name__)
 
 
 class Mode(enum.IntEnum):
@@ -211,12 +215,7 @@ class BaseStl(base.BaseMesh):
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
         if _speedups and speedups:
-            try:
-                return _speedups.ascii_read(fh, header)
-            except RuntimeError:
-                # We got an unexpected error, retrying without speedups
-                # Related to bug #52
-                return cls._load_ascii(fh, header, speedups=False)
+            return _speedups.ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
@@ -310,7 +309,7 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def from_file(cls, filename, calculate_normals=True, fh=None,
-                  mode=AUTOMATIC, speedups=True, **kwargs):
+                  mode=Mode.AUTOMATIC, speedups=True, **kwargs):
         '''Load a mesh from a STL file
 
         :param str filename: The file to load
@@ -323,9 +322,15 @@ class BaseStl(base.BaseMesh):
             name, data = cls.load(
                 fh, mode=mode, speedups=speedups)
         else:
-            with open(filename, 'rb') as fh:
-                name, data = cls.load(
-                    fh, mode=mode, speedups=speedups)
+            try:
+                with open(filename, 'rb') as fh:
+                    name, data = cls.load(
+                        fh, mode=mode, speedups=speedups)
+            except AssertionError:  # pragma: no cover
+                logger.warn('Unable to read the file with speedups, retrying')
+                with open(filename, 'rb') as fh:
+                    name, data = cls.load(
+                        fh, mode=Mode.ASCII, speedups=False)
 
         return cls(data, calculate_normals, name=name,
                    speedups=speedups, **kwargs)
