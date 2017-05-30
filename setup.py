@@ -2,7 +2,9 @@ from __future__ import print_function
 
 import os
 import sys
-from setuptools import setup, extension
+import warnings
+from setuptools import setup, extension, command
+from setuptools.command.build_ext import build_ext
 
 setup_kwargs = {}
 
@@ -57,6 +59,19 @@ else:
     setup_requires = ['pytest-runner']
 
 
+class BuildExt(build_ext):
+
+    def run(self):
+        try:
+            build_ext.run(self)
+        except Exception as e:
+            warnings.warn('''
+            Unable to build speedups module, defaulting to pure Python. Note
+            that the pure Python version is more than fast enough in most cases
+            %r
+            ''' % e)
+
+
 if __name__ == '__main__':
     setup(
         name=about['__package_name__'],
@@ -79,6 +94,9 @@ if __name__ == '__main__':
         },
         classifiers=['License :: OSI Approved :: BSD License'],
         install_requires=install_requires,
+        cmdclass=dict(
+            build_ext=BuildExt,
+        ),
         **setup_kwargs
     )
 
