@@ -3,7 +3,7 @@ from __future__ import print_function
 import os
 import sys
 import warnings
-from setuptools import setup, extension, command
+from setuptools import setup, extension
 from setuptools.command.build_ext import build_ext
 
 setup_kwargs = {}
