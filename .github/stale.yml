@@ -8,6 +8,7 @@ exemptLabels:
  - help-wanted
  - pinned
  - security
+ - enhancement
 # Label to use when marking an issue as stale
 staleLabel: no-activity
 # Comment to post when marking an issue as stale. Set to `false` to disable
