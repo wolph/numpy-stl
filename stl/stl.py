@@ -73,6 +73,8 @@ class BaseStl(base.BaseMesh):
             try:
                 name, data = cls._load_ascii(
                     fh, header, speedups=speedups)
+            except base.FacetError as exception:
+                raise exception
             except RuntimeError as exception:
                 (recoverable, e) = exception.args
                 # If we didn't read beyond the header the stream is still
@@ -164,9 +166,7 @@ class BaseStl(base.BaseMesh):
                         fh.seek(position - size_unprocessedlines)
                     raise StopIteration()
                 else:
-                    raise RuntimeError(recoverable[0],
-                                       '%r should start with %r' % (line,
-                                                                    prefix))
+                    raise base.FacetError(-1, 'Missing vertex (expected 3)')
 
                 if len(values) == 3:
                     return [float(v) for v in values]
@@ -208,7 +208,7 @@ class BaseStl(base.BaseMesh):
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
             except AssertionError as e:  # pragma: no cover
-                raise RuntimeError(recoverable[0], e)
+                raise base.FacetError(1, 'Extra vertex (expected 3) or missing endloop/endfacet keyword.')
             except StopIteration:
                 raise
 

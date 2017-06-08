@@ -32,6 +32,14 @@ X = Dimension.X
 Y = Dimension.Y
 Z = Dimension.Z
 
+class FacetError(Exception):
+    def __init__(self, eType, msg):
+        self.args = [eType, msg]
+        self.type = eType
+        self.msg = msg
+    def __str__(self):
+        return ('Missing Vertex. ' if self.type==-1 else 'Extra Vertex. ') + self.msg
+
 
 class RemoveDuplicates(enum.Enum):
     '''
