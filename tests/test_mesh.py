@@ -18,7 +18,7 @@ def test_units_1d():
 
     assert mesh.areas == 0
     utils.array_equals(mesh.normals, [0, 0, 0])
-    utils.array_equals(mesh.units, [0, 0, 1])
+    utils.array_equals(mesh.units, [0, 0, 0])
 
 
 def test_units_2d():
