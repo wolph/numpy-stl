@@ -1,7 +1,10 @@
 import math
 import numpy
+import pytest
 
 from stl.mesh import Mesh
+
+from . import utils
 
 
 def test_rotation():
@@ -67,9 +70,28 @@ def test_rotation_over_point():
     mesh = Mesh(data, remove_empty_areas=False)
 
     mesh.rotate([1, 0, 0], math.radians(180), point=[1, 2, 3])
-    assert (mesh.vectors == numpy.array([[1, -4, -6],
-                                         [0, -5, -6],
-                                         [0, -4, -7]])).all()
+    utils.array_equals(
+        mesh.vectors,
+        numpy.array([[[1., 4., 6.],
+                      [0., 3., 6.],
+                      [0., 4., 5.]]]))
+
+    mesh.rotate([1, 0, 0], math.radians(-180), point=[1, 2, 3])
+    utils.array_equals(
+        mesh.vectors,
+        numpy.array([[[1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1]]]))
+
+    mesh.rotate([1, 0, 0], math.radians(180), point=0.0)
+    utils.array_equals(
+        mesh.vectors,
+        numpy.array([[[1., 0., -0.],
+                      [0., -1., -0.],
+                      [0., 0., -1.]]]))
+
+    with pytest.raises(TypeError):
+        mesh.rotate([1, 0, 0], math.radians(180), point='x')
 
 
 def test_no_rotation():

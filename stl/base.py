@@ -426,6 +426,11 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
         Uses the :py:func:`rotation_matrix` in the background.
 
+        .. note:: Note that the `point` was accidentaly inverted with the
+           old version of the code. To get the old and incorrect behaviour
+           simply pass `-point` instead of `point` or `-numpy.array(point)` if
+           you're passing along an array.
+
         :param numpy.array axis: Axis to rotate over (x, y, z)
         :param float theta: Rotation angle in radians, use `math.radians` to
                             convert degrees to radians if needed.
@@ -436,7 +441,15 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if not theta:
             return
 
-        point = numpy.asarray(point or [0] * 3)
+        if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
+            point = numpy.asarray(point)
+        elif point is None:
+            point = numpy.array([0, 0, 0])
+        elif isinstance(point, (int, float)):
+            point = numpy.asarray([point] * 3)
+        else:
+            raise TypeError('Incorrect type for point', point)
+
         rotation_matrix = self.rotation_matrix(axis, theta)
 
         # No need to rotate if there is no actual rotation
@@ -446,7 +459,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         def _rotate(matrix):
             if point.any():
                 # Translate while rotating
-                return (matrix + point).dot(rotation_matrix) - point
+                return (matrix - point).dot(rotation_matrix) + point
             else:
                 # Simply apply the rotation
                 return matrix.dot(rotation_matrix)
