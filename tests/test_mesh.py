@@ -4,6 +4,8 @@ from stl.mesh import Mesh
 from stl.base import BaseMesh
 from stl.base import RemoveDuplicates
 
+from . import utils
+
 
 def test_units_1d():
     data = numpy.zeros(1, dtype=Mesh.dtype)
@@ -15,8 +17,8 @@ def test_units_1d():
     mesh.update_units()
 
     assert mesh.areas == 0
-    assert (mesh.normals == [0, 0, 0]).all()
-    assert (mesh.units == [0, 0, 0]).all()
+    utils.array_equals(mesh.normals, [0, 0, 0])
+    utils.array_equals(mesh.units, [0, 0, 1])
 
 
 def test_units_2d():
