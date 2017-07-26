@@ -284,11 +284,6 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
             # Combine both unique lists
             filtered_data = data[numpy.sort(idx[diff_a & diff_b])]
-            print(diff)
-            print(diff_a)
-            print(diff_b)
-            print(idx)
-            print(idx[diff])
             if len(filtered_data) <= len(data) / 2:
                 return data[numpy.sort(idx[diff_a])]
             else:
