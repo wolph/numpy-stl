@@ -341,7 +341,15 @@ Combining multiple STL files
 
 
     def translate(_solid, step, padding, multiplier, axis):
-        items = {'x': (0, 3, 6), 'y': (1, 4, 7), 'z': (2, 5, 8)}[axis]
+        if 'x' == axis:
+            items = 0, 3, 6
+        elif 'y' == axis:
+            items = 1, 4, 7
+        elif 'z' == axis:
+            items = 2, 5, 8
+        else:
+            raise RuntimeError('Unknown axis %r, expected x, y or z' % axis)
+
         # _solid.points.shape == [:, ((x, y, z), (x, y, z), (x, y, z))]
         _solid.points[:, items] += (step * multiplier) + (padding * multiplier)
 
