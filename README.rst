@@ -341,16 +341,9 @@ Combining multiple STL files
 
 
     def translate(_solid, step, padding, multiplier, axis):
-        if axis == 'x':
-            items = [0, 3, 6]
-        elif axis == 'y':
-            items = [1, 4, 7]
-        elif axis == 'z':
-            items = [2, 5, 8]
-        for p in _solid.points:
-            # point items are ((x, y, z), (x, y, z), (x, y, z))
-            for i in range(3):
-                p[items[i]] += (step * multiplier) + (padding * multiplier)
+        items = {'x': (0, 3, 6), 'y': (1, 4, 7), 'z': (2, 5, 8)}[axis]
+        # _solid.points.shape == [:, ((x, y, z), (x, y, z), (x, y, z))]
+        _solid.points[:, items] += (step * multiplier) + (padding * multiplier)
 
 
     def copy_obj(obj, dims, num_rows, num_cols, num_layers):
