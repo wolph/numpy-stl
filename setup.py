@@ -8,6 +8,11 @@ from setuptools.command.build_ext import build_ext
 
 setup_kwargs = {}
 
+
+def error(*lines):
+    for line in lines:
+        print(line, file=sys.stderr)
+
 try:
     import numpy
     from Cython import Build
@@ -20,10 +25,20 @@ try:
         ),
     ])
 except ImportError:
-    print('WARNING', file=sys.stderr)
-    print('Cython and Numpy is required for building extension.',
-          file=sys.stderr)
-    print('Falling back to pure Python implementation.', file=sys.stderr)
+    error('WARNING',
+          'Cython and Numpy is required for building extension.',
+          'Falling back to pure Python implementation.')
+
+
+try:
+    from stl import stl
+    if not hasattr(stl, 'BaseStl'):
+        error('ERROR',
+              'You have an incompatible stl package installed'
+              'Please run "pip uninstall -y stl" first')
+        sys.exit(1)
+except ImportError:
+    pass
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
