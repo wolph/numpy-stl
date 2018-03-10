@@ -106,23 +106,23 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
     >>> # Check item 0 (contains v0, v1 and v2)
     >>> mesh[0]
-    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
+    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
     >>> mesh.vectors[0]
-    array([[ 1.,  1.,  1.],
-           [ 2.,  2.,  2.],
-           [ 0.,  0.,  0.]], dtype=float32)
+    array([[1., 1., 1.],
+           [2., 2., 2.],
+           [0., 0., 0.]], dtype=float32)
     >>> mesh.v0[0]
-    array([ 1.,  1.,  1.], dtype=float32)
+    array([1., 1., 1.], dtype=float32)
     >>> mesh.points[0]
-    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
+    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
     >>> mesh.data[0]
-    ([ 0.,  0.,  0.], [[ 1.,  1.,  1.], [ 2.,  2.,  2.], [ 0.,  0.,  0.]], [0])
+    ([0., 0., 0.], [[1., 1., 1.], [2., 2., 2.], [0., 0., 0.]], [0])
     >>> mesh.x[0]
-    array([ 1.,  2.,  0.], dtype=float32)
+    array([1., 2., 0.], dtype=float32)
 
     >>> mesh[0] = 3
     >>> mesh[0]
-    array([ 3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.], dtype=float32)
+    array([3., 3., 3., 3., 3., 3., 3., 3., 3.], dtype=float32)
 
     >>> len(mesh) == len(list(mesh))
     True
@@ -316,11 +316,15 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def check(self):
-        if not numpy.any(self.normals.sum(axis=0) >= 1e-4):
+        if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
-            Your mesh is not closed, this method can't function correctly.
-            For more info: https://github.com/WoLpH/numpy-stl/issues/69
+            Your mesh is not closed, the mass methods will not function
+            correctly on this mesh.  For more info:
+            https://github.com/WoLpH/numpy-stl/issues/69
             '''.strip())
+            return False
+        else:
+            return True
 
     def get_mass_properties(self):
         '''

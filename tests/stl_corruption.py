@@ -1,4 +1,5 @@
 from __future__ import print_function
+import numpy
 import pytest
 import struct
 
@@ -127,3 +128,17 @@ def test_corrupt_binary_file(tmpdir, speedups):
         fh.seek(0)
         mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
+
+def test_duplicate_polygons():
+    data = numpy.zeros(3, dtype=mesh.Mesh.dtype)
+    data['vectors'][0] = numpy.array([[0, 0, 0],
+                                      [1, 0, 0],
+                                      [0, 1, 1.]])
+    data['vectors'][0] = numpy.array([[0, 0, 0],
+                                      [2, 0, 0],
+                                      [0, 2, 1.]])
+    data['vectors'][0] = numpy.array([[0, 0, 0],
+                                      [3, 0, 0],
+                                      [0, 3, 1.]])
+
+    assert not mesh.Mesh(data, remove_empty_areas=False).check()
