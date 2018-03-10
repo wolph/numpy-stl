@@ -13,22 +13,6 @@ def error(*lines):
     for line in lines:
         print(line, file=sys.stderr)
 
-try:
-    import numpy
-    from Cython import Build
-
-    setup_kwargs['ext_modules'] = Build.cythonize([
-        extension.Extension(
-            'stl._speedups',
-            ['stl/_speedups.pyx'],
-            include_dirs=[numpy.get_include()],
-        ),
-    ])
-except ImportError:
-    error('WARNING',
-          'Cython and Numpy is required for building extension.',
-          'Falling back to pure Python implementation.')
-
 
 try:
     from stl import stl
@@ -39,6 +23,25 @@ try:
         sys.exit(1)
 except ImportError:
     pass
+
+
+if sys.version_info.major == 2 or sys.platform.lower() != 'win32':
+    try:
+        import numpy
+        from Cython import Build
+
+        setup_kwargs['ext_modules'] = Build.cythonize([
+            extension.Extension(
+                'stl._speedups',
+                ['stl/_speedups.pyx'],
+                include_dirs=[numpy.get_include()],
+            ),
+        ])
+    except ImportError:
+        error('WARNING',
+            'Cython and Numpy is required for building extension.',
+            'Falling back to pure Python implementation.')
+
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
@@ -55,7 +58,6 @@ else:
 
 install_requires = [
     'numpy',
-    'nine',
     'python-utils>=1.6.2',
 ]
 
