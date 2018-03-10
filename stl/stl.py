@@ -214,7 +214,9 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
-        if _speedups and speedups:
+        # The speedups module is covered by travis but it can't be tested in
+        # all environments, this makes coverage checks easier
+        if _speedups and speedups:  # pragma: no cover
             return _speedups.ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
@@ -259,7 +261,7 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        if _speedups and self.speedups:
+        if _speedups and self.speedups:  # pragma: no cover
             _speedups.ascii_write(fh, b(name), self.data)
         else:
             def p(s, file):
