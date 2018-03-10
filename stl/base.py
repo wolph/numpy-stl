@@ -315,6 +315,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
+    def check(self):
+        if not numpy.any(self.normals.sum(axis=0) >= 1e-4):
+            self.warning('''
+            Your mesh is not closed, this method can't function correctly.
+            For more info: https://github.com/WoLpH/numpy-stl/issues/69
+            '''.strip())
+
     def get_mass_properties(self):
         '''
         Evaluate and return a tuple with the following elements:
@@ -325,6 +332,8 @@ class BaseMesh(logger.Logged, collections.Mapping):
         Documentation can be found here:
         http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
         '''
+        self.check()
+
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
