@@ -106,23 +106,23 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
     >>> # Check item 0 (contains v0, v1 and v2)
     >>> mesh[0]
-    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
-    >>> mesh.vectors[0] # doctest: +NORMALIZE_WHITESPACE
-    array([[ 1.,  1.,  1.],
-           [ 2.,  2.,  2.],
-           [ 0.,  0.,  0.]], dtype=float32)
+    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
+    >>> mesh.vectors[0]
+    array([[1., 1., 1.],
+           [2., 2., 2.],
+           [0., 0., 0.]], dtype=float32)
     >>> mesh.v0[0]
-    array([ 1.,  1.,  1.], dtype=float32)
+    array([1., 1., 1.], dtype=float32)
     >>> mesh.points[0]
-    array([ 1.,  1.,  1.,  2.,  2.,  2.,  0.,  0.,  0.], dtype=float32)
-    >>> mesh.data[0] # doctest: +NORMALIZE_WHITESPACE
-    ([ 0.,  0.,  0.], [[ 1.,  1.,  1.], [ 2.,  2.,  2.], [ 0.,  0.,  0.]], [0])
+    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
+    >>> mesh.data[0]
+    ([0., 0., 0.], [[1., 1., 1.], [2., 2., 2.], [0., 0., 0.]], [0])
     >>> mesh.x[0]
-    array([ 1.,  2.,  0.], dtype=float32)
+    array([1., 2., 0.], dtype=float32)
 
     >>> mesh[0] = 3
     >>> mesh[0]
-    array([ 3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.,  3.], dtype=float32)
+    array([3., 3., 3., 3., 3., 3., 3., 3., 3.], dtype=float32)
 
     >>> len(mesh) == len(list(mesh))
     True
@@ -315,6 +315,17 @@ class BaseMesh(logger.Logged, collections.Mapping):
         areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
+    def check(self):
+        if (self.normals.sum(axis=0) >= 1e-4).any():
+            self.warning('''
+            Your mesh is not closed, the mass methods will not function
+            correctly on this mesh.  For more info:
+            https://github.com/WoLpH/numpy-stl/issues/69
+            '''.strip())
+            return False
+        else:
+            return True
+
     def get_mass_properties(self):
         '''
         Evaluate and return a tuple with the following elements:
@@ -325,6 +336,8 @@ class BaseMesh(logger.Logged, collections.Mapping):
         Documentation can be found here:
         http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
         '''
+        self.check()
+
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
@@ -421,7 +434,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
                             [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                             [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
-    def rotate(self, axis, theta, point=None):
+    def rotate(self, axis, theta=0, point=None):
         '''
         Rotate the matrix over the given axis by the given theta (angle)
 
@@ -442,6 +455,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if not theta:
             return
 
+        self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
+
+    def rotate_using_matrix(self, rotation_matrix, point=None):
+        # No need to rotate if there is no actual rotation
+        if not rotation_matrix.any():
+            return
+
         if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
             point = numpy.asarray(point)
         elif point is None:
@@ -450,12 +470,6 @@ class BaseMesh(logger.Logged, collections.Mapping):
             point = numpy.asarray([point] * 3)
         else:
             raise TypeError('Incorrect type for point', point)
-
-        rotation_matrix = self.rotation_matrix(axis, theta)
-
-        # No need to rotate if there is no actual rotation
-        if not rotation_matrix.any():
-            return
 
         def _rotate(matrix):
             if point.any():
