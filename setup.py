@@ -39,8 +39,8 @@ if sys.version_info.major == 2 or sys.platform.lower() != 'win32':
         ])
     except ImportError:
         error('WARNING',
-            'Cython and Numpy is required for building extension.',
-            'Falling back to pure Python implementation.')
+              'Cython and Numpy is required for building extension.',
+              'Falling back to pure Python implementation.')
 
 
 # To prevent importing about and thereby breaking the coverage info we use this
