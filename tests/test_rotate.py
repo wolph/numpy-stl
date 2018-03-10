@@ -94,6 +94,27 @@ def test_rotation_over_point():
         mesh.rotate([1, 0, 0], math.radians(180), point='x')
 
 
+def test_double_rotation():
+    # Create a single face
+    data = numpy.zeros(1, dtype=Mesh.dtype)
+
+    data['vectors'][0] = numpy.array([[1, 0, 0],
+                                      [0, 1, 0],
+                                      [0, 0, 1]])
+
+    mesh = Mesh(data, remove_empty_areas=False)
+
+    rotation_matrix = mesh.rotation_matrix([1, 0, 0], math.radians(180))
+    combined_rotation_matrix = numpy.dot(rotation_matrix, rotation_matrix)
+
+    mesh.rotate_using_matrix(combined_rotation_matrix)
+    utils.array_equals(
+        mesh.vectors,
+        numpy.array([[[1., 0., 0.],
+                      [0., 1., 0.],
+                      [0., 0., 1.]]]))
+
+
 def test_no_rotation():
     # Create a single face
     data = numpy.zeros(1, dtype=Mesh.dtype)

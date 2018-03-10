@@ -434,7 +434,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
                             [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                             [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
-    def rotate(self, axis, theta, point=None):
+    def rotate(self, axis, theta=0, point=None):
         '''
         Rotate the matrix over the given axis by the given theta (angle)
 
@@ -455,6 +455,13 @@ class BaseMesh(logger.Logged, collections.Mapping):
         if not theta:
             return
 
+        self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
+
+    def rotate_using_matrix(self, rotation_matrix, point=None):
+        # No need to rotate if there is no actual rotation
+        if not rotation_matrix.any():
+            return
+
         if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
             point = numpy.asarray(point)
         elif point is None:
@@ -463,12 +470,6 @@ class BaseMesh(logger.Logged, collections.Mapping):
             point = numpy.asarray([point] * 3)
         else:
             raise TypeError('Incorrect type for point', point)
-
-        rotation_matrix = self.rotation_matrix(axis, theta)
-
-        # No need to rotate if there is no actual rotation
-        if not rotation_matrix.any():
-            return
 
         def _rotate(matrix):
             if point.any():
