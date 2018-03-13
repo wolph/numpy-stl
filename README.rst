@@ -70,6 +70,7 @@ Quickstart
     your_mesh.save('new_stl_file.stl')
 
 Plotting using `matplotlib`_ is equally easy:
+------------------------------------------------------------------------------
 
 .. code-block:: python
 
