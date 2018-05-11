@@ -33,12 +33,9 @@ def test_units_2d():
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
-    assert (mesh.areas == [.5, .5]).all()
-    assert (mesh.normals == [[0, 0, 1.],
-                             [0, 0, -1.]]).all()
-
-    assert (mesh.units == [[0, 0, 1],
-                           [0, 0, -1]]).all()
+    assert numpy.allclose(mesh.areas, [.5, .5])
+    assert numpy.allclose(mesh.normals, [[0, 0, 1.], [0, 0, -1.]])
+    assert numpy.allclose(mesh.units, [[0, 0, 1], [0, 0, -1]])
 
 
 def test_units_3d():
@@ -51,7 +48,7 @@ def test_units_3d():
     mesh.update_units()
 
     assert (mesh.areas - 2 ** .5) < 0.0001
-    assert (mesh.normals == [0, -1, 1]).all()
+    assert numpy.allclose(mesh.normals, [0, -1, 1])
 
     units = mesh.units[0]
     assert units[0] == 0
@@ -102,28 +99,28 @@ def test_duplicate_polygons():
     mesh = Mesh(data, remove_duplicate_polygons=True)
     assert mesh.data.size == 3
 
-    assert (mesh.vectors[0] == numpy.array([[1, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[1] == numpy.array([[2, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[2] == numpy.array([[0, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
+    assert numpy.allclose(mesh.vectors[0], numpy.array([[1, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
+    assert numpy.allclose(mesh.vectors[1], numpy.array([[2, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
+    assert numpy.allclose(mesh.vectors[2], numpy.array([[0, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
 
     mesh = Mesh(data, remove_duplicate_polygons=RemoveDuplicates.ALL)
     assert mesh.data.size == 3
 
-    assert (mesh.vectors[0] == numpy.array([[1, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[1] == numpy.array([[2, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[2] == numpy.array([[0, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
+    assert numpy.allclose(mesh.vectors[0], numpy.array([[1, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
+    assert numpy.allclose(mesh.vectors[1], numpy.array([[2, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
+    assert numpy.allclose(mesh.vectors[2], numpy.array([[0, 0, 0],
+                                                        [0, 0, 0],
+                                                        [0, 0, 0]]))
 
 
 def test_remove_all_duplicate_polygons():
