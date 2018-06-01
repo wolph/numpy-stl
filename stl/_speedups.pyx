@@ -1,11 +1,11 @@
 from libc.stdio cimport *                                                                
 from libc.string cimport memcpy, strcmp, strstr, strcpy
 
-IF UNAME_SYSNAME == u"Windows":
-    cdef extern from "io.h":
+IF UNAME_SYSNAME == 'Windows':
+    cdef extern from 'io.h':
         int dup(int fd)
 ELSE:
-    cdef extern from "unistd.h":
+    cdef extern from 'unistd.h':
         int dup(int fd)
 
 import numpy as np
@@ -45,17 +45,20 @@ cdef char* readline(State* state) except NULL:
     cdef char current;
     while True:
         if state.pos == state.size:
-
             if feof(state.fp):
                 if line_pos != 0:
                     state.line[line_pos] = '\0'
                     return state.line
-                raise RuntimeError(state.recoverable,
-                    "Unexpected EOF")
+                raise RuntimeError(state.recoverable, 'Unexpected EOF')
 
             state.size = fread(state.buf, 1, BUF_SIZE, state.fp)
             state.pos = 0
             state.recoverable = 0
+
+        if line_pos == LINE_SIZE:
+            raise RuntimeError(
+                state.recoverable, 'Line longer than %d, probably non-ascii' %
+                LINE_SIZE)
 
         current = state.buf[state.pos]
         state.pos += 1
@@ -97,9 +100,9 @@ def ascii_read(fh, buf):
 
         line = readline(&state)
 
-        if strstr(line, "solid") != line:
+        if strstr(line, 'solid') != line:
             raise RuntimeError(state.recoverable,
-                    "Solid name not found (%i:%s)" % (state.line_num, line))
+                    'Solid name not found (%i:%s)' % (state.line_num, line))
 
         strcpy(name, line+5)		
 
@@ -108,26 +111,26 @@ def ascii_read(fh, buf):
             line = readline(&state)
             line = state.line
 
-            if strstr(line, "endsolid") != NULL:
+            if strstr(line, 'endsolid') != NULL:
                 arr.resize(facet - <Facet*>arr.data, refcheck=False)
                 return (<object>name).strip(), arr
 
-            if strcmp(line, "color") == 0:
+            if strcmp(line, 'color') == 0:
                 readline(&state)
                 continue
-            elif sscanf(line, "%*s %*s %f %f %f",
+            elif sscanf(line, '%*s %*s %f %f %f',
                     facet.n, facet.n+1, facet.n+2) != 3:
                 raise RuntimeError(state.recoverable,
-                    "Can't read normals (%i:%s)" % (state.line_num, line))
+                    'Cannot read normals (%i:%s)' % (state.line_num, line))
 
             readline(&state) # outer loop
 
             for i in range(3):
                 line = readline(&state)
-                if sscanf(line, "%*s %f %f %f\n",
+                if sscanf(line, '%*s %f %f %f\n',
                         facet.v[i], facet.v[i]+1, facet.v[i]+2) != 3:
                     raise RuntimeError(state.recoverable,
-                        "Can't read vertex (%i:%s)" % (state.line_num, line))
+                        'Cannot read vertex (%i:%s)' % (state.line_num, line))
 
             readline(&state) # endloop
             readline(&state) # endfacet
@@ -156,13 +159,13 @@ def ascii_write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
         fprintf(fp, 'solid %s\n', <char*>name)
         while facet != end:
             fprintf(fp, 
-                "facet normal %f %f %f\n"
-                "  outer loop\n"
-                "    vertex %f %f %f\n"
-                "    vertex %f %f %f\n"
-                "    vertex %f %f %f\n"
-                "  endloop\n"
-                "endfacet\n",
+                'facet normal %f %f %f\n'
+                '  outer loop\n'
+                '    vertex %f %f %f\n'
+                '    vertex %f %f %f\n'
+                '    vertex %f %f %f\n'
+                '  endloop\n'
+                'endfacet\n',
                 facet.n[0], facet.n[1], facet.n[2],
                 facet.v[0][0], facet.v[0][1], facet.v[0][2],
                 facet.v[1][0], facet.v[1][1], facet.v[1][2],
