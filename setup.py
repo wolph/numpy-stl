@@ -42,16 +42,16 @@ if sys.version_info.major == 2 or sys.platform.lower() != 'win32':
               'Cython and Numpy is required for building extension.',
               'Falling back to pure Python implementation.')
 
-
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
 about = {}
-with open('stl/__about__.py') as fp:
-    exec(fp.read(), about)
+with open('stl/__about__.py') as fh:
+    exec(fh.read(), about)
 
 
 if os.path.isfile('README.rst'):
-    long_description = open('README.rst').read()
+    with open('README.rst') as fh:
+        long_description = fh.read()
 else:
     long_description = 'See http://pypi.python.org/pypi/%s/' % (
         about['__package_name__'])
