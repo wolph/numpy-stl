@@ -69,7 +69,24 @@ class BaseStl(base.BaseMesh):
 
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
+        is_ascii_file = header.startswith(b('solid'))
+        # Even if the 80 char header has "solid" in it, it might be still be a
+        # BIN file. A real ASCII file will have "endsolid" in the last line...
+        # but the last line could also have the name identifier string
+        # and we do not know how long that string is (or if there is a max)
+        # The smallest possible STL file is 186 bytes.
+        # So, we'll assume that no one is using ASCII files with identifier
+        # strings longer than 176, read in 176 + 10 ("endsolid", " ", and the
+        # EOL), and look for endsolid.
+        # There _has_ to be a smarter way to do this, but all the other ways
+        # I came up with required reading the whole file.
+        if is_ascii_file:
+            marker = fh.tell()
+            fh.seek(-186, io.SEEK_END)
+            tail = fh.read().lower()
+            is_ascii_file = tail.find(b('endsolid')) != -1
+            fh.seek(marker)
+        if mode in (AUTOMATIC, ASCII) and is_ascii_file:
             try:
                 name, data = cls._load_ascii(
                     fh, header, speedups=speedups)
