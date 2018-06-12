@@ -105,24 +105,33 @@ class BaseMesh(logger.Logged, collections.Mapping):
     >>> mesh.v1[0] += 2
 
     >>> # Check item 0 (contains v0, v1 and v2)
-    >>> mesh[0]
-    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
-    >>> mesh.vectors[0]
-    array([[1., 1., 1.],
-           [2., 2., 2.],
-           [0., 0., 0.]], dtype=float32)
-    >>> mesh.v0[0]
-    array([1., 1., 1.], dtype=float32)
-    >>> mesh.points[0]
-    array([1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=float32)
-    >>> mesh.data[0]
-    ([0., 0., 0.], [[1., 1., 1.], [2., 2., 2.], [0., 0., 0.]], [0])
-    >>> mesh.x[0]
-    array([1., 2., 0.], dtype=float32)
+    >>> assert numpy.array_equal(
+    ...     mesh[0],
+    ...     numpy.array([1., 1., 1., 2., 2., 2., 0., 0., 0.]))
+    >>> assert numpy.array_equal(
+    ... mesh.vectors[0],
+    ... numpy.array([[1., 1., 1.],
+    ...     [2., 2., 2.],
+    ...     [0., 0., 0.]]))
+    >>> assert numpy.array_equal(
+    ...     mesh.v0[0],
+    ...     numpy.array([1., 1., 1.]))
+    >>> assert numpy.array_equal(
+    ...     mesh.points[0],
+    ...     numpy.array([1., 1., 1., 2., 2., 2., 0., 0., 0.]))
+    >>> assert numpy.array_equal(
+    ...     mesh.data[0],
+    ...     numpy.array((
+    ...             [0., 0., 0.],
+    ...             [[1., 1., 1.], [2., 2., 2.], [0., 0., 0.]],
+    ...             [0]),
+    ...         dtype=BaseMesh.dtype))
+    >>> assert numpy.array_equal(mesh.x[0], numpy.array([1., 2., 0.]))
 
     >>> mesh[0] = 3
-    >>> mesh[0]
-    array([3., 3., 3., 3., 3., 3., 3., 3., 3.], dtype=float32)
+    >>> assert numpy.array_equal(
+    ...     mesh[0],
+    ...     numpy.array([3., 3., 3., 3., 3., 3., 3., 3., 3.]))
 
     >>> len(mesh) == len(list(mesh))
     True
