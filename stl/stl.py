@@ -214,7 +214,7 @@ class BaseStl(base.BaseMesh):
             except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
-                raise
+                return
 
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
