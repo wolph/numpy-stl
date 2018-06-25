@@ -74,6 +74,10 @@ class BaseStl(base.BaseMesh):
                 name, data = cls._load_ascii(
                     fh, header, speedups=speedups)
             except RuntimeError as exception:
+                # Disable fallbacks in ASCII mode
+                if mode is ASCII:
+                    raise
+
                 (recoverable, e) = exception.args
                 # If we didn't read beyond the header the stream is still
                 # readable through the binary reader
@@ -210,7 +214,7 @@ class BaseStl(base.BaseMesh):
             except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
-                raise
+                return
 
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
@@ -342,6 +346,9 @@ class BaseStl(base.BaseMesh):
                         mode=ASCII, speedups=True, **kwargs):
         '''Load multiple meshes from a STL file
 
+        Note: mode is hardcoded to ascii since binary stl files do not support
+        the multi format
+
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
         :param file fh: The file handle to open
@@ -359,7 +366,7 @@ class BaseStl(base.BaseMesh):
                 name, data = raw_data
                 yield cls(data, calculate_normals, name=name,
                           speedups=speedups, **kwargs)
-                raw_data = cls.load(fh, mode=mode,
+                raw_data = cls.load(fh, mode=ASCII,
                                     speedups=speedups)
 
         finally:

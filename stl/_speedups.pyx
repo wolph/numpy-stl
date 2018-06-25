@@ -118,7 +118,7 @@ def ascii_read(fh, buf):
             if strcmp(line, 'color') == 0:
                 readline(&state)
                 continue
-            elif sscanf(line, '%*s %*s %f %f %f',
+            elif sscanf(line, '%*s %*s %e %e %e',
                     facet.n, facet.n+1, facet.n+2) != 3:
                 raise RuntimeError(state.recoverable,
                     'Cannot read normals (%i:%s)' % (state.line_num, line))
@@ -127,7 +127,7 @@ def ascii_read(fh, buf):
 
             for i in range(3):
                 line = readline(&state)
-                if sscanf(line, '%*s %f %f %f\n',
+                if sscanf(line, '%*s %e %e %e',
                         facet.v[i], facet.v[i]+1, facet.v[i]+2) != 3:
                     raise RuntimeError(state.recoverable,
                         'Cannot read vertex (%i:%s)' % (state.line_num, line))
