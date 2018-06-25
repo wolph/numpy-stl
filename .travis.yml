@@ -13,6 +13,13 @@ env:
 - TOX_ENV=py34-nix
 - TOX_ENV=py35-nix
 - TOX_ENV=py36-nix
+matrix:
+  include:
+    - env: TOX_ENV=py37-nix
+      python: '3.7-dev'
+      install: pip install coveralls flake8 tox
+      # be more verbose not to timeout:
+      script: tox -vv -e $TOX_ENV
 install:
 - pip install -r tests/requirements.txt
 - pip install coveralls flake8 tox
