@@ -325,11 +325,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def is_closed(self):
-        '''
-        Check the mesh is closed or not
-        
-        :rtype: bool
-        '''
+        '''Check the mesh is closed or not'''
         if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
             Your mesh is not closed, the mass methods will not function
