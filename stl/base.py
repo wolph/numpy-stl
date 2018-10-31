@@ -324,7 +324,12 @@ class BaseMesh(logger.Logged, collections.Mapping):
         areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
-    def check(self):
+    def is_closed(self):
+        '''
+        Check the mesh is closed or not
+        
+        :rtype: bool
+        '''
         if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
             Your mesh is not closed, the mass methods will not function
@@ -345,7 +350,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         Documentation can be found here:
         http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
         '''
-        self.check()
+        self.is_closed()
 
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
