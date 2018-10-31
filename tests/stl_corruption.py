@@ -141,4 +141,4 @@ def test_duplicate_polygons():
                                       [3, 0, 0],
                                       [0, 3, 1.]])
 
-    assert not mesh.Mesh(data, remove_empty_areas=False).check()
+    assert not mesh.Mesh(data, remove_empty_areas=False).is_closed()
