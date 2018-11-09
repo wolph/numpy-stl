@@ -339,7 +339,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
             return False
         else:
             return True
-          
+
     def get_mass_properties(self):
         '''
         Evaluate and return a tuple with the following elements:
