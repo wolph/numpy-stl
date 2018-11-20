@@ -57,7 +57,10 @@ def test_scientific_notation(tmpdir, speedups):
 
 @pytest.mark.skipif(sys.platform.startswith('win'),
                     reason='Only makes sense on Unix')
-def test_use_with_qr_with_custom_locale_decimal_delimeter():
+def test_use_with_qr_with_custom_locale_decimal_delimeter(speedups):
+    if not speedups:
+        pytest.skip('Only makes sense with speedups')
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
     script_path = os.path.join(dir_path, 'qt-lc_numeric-reproducer')
 
