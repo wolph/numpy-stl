@@ -7,6 +7,7 @@ cython
 pep8
 py
 pyflakes
+PyQt5
 pytest
 pytest-cache
 pytest-cov

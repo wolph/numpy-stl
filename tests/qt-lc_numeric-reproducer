@@ -1,0 +1,18 @@
+from __future__ import print_function
+
+import os.path
+import sys
+
+from stl import mesh
+
+try:
+    from PySide2 import QtWidgets
+except ImportError:
+    from PyQt5 import QtWidgets
+
+app = QtWidgets.QApplication([])
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+stl_path = os.path.join(dir_path, 'stl_ascii/Star.stl')
+
+your_mesh = mesh.Mesh.from_file(stl_path, speedups=True)

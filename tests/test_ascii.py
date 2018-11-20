@@ -1,3 +1,8 @@
+import os
+import pytest
+import subprocess
+import sys
+
 from stl.utils import b
 from stl import mesh
 
@@ -50,3 +55,28 @@ def test_scientific_notation(tmpdir, speedups):
         assert test_mesh.name == b(name)
 
 
+@pytest.mark.skipif(sys.platform.startswith('win'),
+                    reason='Only makes sense on Unix')
+def test_use_with_qr_with_custom_locale_decimal_delimeter():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    script_path = os.path.join(dir_path, 'qt-lc_numeric-reproducer')
+
+    env = os.environ.copy()
+    env['LC_NUMERIC'] = 'cs_CZ.utf-8'
+
+    prefix = tuple()
+    if sys.platform.startswith('linux'):
+        prefix = ('xvfb-run', '-d')
+
+    cp = subprocess.run(prefix + (sys.executable, script_path),
+                        env=env, check=True,
+                        universal_newlines=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+
+    # Unable to read the file with speedups, retrying
+    # https://github.com/WoLpH/numpy-stl/issues/52
+    sys.stdout.write(cp.stdout)
+    sys.stderr.write(cp.stderr)
+    assert 'speedups' not in cp.stdout
+    assert 'speedups' not in cp.stderr
