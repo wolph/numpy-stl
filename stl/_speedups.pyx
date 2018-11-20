@@ -9,7 +9,7 @@ ELSE:
         int dup(int fd)
 
     cdef extern from 'locale.h':
-        struct locale_t:
+        ctypedef struct locale_t:
             pass
 
         locale_t uselocale(locale_t __dataset)
