@@ -69,7 +69,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
 
     prefix = tuple()
     if sys.platform.startswith('linux'):
-        prefix = ('xvfb-run', '-d')
+        prefix = ('xvfb-run', '-a')
 
     p = subprocess.Popen(prefix + (sys.executable, script_path),
                          env=env,
