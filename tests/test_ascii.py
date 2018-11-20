@@ -69,7 +69,7 @@ def test_use_with_qr_with_custom_locale_decimal_delimeter():
         prefix = ('xvfb-run', '-d')
 
     cp = subprocess.run(prefix + (sys.executable, script_path),
-                        env=env, check=True,
+                        env=env, check=False,
                         universal_newlines=True,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE)
@@ -78,5 +78,6 @@ def test_use_with_qr_with_custom_locale_decimal_delimeter():
     # https://github.com/WoLpH/numpy-stl/issues/52
     sys.stdout.write(cp.stdout)
     sys.stderr.write(cp.stderr)
-    assert 'speedups' not in cp.stdout
-    assert 'speedups' not in cp.stderr
+    assert 'File too large' not in cp.stdout
+    assert 'File too large' not in cp.stderr
+    assert cp.returncode == 0
