@@ -57,7 +57,7 @@ def test_scientific_notation(tmpdir, speedups):
 
 @pytest.mark.skipif(sys.platform.startswith('win'),
                     reason='Only makes sense on Unix')
-def test_use_with_qr_with_custom_locale_decimal_delimeter(speedups):
+def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
 
