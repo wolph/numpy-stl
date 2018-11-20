@@ -8,6 +8,17 @@ ELSE:
     cdef extern from 'unistd.h':
         int dup(int fd)
 
+    cdef extern from 'locale.h':
+        struct locale_t:
+            pass
+
+        locale_t uselocale(locale_t __dataset)
+        locale_t newlocale(int __category_mask, const char *__locale,
+                           locale_t __base)
+        void freelocale(locale_t __dataset)
+
+        enum: LC_NUMERIC_MASK
+
 import numpy as np
 cimport numpy as np
 
@@ -89,6 +100,13 @@ def ascii_read(fh, buf):
     cdef size_t pos = 0
     cdef State state 
 
+
+    IF UNAME_SYSNAME != 'Windows':
+        cdef locale_t new_locale = newlocale(LC_NUMERIC_MASK, 'C',
+                                             <locale_t>NULL)
+        cdef locale_t old_locale = uselocale(new_locale)
+        freelocale(new_locale)
+
     try:
         state.size = len(buf)
         memcpy(state.buf, <char*> buf, state.size)
@@ -146,6 +164,11 @@ def ascii_read(fh, buf):
             pos = ftell(state.fp) - state.size + state.pos
             fclose(state.fp)
             fh.seek(pos, SEEK_SET)
+
+    IF UNAME_SYSNAME != 'Windows':
+        uselocale(old_locale)
+        freelocale(old_locale)
+
 
 def ascii_write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
     cdef FILE* fp
