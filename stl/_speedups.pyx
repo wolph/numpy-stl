@@ -8,6 +8,7 @@ ELSE:
     cdef extern from 'unistd.h':
         int dup(int fd)
 
+IF UNAME_SYSNAME == 'Linux':
     cdef extern from 'locale.h':
         ctypedef struct locale_t:
             pass
@@ -101,7 +102,7 @@ def ascii_read(fh, buf):
     cdef State state 
 
 
-    IF UNAME_SYSNAME != 'Windows':
+    IF UNAME_SYSNAME == 'Linux':
         cdef locale_t new_locale = newlocale(LC_NUMERIC_MASK, 'C',
                                              <locale_t>NULL)
         cdef locale_t old_locale = uselocale(new_locale)
@@ -165,7 +166,7 @@ def ascii_read(fh, buf):
             fclose(state.fp)
             fh.seek(pos, SEEK_SET)
 
-    IF UNAME_SYSNAME != 'Windows':
+    IF UNAME_SYSNAME == 'Linux':
         uselocale(old_locale)
         freelocale(old_locale)
 
