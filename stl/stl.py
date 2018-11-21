@@ -6,7 +6,6 @@ import os
 import enum
 import numpy
 import struct
-import logging
 import datetime
 
 from . import base
@@ -18,9 +17,6 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
-
-
-logger = logging.getLogger(__name__)
 
 
 class Mode(enum.IntEnum):
@@ -328,15 +324,9 @@ class BaseStl(base.BaseMesh):
             name, data = cls.load(
                 fh, mode=mode, speedups=speedups)
         else:
-            try:
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=mode, speedups=speedups)
-            except AssertionError:  # pragma: no cover
-                logger.warn('Unable to read the file with speedups, retrying')
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=Mode.ASCII, speedups=False)
+            with open(filename, 'rb') as fh:
+                name, data = cls.load(
+                    fh, mode=mode, speedups=speedups)
 
         return cls(data, calculate_normals, name=name,
                    speedups=speedups, **kwargs)

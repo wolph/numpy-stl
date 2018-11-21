@@ -1,3 +1,8 @@
+import os
+import pytest
+import subprocess
+import sys
+
 from stl.utils import b
 from stl import mesh
 
@@ -50,3 +55,37 @@ def test_scientific_notation(tmpdir, speedups):
         assert test_mesh.name == b(name)
 
 
+@pytest.mark.skipif(sys.platform.startswith('win'),
+                    reason='Only makes sense on Unix')
+def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
+    if not speedups:
+        pytest.skip('Only makes sense with speedups')
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    script_path = os.path.join(dir_path, 'qt-lc_numeric-reproducer')
+
+    env = os.environ.copy()
+    env['LC_NUMERIC'] = 'cs_CZ.utf-8'
+
+    prefix = tuple()
+    if sys.platform.startswith('linux'):
+        prefix = ('xvfb-run', '-a')
+
+    p = subprocess.Popen(prefix + (sys.executable, script_path),
+                         env=env,
+                         universal_newlines=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+
+    # Unable to read the file with speedups, retrying
+    # https://github.com/WoLpH/numpy-stl/issues/52
+    sys.stdout.write(out)
+    sys.stderr.write(err)
+
+    if 'No module named' in out:
+        pytest.skip('Optional dependency PyQt5 or PySide2 not installed')
+
+    assert 'File too large' not in out
+    assert 'File too large' not in err
+    assert p.returncode == 0
