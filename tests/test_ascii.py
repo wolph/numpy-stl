@@ -1,7 +1,8 @@
 import os
-import pytest
-import subprocess
 import sys
+import pytest
+import warnings
+import subprocess
 
 from stl.utils import b
 from stl import mesh
@@ -60,6 +61,19 @@ def test_scientific_notation(tmpdir, speedups):
 def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
+
+    try:
+        from PySide2 import QtWidgets
+    except ImportError:
+        try:
+            from PyQt5 import QtWidgets
+        except ImportError:
+            warnings.warn(
+                'Unable to import PySide2/PyQt5, skipping locale tests',
+                warnings.ImportWarning,
+            )
+            return
+    assert QtWidgets
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     script_path = os.path.join(dir_path, 'qt-lc_numeric-reproducer')

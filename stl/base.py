@@ -4,7 +4,10 @@ import enum
 import math
 import numpy
 import logging
-import collections
+try:  # pragma: no cover
+    from collections import abc
+except ImportError:  # pragma: no cover
+    import collections as abc
 
 from python_utils import logger
 
@@ -74,7 +77,7 @@ def logged(class_):
 
 
 @logged
-class BaseMesh(logger.Logged, collections.Mapping):
+class BaseMesh(logger.Logged, abc.Mapping):
     '''
     Mesh object with easy access to the vectors through v0, v1 and v2.
     The normals, areas, min, max and units are calculated automatically.
