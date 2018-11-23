@@ -6,7 +6,6 @@ import os
 import enum
 import numpy
 import struct
-import logging
 import datetime
 
 from . import base
@@ -18,9 +17,6 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
-
-
-logger = logging.getLogger(__name__)
 
 
 class Mode(enum.IntEnum):
@@ -321,22 +317,16 @@ class BaseStl(base.BaseMesh):
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
         :param file fh: The file handle to open
-        :param dict \**kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
 
         '''
         if fh:
             name, data = cls.load(
                 fh, mode=mode, speedups=speedups)
         else:
-            try:
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=mode, speedups=speedups)
-            except AssertionError:  # pragma: no cover
-                logger.warn('Unable to read the file with speedups, retrying')
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=Mode.ASCII, speedups=False)
+            with open(filename, 'rb') as fh:
+                name, data = cls.load(
+                    fh, mode=mode, speedups=speedups)
 
         return cls(data, calculate_normals, name=name,
                    speedups=speedups, **kwargs)
@@ -352,7 +342,7 @@ class BaseStl(base.BaseMesh):
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
         :param file fh: The file handle to open
-        :param dict \**kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
         '''
         if fh:
             close = False
