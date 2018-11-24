@@ -70,7 +70,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
         except ImportError:
             warnings.warn(
                 'Unable to import PySide2/PyQt5, skipping locale tests',
-                warnings.ImportWarning,
+                warnings.Warning,
             )
             return
     assert QtWidgets
