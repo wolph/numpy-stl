@@ -70,9 +70,9 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
         except ImportError:
             warnings.warn(
                 'Unable to import PySide2/PyQt5, skipping locale tests',
-                warnings.Warning,
+                ImportWarning,
             )
-            return
+            pytest.skip('PySide2/PyQt5 missing')
     assert QtWidgets
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -96,9 +96,6 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     # https://github.com/WoLpH/numpy-stl/issues/52
     sys.stdout.write(out)
     sys.stderr.write(err)
-
-    if 'No module named' in out:
-        pytest.skip('Optional dependency PyQt5 or PySide2 not installed')
 
     assert 'File too large' not in out
     assert 'File too large' not in err
