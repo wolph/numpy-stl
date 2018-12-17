@@ -47,10 +47,10 @@ class RemoveDuplicates(enum.Enum):
 
     @classmethod
     def map(cls, value):
-        if value and value in cls:
-            pass
-        elif value:
+        if value is True:
             value = cls.SINGLE
+        elif value and value in cls:
+            pass
         else:
             value = cls.NONE
 
