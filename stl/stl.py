@@ -327,7 +327,7 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def from_multi_file(cls, filename, calculate_normals=True, fh=None,
-                        mode=ASCII, speedups=True, **kwargs):
+                        mode=Mode.ASCII, speedups=True, **kwargs):
         '''Load multiple meshes from a STL file
 
         Note: mode is hardcoded to ascii since binary stl files do not support
@@ -356,6 +356,31 @@ class BaseStl(base.BaseMesh):
         finally:
             if close:
                 fh.close()
+
+    @classmethod
+    def from_files(cls, filenames, calculate_normals=True, mode=Mode.AUTOMATIC,
+                   speedups=True, **kwargs):
+        '''Load multiple meshes from a STL file
+
+        Note: mode is hardcoded to ascii since binary stl files do not support
+        the multi format
+
+        :param list(str) filenames: The files to load
+        :param bool calculate_normals: Whether to update the normals
+        :param file fh: The file handle to open
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        '''
+        meshes = []
+        for filename in filenames:
+            meshes.append(cls.from_file(
+                filename,
+                calculate_normals=calculate_normals,
+                mode=mode,
+                speedups=speedups,
+                **kwargs))
+
+        data = numpy.concatenate([mesh.data for mesh in meshes])
+        return cls(data, calculate_normals=calculate_normals, **kwargs)
 
 
 StlMesh = BaseStl.from_file
