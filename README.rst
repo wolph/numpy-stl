@@ -15,9 +15,6 @@ numpy-stl
     :target: https://coveralls.io/r/WoLpH/numpy-stl?branch=master
 
 .. image:: https://img.shields.io/pypi/pyversions/mt-940.svg
-    :alt: Supported Python versions 
-    :target: https://crate.io/packages/mt-940?version=latest
-
 
 Simple library to make working with STL files (and 3D objects in general) fast
 and easy.
