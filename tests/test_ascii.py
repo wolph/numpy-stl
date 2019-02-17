@@ -62,6 +62,10 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
 
+    venv = os.environ.get('VIRTUAL_ENV', '')
+    if (3, 6) == sys.version_info[:2] and venv.startswith('/home/travis/'):
+        pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
+
     try:
         from PySide2 import QtWidgets
     except ImportError:

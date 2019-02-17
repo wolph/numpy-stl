@@ -61,3 +61,15 @@ def test_multiple_stl_file(tmpdir, speedups):
         assert i == 9
 
 
+def test_multiple_stl_files(tmpdir, speedups):
+    tmp_file = tmpdir.join('tmp.stl')
+    with tmp_file.open('wb+') as fh:
+        fh.write(_STL_FILE)
+        fh.seek(0)
+
+        filenames = [str(tmp_file)] * 10
+
+        m = mesh.Mesh.from_files(filenames, speedups=speedups)
+        assert m.data.size == 10
+
+
