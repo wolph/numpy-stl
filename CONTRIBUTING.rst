@@ -36,8 +36,8 @@ is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-Python Progressbar could always use more documentation, whether as part of the 
-official Python Progressbar docs, in docstrings, or even on the web in blog posts,
+numpy-stl could always use more documentation, whether as part of the 
+official numpy-stl docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
 Submit Feedback
