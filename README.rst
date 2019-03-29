@@ -131,7 +131,7 @@ Modifying Mesh objects
     data['vectors'][1] = numpy.array([[1, 0, 1],
                                       [0, 1, 1],
                                       [1, 1, 1]])
-    # Right face
+    # Front face
     data['vectors'][2] = numpy.array([[1, 0, 0],
                                       [1, 0, 1],
                                       [1, 1, 0]])
@@ -210,7 +210,7 @@ Extending Mesh objects
     data['vectors'][1] = numpy.array([[1, 0, 1],
                                       [0, 1, 1],
                                       [1, 1, 1]])
-    # Right face
+    # Front face
     data['vectors'][2] = numpy.array([[1, 0, 0],
                                       [1, 0, 1],
                                       [1, 1, 0]])
