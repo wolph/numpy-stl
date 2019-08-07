@@ -33,8 +33,10 @@ def test_units_2d():
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
-    assert numpy.allclose(mesh.areas, [.5, .5])
-    assert numpy.allclose(mesh.normals, [[0, 0, 1.], [0, 0, -1.]])
+    assert numpy.allclose(mesh.areas, [0.35355338, 0.35355338])
+    assert numpy.allclose(mesh.normals, [
+                          [0.0, 0.0, 0.70710677],
+                          [0.0, 0.0, -0.70710677]])
     assert numpy.allclose(mesh.units, [[0, 0, 1], [0, 0, -1]])
 
 
@@ -48,7 +50,7 @@ def test_units_3d():
     mesh.update_units()
 
     assert (mesh.areas - 2 ** .5) < 0.0001
-    assert numpy.allclose(mesh.normals, [0, -1, 1])
+    assert numpy.allclose(mesh.normals, [0.0, -0.70710677, 0.70710677])
 
     units = mesh.units[0]
     assert units[0] == 0
