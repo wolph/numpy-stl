@@ -432,7 +432,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         axis = numpy.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis.any():
-            return numpy.zeros((3, 3))
+            return numpy.identity(3)
 
         theta = 0.5 * numpy.asarray(theta)
 
@@ -475,8 +475,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
         self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
 
     def rotate_using_matrix(self, rotation_matrix, point=None):
+        identity = numpy.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
-        if not rotation_matrix.any():
+        if not rotation_matrix.any() or (identity == rotation_matrix).all():
             return
 
         if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
