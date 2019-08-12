@@ -317,8 +317,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
         '''Update the normals for all points'''
         normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
         normal = numpy.linalg.norm(normals, axis=1)
-        if normal:
-            normals /= normal[:, None]
+        non_zero = normal > 0
+        if non_zero.any():
+            normals[non_zero] /= normal[non_zero][:, None]
         self.normals[:] = normals
 
     def update_min(self):
