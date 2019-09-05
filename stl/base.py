@@ -488,6 +488,10 @@ class BaseMesh(logger.Logged, collections.Mapping):
                 # Simply apply the rotation
                 return matrix.dot(rotation_matrix)
 
+        # Rotate the normals
+        self.normals[:] = _rotate(self.normals[:])
+
+        # Rotate the vectors
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
 
