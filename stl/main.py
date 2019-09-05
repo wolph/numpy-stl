@@ -76,7 +76,7 @@ def to_ascii():
 
 
 def to_binary():
-    parser = _get_parser('Convert STL files to ASCII (text) format')
+    parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
     name = _get_name(args)
     stl_file = stl.StlMesh(filename=name, fh=args.infile,

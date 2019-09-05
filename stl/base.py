@@ -4,7 +4,10 @@ import enum
 import math
 import numpy
 import logging
-import collections
+try:  # pragma: no cover
+    from collections import abc
+except ImportError:  # pragma: no cover
+    import collections as abc
 
 from python_utils import logger
 
@@ -44,10 +47,10 @@ class RemoveDuplicates(enum.Enum):
 
     @classmethod
     def map(cls, value):
-        if value and value in cls:
-            pass
-        elif value:
+        if value is True:
             value = cls.SINGLE
+        elif value and value in cls:
+            pass
         else:
             value = cls.NONE
 
@@ -74,7 +77,7 @@ def logged(class_):
 
 
 @logged
-class BaseMesh(logger.Logged, collections.Mapping):
+class BaseMesh(logger.Logged, abc.Mapping):
     '''
     Mesh object with easy access to the vectors through v0, v1 and v2.
     The normals, areas, min, max and units are calculated automatically.
@@ -312,7 +315,12 @@ class BaseMesh(logger.Logged, collections.Mapping):
 
     def update_normals(self):
         '''Update the normals for all points'''
-        self.normals[:] = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+        normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+        normal = numpy.linalg.norm(normals, axis=1)
+        non_zero = normal > 0
+        if non_zero.any():
+            normals[non_zero] /= normal[non_zero][:, None]
+        self.normals[:] = normals
 
     def update_min(self):
         self._min = self.vectors.min(axis=(0, 1))
@@ -325,6 +333,11 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.areas = areas.reshape((areas.size, 1))
 
     def check(self):
+        '''Check the mesh is valid or not'''
+        return self.is_closed()
+
+    def is_closed(self):
+        """Check the mesh is closed or not"""
         if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
             Your mesh is not closed, the mass methods will not function
@@ -424,7 +437,7 @@ class BaseMesh(logger.Logged, collections.Mapping):
         axis = numpy.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis.any():
-            return numpy.zeros((3, 3))
+            return numpy.identity(3)
 
         theta = 0.5 * numpy.asarray(theta)
 
@@ -467,8 +480,9 @@ class BaseMesh(logger.Logged, collections.Mapping):
         self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
 
     def rotate_using_matrix(self, rotation_matrix, point=None):
+        identity = numpy.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
-        if not rotation_matrix.any():
+        if not rotation_matrix.any() or (identity == rotation_matrix).all():
             return
 
         if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:

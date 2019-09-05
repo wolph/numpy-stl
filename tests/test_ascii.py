@@ -1,3 +1,9 @@
+import os
+import sys
+import pytest
+import warnings
+import subprocess
+
 from stl.utils import b
 from stl import mesh
 
@@ -50,3 +56,51 @@ def test_scientific_notation(tmpdir, speedups):
         assert test_mesh.name == b(name)
 
 
+@pytest.mark.skipif(sys.platform.startswith('win'),
+                    reason='Only makes sense on Unix')
+def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
+    if not speedups:
+        pytest.skip('Only makes sense with speedups')
+
+    venv = os.environ.get('VIRTUAL_ENV', '')
+    if (3, 6) == sys.version_info[:2] and venv.startswith('/home/travis/'):
+        pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
+
+    try:
+        from PySide2 import QtWidgets
+    except ImportError:
+        try:
+            from PyQt5 import QtWidgets
+        except ImportError:
+            warnings.warn(
+                'Unable to import PySide2/PyQt5, skipping locale tests',
+                ImportWarning,
+            )
+            pytest.skip('PySide2/PyQt5 missing')
+    assert QtWidgets
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    script_path = os.path.join(dir_path, 'qt-lc_numeric-reproducer')
+
+    env = os.environ.copy()
+    env['LC_NUMERIC'] = 'cs_CZ.utf-8'
+
+    prefix = tuple()
+    if sys.platform.startswith('linux'):
+        prefix = ('xvfb-run', '-a')
+
+    p = subprocess.Popen(prefix + (sys.executable, script_path),
+                         env=env,
+                         universal_newlines=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+
+    # Unable to read the file with speedups, retrying
+    # https://github.com/WoLpH/numpy-stl/issues/52
+    sys.stdout.write(out)
+    sys.stderr.write(err)
+
+    assert 'File too large' not in out
+    assert 'File too large' not in err
+    assert p.returncode == 0

@@ -6,7 +6,6 @@ import os
 import enum
 import numpy
 import struct
-import logging
 import datetime
 
 from . import base
@@ -18,9 +17,6 @@ try:
     from . import _speedups
 except ImportError:  # pragma: no cover
     _speedups = None
-
-
-logger = logging.getLogger(__name__)
 
 
 class Mode(enum.IntEnum):
@@ -181,12 +177,6 @@ class BaseStl(base.BaseMesh):
                 return b(line)
 
         line = get()
-        if not line.startswith(b('solid ')) and line.startswith(b('solid')):
-            cls.warning('ASCII STL files should start with solid <space>. '
-                        'The application that produced this STL file may be '
-                        'faulty, please report this error. The erroneous '
-                        'line: %r', line)
-
         if not lines:
             raise RuntimeError(recoverable[0],
                                'No lines found, impossible to read')
@@ -214,7 +204,7 @@ class BaseStl(base.BaseMesh):
             except AssertionError as e:  # pragma: no cover
                 raise RuntimeError(recoverable[0], e)
             except StopIteration:
-                raise
+                return
 
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
@@ -321,29 +311,23 @@ class BaseStl(base.BaseMesh):
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
         :param file fh: The file handle to open
-        :param dict \**kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
 
         '''
         if fh:
             name, data = cls.load(
                 fh, mode=mode, speedups=speedups)
         else:
-            try:
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=mode, speedups=speedups)
-            except AssertionError:  # pragma: no cover
-                logger.warn('Unable to read the file with speedups, retrying')
-                with open(filename, 'rb') as fh:
-                    name, data = cls.load(
-                        fh, mode=Mode.ASCII, speedups=False)
+            with open(filename, 'rb') as fh:
+                name, data = cls.load(
+                    fh, mode=mode, speedups=speedups)
 
         return cls(data, calculate_normals, name=name,
                    speedups=speedups, **kwargs)
 
     @classmethod
     def from_multi_file(cls, filename, calculate_normals=True, fh=None,
-                        mode=ASCII, speedups=True, **kwargs):
+                        mode=Mode.ASCII, speedups=True, **kwargs):
         '''Load multiple meshes from a STL file
 
         Note: mode is hardcoded to ascii since binary stl files do not support
@@ -352,7 +336,7 @@ class BaseStl(base.BaseMesh):
         :param str filename: The file to load
         :param bool calculate_normals: Whether to update the normals
         :param file fh: The file handle to open
-        :param dict \**kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
         '''
         if fh:
             close = False
@@ -372,6 +356,31 @@ class BaseStl(base.BaseMesh):
         finally:
             if close:
                 fh.close()
+
+    @classmethod
+    def from_files(cls, filenames, calculate_normals=True, mode=Mode.AUTOMATIC,
+                   speedups=True, **kwargs):
+        '''Load multiple meshes from a STL file
+
+        Note: mode is hardcoded to ascii since binary stl files do not support
+        the multi format
+
+        :param list(str) filenames: The files to load
+        :param bool calculate_normals: Whether to update the normals
+        :param file fh: The file handle to open
+        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        '''
+        meshes = []
+        for filename in filenames:
+            meshes.append(cls.from_file(
+                filename,
+                calculate_normals=calculate_normals,
+                mode=mode,
+                speedups=speedups,
+                **kwargs))
+
+        data = numpy.concatenate([mesh.data for mesh in meshes])
+        return cls(data, calculate_normals=calculate_normals, **kwargs)
 
 
 StlMesh = BaseStl.from_file

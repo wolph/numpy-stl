@@ -1,6 +1,21 @@
 numpy-stl
 ==============================================================================
 
+
+.. image:: https://travis-ci.org/WoLpH/numpy-stl.svg?branch=master
+    :alt: numpy-stl test status 
+    :target: https://travis-ci.org/WoLpH/numpy-stl
+
+.. image:: https://badge.fury.io/py/mt-940.svg
+    :alt: numpy-stl Pypi version 
+    :target: https://pypi.python.org/pypi/mt-940
+
+.. image:: https://coveralls.io/repos/WoLpH/numpy-stl/badge.svg?branch=master
+    :alt: numpy-stl code coverage 
+    :target: https://coveralls.io/r/WoLpH/numpy-stl?branch=master
+
+.. image:: https://img.shields.io/pypi/pyversions/mt-940.svg
+
 Simple library to make working with STL files (and 3D objects in general) fast
 and easy.
 
@@ -116,7 +131,7 @@ Modifying Mesh objects
     data['vectors'][1] = numpy.array([[1, 0, 1],
                                       [0, 1, 1],
                                       [1, 1, 1]])
-    # Right face
+    # Front face
     data['vectors'][2] = numpy.array([[1, 0, 0],
                                       [1, 0, 1],
                                       [1, 1, 0]])
@@ -195,7 +210,7 @@ Extending Mesh objects
     data['vectors'][1] = numpy.array([[1, 0, 1],
                                       [0, 1, 1],
                                       [1, 1, 1]])
-    # Right face
+    # Front face
     data['vectors'][2] = numpy.array([[1, 0, 0],
                                       [1, 0, 1],
                                       [1, 1, 0]])
