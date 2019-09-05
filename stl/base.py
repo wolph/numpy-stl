@@ -336,7 +336,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         '''Check the mesh is valid or not'''
         return self.is_closed()
 
-    def is_closed(self):
+    def is_closed(self):  # pragma: no cover
         """Check the mesh is closed or not"""
         if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
