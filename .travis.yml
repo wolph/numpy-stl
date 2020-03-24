@@ -13,7 +13,7 @@ env:
 - TOX_ENV=py27-nix
 - TOX_ENV=py34-nix
 - TOX_ENV=py35-nix
-- TOX_ENV=py36-nix
+# - TOX_ENV=py36-nix
 - TOX_ENV=py37-nix
 - TOX_ENV=py38-nix
 - TOX_ENV=py39-nix
