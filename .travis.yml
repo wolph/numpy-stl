@@ -1,3 +1,4 @@
+dist: xenial
 sudo: false
 language: python
 python: 3.6
@@ -13,6 +14,9 @@ env:
 - TOX_ENV=py34-nix
 - TOX_ENV=py35-nix
 - TOX_ENV=py36-nix
+- TOX_ENV=py37-nix
+- TOX_ENV=py38-nix
+- TOX_ENV=py39-nix
 matrix:
   include:
     - env: TOX_ENV=py37-nix
