@@ -43,6 +43,8 @@ HEADER_SIZE = 80
 COUNT_SIZE = 4
 #: The maximum amount of triangles we can read from binary files
 MAX_COUNT = 1e8
+#: The header format, can be safely monkeypatched. Limited to 80 characters
+HEADER_FORMAT = '{package_name} ({version}) {now} {name}'
 
 
 class BaseStl(base.BaseMesh):
@@ -275,17 +277,20 @@ class BaseStl(base.BaseMesh):
 
             p('endsolid %s' % name, file=fh)
 
-    def _write_binary(self, fh, name):
-        # Create the header
-        header = '%s (%s) %s %s' % (
-            metadata.__package_name__,
-            metadata.__version__,
-            datetime.datetime.now(),
-            name,
+    def get_header(self, name):
+        # Format the header
+        header = HEADER_FORMAT.format(
+            package_name=metadata.__package_name__,
+            version=metadata.__version__,
+            now=datetime.datetime.now(),
+            name=name,
         )
 
         # Make it exactly 80 characters
-        header = header[:80].ljust(80, ' ')
+        return header[:80].ljust(80, ' ')
+
+    def _write_binary(self, fh, name):
+        header = self.get_header(name)
         packed = struct.pack(s('<i'), self.data.size)
 
         if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
