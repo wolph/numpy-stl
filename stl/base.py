@@ -316,9 +316,10 @@ class BaseMesh(logger.Logged, abc.Mapping):
     def update_normals(self):
         '''Update the normals for all points'''
         normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
-        normal = numpy.linalg.norm(normals)
-        if normal:
-            normals /= normal
+        normal = numpy.linalg.norm(normals, axis=1)
+        non_zero = normal > 0
+        if non_zero.any():
+            normals[non_zero] /= normal[non_zero][:, None]
         self.normals[:] = normals
 
     def update_min(self):
@@ -335,7 +336,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         '''Check the mesh is valid or not'''
         return self.is_closed()
 
-    def is_closed(self):
+    def is_closed(self):  # pragma: no cover
         """Check the mesh is closed or not"""
         if (self.normals.sum(axis=0) >= 1e-4).any():
             self.warning('''
@@ -436,7 +437,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         axis = numpy.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis.any():
-            return numpy.zeros((3, 3))
+            return numpy.identity(3)
 
         theta = 0.5 * numpy.asarray(theta)
 
@@ -479,8 +480,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
         self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
 
     def rotate_using_matrix(self, rotation_matrix, point=None):
+        identity = numpy.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
-        if not rotation_matrix.any():
+        if not rotation_matrix.any() or (identity == rotation_matrix).all():
             return
 
         if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
@@ -500,6 +502,10 @@ class BaseMesh(logger.Logged, abc.Mapping):
                 # Simply apply the rotation
                 return matrix.dot(rotation_matrix)
 
+        # Rotate the normals
+        self.normals[:] = _rotate(self.normals[:])
+
+        # Rotate the vectors
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
 

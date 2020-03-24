@@ -336,23 +336,12 @@ Combining multiple STL files
     # find the max dimensions, so we can know the bounding box, getting the height,
     # width, length (because these are the step size)...
     def find_mins_maxs(obj):
-        minx = maxx = miny = maxy = minz = maxz = None
-        for p in obj.points:
-            # p contains (x, y, z)
-            if minx is None:
-                minx = p[stl.Dimension.X]
-                maxx = p[stl.Dimension.X]
-                miny = p[stl.Dimension.Y]
-                maxy = p[stl.Dimension.Y]
-                minz = p[stl.Dimension.Z]
-                maxz = p[stl.Dimension.Z]
-            else:
-                maxx = max(p[stl.Dimension.X], maxx)
-                minx = min(p[stl.Dimension.X], minx)
-                maxy = max(p[stl.Dimension.Y], maxy)
-                miny = min(p[stl.Dimension.Y], miny)
-                maxz = max(p[stl.Dimension.Z], maxz)
-                minz = min(p[stl.Dimension.Z], minz)
+        minx = obj.x.min()
+        maxx = obj.x.max()
+        miny = obj.y.min()
+        maxy = obj.y.max()
+        minz = obj.z.min()
+        maxz = obj.z.max()
         return minx, maxx, miny, maxy, minz, maxz
 
 

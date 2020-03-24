@@ -5,6 +5,7 @@ import sys
 import warnings
 from setuptools import setup, extension
 from setuptools.command.build_ext import build_ext
+from setuptools.command.test import test as TestCommand
 
 setup_kwargs = {}
 
@@ -23,6 +24,19 @@ try:
         sys.exit(1)
 except ImportError:
     pass
+
+
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
 
 
 if sys.version_info.major == 2 or sys.platform.lower() != 'win32':
@@ -68,12 +82,7 @@ except ImportError:
     install_requires.append('enum34')
 
 
-if os.environ.get('PYTEST_RUNNER', '').lower() == 'false':
-    tests_require = []
-    setup_requires = []
-else:
-    tests_require = ['pytest']
-    setup_requires = ['pytest-runner']
+tests_require = ['pytest']
 
 
 class BuildExt(build_ext):
@@ -101,7 +110,6 @@ if __name__ == '__main__':
         packages=['stl'],
         long_description=long_description,
         tests_require=tests_require,
-        setup_requires=setup_requires,
         entry_points={
             'console_scripts': [
                 'stl = %s.main:main' % about['__import_name__'],
@@ -128,6 +136,7 @@ if __name__ == '__main__':
         install_requires=install_requires,
         cmdclass=dict(
             build_ext=BuildExt,
+            test=PyTest,
         ),
         **setup_kwargs
     )

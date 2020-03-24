@@ -43,6 +43,8 @@ HEADER_SIZE = 80
 COUNT_SIZE = 4
 #: The maximum amount of triangles we can read from binary files
 MAX_COUNT = 1e8
+#: The header format, can be safely monkeypatched. Limited to 80 characters
+HEADER_FORMAT = '{package_name} ({version}) {now} {name}'
 
 
 class BaseStl(base.BaseMesh):
@@ -56,7 +58,7 @@ class BaseStl(base.BaseMesh):
         :param file fh: The file handle to open
         :param int mode: Automatically detect the filetype or force binary
         '''
-        header = fh.read(HEADER_SIZE).lower()
+        header = fh.read(HEADER_SIZE)
         if not header:
             return
 
@@ -65,7 +67,7 @@ class BaseStl(base.BaseMesh):
 
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
+        if mode in (AUTOMATIC, ASCII) and header[:5].lower() == b('solid'):
             try:
                 name, data = cls._load_ascii(
                     fh, header, speedups=speedups)
@@ -136,20 +138,22 @@ class BaseStl(base.BaseMesh):
         lines = b(header).split(b('\n'))
 
         def get(prefix=''):
-            prefix = b(prefix)
+            prefix = b(prefix).lower()
 
             if lines:
-                line = lines.pop(0)
+                raw_line = lines.pop(0)
             else:
                 raise RuntimeError(recoverable[0], 'Unable to find more lines')
+
             if not lines:
                 recoverable[0] = False
 
                 # Read more lines and make sure we prepend any old data
                 lines[:] = b(fh.read(BUFFER_SIZE)).split(b('\n'))
-                line += lines.pop(0)
+                raw_line += lines.pop(0)
 
-            line = line.lower().strip()
+            raw_line = raw_line.strip()
+            line = raw_line.lower()
             if line == b(''):
                 return get(prefix)
 
@@ -174,7 +178,7 @@ class BaseStl(base.BaseMesh):
                     raise RuntimeError(recoverable[0],
                                        'Incorrect value %r' % line)
             else:
-                return b(line)
+                return b(raw_line)
 
         line = get()
         if not lines:
@@ -275,17 +279,20 @@ class BaseStl(base.BaseMesh):
 
             p('endsolid %s' % name, file=fh)
 
-    def _write_binary(self, fh, name):
-        # Create the header
-        header = '%s (%s) %s %s' % (
-            metadata.__package_name__,
-            metadata.__version__,
-            datetime.datetime.now(),
-            name,
+    def get_header(self, name):
+        # Format the header
+        header = HEADER_FORMAT.format(
+            package_name=metadata.__package_name__,
+            version=metadata.__version__,
+            now=datetime.datetime.now(),
+            name=name,
         )
 
         # Make it exactly 80 characters
-        header = header[:80].ljust(80, ' ')
+        return header[:80].ljust(80, ' ')
+
+    def _write_binary(self, fh, name):
+        header = self.get_header(name)
         packed = struct.pack(s('<i'), self.data.size)
 
         if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
