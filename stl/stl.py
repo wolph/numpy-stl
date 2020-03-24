@@ -58,7 +58,7 @@ class BaseStl(base.BaseMesh):
         :param file fh: The file handle to open
         :param int mode: Automatically detect the filetype or force binary
         '''
-        header = fh.read(HEADER_SIZE).lower()
+        header = fh.read(HEADER_SIZE)
         if not header:
             return
 
@@ -67,7 +67,7 @@ class BaseStl(base.BaseMesh):
 
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and header.startswith(b('solid')):
+        if mode in (AUTOMATIC, ASCII) and header[:5].lower() == b('solid'):
             try:
                 name, data = cls._load_ascii(
                     fh, header, speedups=speedups)
@@ -138,20 +138,22 @@ class BaseStl(base.BaseMesh):
         lines = b(header).split(b('\n'))
 
         def get(prefix=''):
-            prefix = b(prefix)
+            prefix = b(prefix).lower()
 
             if lines:
-                line = lines.pop(0)
+                raw_line = lines.pop(0)
             else:
                 raise RuntimeError(recoverable[0], 'Unable to find more lines')
+
             if not lines:
                 recoverable[0] = False
 
                 # Read more lines and make sure we prepend any old data
                 lines[:] = b(fh.read(BUFFER_SIZE)).split(b('\n'))
-                line += lines.pop(0)
+                raw_line += lines.pop(0)
 
-            line = line.lower().strip()
+            raw_line = raw_line.strip()
+            line = raw_line.lower()
             if line == b(''):
                 return get(prefix)
 
@@ -176,7 +178,7 @@ class BaseStl(base.BaseMesh):
                     raise RuntimeError(recoverable[0],
                                        'Incorrect value %r' % line)
             else:
-                return b(line)
+                return b(raw_line)
 
         line = get()
         if not lines:
