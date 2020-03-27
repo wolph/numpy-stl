@@ -51,12 +51,7 @@ def test_units_3d():
 
     assert (mesh.areas - 2 ** .5) < 0.0001
     assert numpy.allclose(mesh.normals, [0.0, -0.70710677, 0.70710677])
-
-    units = mesh.units[0]
-    assert units[0] == 0
-    # Due to floating point errors
-    assert (units[1] + .5 * 2 ** .5) < 0.0001
-    assert (units[2] - .5 * 2 ** .5) < 0.0001
+    assert numpy.allclose(mesh.units[0], [0.0, -0.5, 0.5])
 
 
 def test_duplicate_polygons():
@@ -173,8 +168,19 @@ def test_empty_areas():
                                       [0, 1, 0],
                                       [1, 0, 0]])
 
-    mesh = Mesh(data, remove_empty_areas=False)
+    mesh = Mesh(data, calculate_normals=False, remove_empty_areas=False)
     assert mesh.data.size == 3
+
+    # Test the normals recalculation which also calculates the areas by default
+    mesh.areas[1] = 1
+    mesh.areas[2] = 2
+    assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
+
+    mesh.update_normals(update_areas=False)
+    assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
+
+    mesh.update_normals(update_areas=True)
+    assert numpy.allclose(mesh.areas, [[0.5], [0.0], [0.0]])
 
     mesh = Mesh(data, remove_empty_areas=True)
     assert mesh.data.size == 1

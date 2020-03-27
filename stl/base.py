@@ -313,9 +313,13 @@ class BaseMesh(logger.Logged, abc.Mapping):
         squared_areas = (normals ** 2).sum(axis=1)
         return data[squared_areas > AREA_SIZE_THRESHOLD ** 2]
 
-    def update_normals(self):
-        '''Update the normals for all points'''
+    def update_normals(self, update_areas=True):
+        '''Update the normals and areas for all points'''
         normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+
+        if update_areas:
+            self.update_areas(normals)
+
         normal = numpy.linalg.norm(normals, axis=1)
         non_zero = normal > 0
         if non_zero.any():
@@ -328,8 +332,11 @@ class BaseMesh(logger.Logged, abc.Mapping):
     def update_max(self):
         self._max = self.vectors.max(axis=(0, 1))
 
-    def update_areas(self):
-        areas = .5 * numpy.sqrt((self.normals ** 2).sum(axis=1))
+    def update_areas(self, normals=None):
+        if normals is None:
+            normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+
+        areas = .5 * numpy.sqrt((normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
     def check(self):
