@@ -345,15 +345,15 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     def is_closed(self):  # pragma: no cover
         """Check the mesh is closed or not"""
-        if (self.normals.sum(axis=0) >= 1e-4).any():
+        if numpy.isclose(self.normals.sum(axis=0), 0, atol=1e-4).all():
+            return True
+        else:
             self.warning('''
             Your mesh is not closed, the mass methods will not function
             correctly on this mesh.  For more info:
             https://github.com/WoLpH/numpy-stl/issues/69
             '''.strip())
             return False
-        else:
-            return True
 
     def get_mass_properties(self):
         '''
