@@ -102,7 +102,7 @@ Plotting using `matplotlib`_ is equally easy:
     axes.add_collection3d(mplot3d.art3d.Poly3DCollection(your_mesh.vectors))
 
     # Auto scale to the mesh size
-    scale = your_mesh.points.flatten(-1)
+    scale = your_mesh.points.flatten()
     axes.auto_scale_xyz(scale, scale, scale)
 
     # Show the plot to the screen
@@ -185,7 +185,7 @@ Modifying Mesh objects
         axes.add_collection3d(mplot3d.art3d.Poly3DCollection(m.vectors))
 
     # Auto scale to the mesh size
-    scale = numpy.concatenate([m.points for m in meshes]).flatten(-1)
+    scale = numpy.concatenate([m.points for m in meshes]).flatten()
     axes.auto_scale_xyz(scale, scale, scale)
 
     # Show the plot to the screen
@@ -255,7 +255,7 @@ Extending Mesh objects
     axes.add_collection3d(mplot3d.art3d.Poly3DCollection(cube.vectors))
 
     # Auto scale to the mesh size
-    scale = cube_back.points.flatten(-1)
+    scale = cube_back.points.flatten()
     axes.auto_scale_xyz(scale, scale, scale)
 
     # Show the plot to the screen
