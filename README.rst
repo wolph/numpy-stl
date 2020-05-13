@@ -6,15 +6,15 @@ numpy-stl
     :alt: numpy-stl test status 
     :target: https://travis-ci.org/WoLpH/numpy-stl
 
-.. image:: https://badge.fury.io/py/mt-940.svg
+.. image:: https://badge.fury.io/py/numpy-stl.svg
     :alt: numpy-stl Pypi version 
-    :target: https://pypi.python.org/pypi/mt-940
+    :target: https://pypi.python.org/pypi/numpy-stl
 
 .. image:: https://coveralls.io/repos/WoLpH/numpy-stl/badge.svg?branch=master
     :alt: numpy-stl code coverage 
     :target: https://coveralls.io/r/WoLpH/numpy-stl?branch=master
 
-.. image:: https://img.shields.io/pypi/pyversions/mt-940.svg
+.. image:: https://img.shields.io/pypi/pyversions/numpy-stl.svg
 
 Simple library to make working with STL files (and 3D objects in general) fast
 and easy.
