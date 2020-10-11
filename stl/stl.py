@@ -125,7 +125,12 @@ class BaseStl(base.BaseMesh):
         name = header.strip()
 
         # Read the rest of the binary data
-        return name, numpy.fromfile(fh, dtype=cls.dtype, count=count)
+        try:
+            return name, numpy.fromfile(fh, dtype=cls.dtype, count=count)
+        except io.UnsupportedOperation:
+            data = numpy.frombuffer(fh.read(), dtype=cls.dtype, count=count)
+            # Copy to make the buffer writable
+            return name, data.copy()
 
     @classmethod
     def _ascii_reader(cls, fh, header):
@@ -162,15 +167,17 @@ class BaseStl(base.BaseMesh):
                     values = line.replace(prefix, b(''), 1).strip().split()
                 elif line.startswith(b('endsolid')):
                     # go back to the beginning of new solid part
-                    size_unprocessedlines = sum(len(l) + 1 for l in lines) - 1
+                    size_unprocessedlines = sum(
+                        len(line) + 1 for line in lines) - 1
+
                     if size_unprocessedlines > 0:
                         position = fh.tell()
                         fh.seek(position - size_unprocessedlines)
                     raise StopIteration()
                 else:
-                    raise RuntimeError(recoverable[0],
-                                       '%r should start with %r' % (line,
-                                                                    prefix))
+                    raise RuntimeError(
+                        recoverable[0],
+                        '%r should start with %r' % (line, prefix))
 
                 if len(values) == 3:
                     return [float(v) for v in values]
@@ -212,6 +219,11 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _load_ascii(cls, fh, header, speedups=True):
+        # Speedups does not support non file-based streams
+        try:
+            fh.fileno()
+        except io.UnsupportedOperation:
+            speedups = False
         # The speedups module is covered by travis but it can't be tested in
         # all environments, this makes coverage checks easier
         if _speedups and speedups:  # pragma: no cover
