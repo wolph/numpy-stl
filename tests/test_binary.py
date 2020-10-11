@@ -1,3 +1,4 @@
+import io
 import pytest
 from stl import mesh, Mode
 
@@ -19,6 +20,12 @@ def test_binary_in_ascii_mode(tmpdir, speedups):
 def _test(tmpdir, speedups, mode, use_filehandle=True):
     if use_filehandle:
         with open('tests/stl_binary/rear_case.stl', 'rb') as fh:
+            mesh.Mesh.from_file('rear_case.stl', fh=fh, speedups=speedups,
+                                mode=mode)
+
+        with open('tests/stl_binary/rear_case.stl', 'rb') as fh:
+            # Test with BytesIO
+            fh = io.BytesIO(fh.read())
             mesh.Mesh.from_file('rear_case.stl', fh=fh, speedups=speedups,
                                 mode=mode)
     else:
