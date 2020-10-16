@@ -320,10 +320,6 @@ class BaseMesh(logger.Logged, abc.Mapping):
         if update_areas:
             self.update_areas(normals)
 
-        normal = numpy.linalg.norm(normals, axis=1)
-        non_zero = normal > 0
-        if non_zero.any():
-            normals[non_zero] /= normal[non_zero][:, None]
         self.normals[:] = normals
 
     def update_min(self):

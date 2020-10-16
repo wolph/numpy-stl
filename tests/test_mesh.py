@@ -50,8 +50,9 @@ def test_units_3d():
     mesh.update_units()
 
     assert (mesh.areas - 2 ** .5) < 0.0001
-    assert numpy.allclose(mesh.normals, [0.0, -0.70710677, 0.70710677])
-    assert numpy.allclose(mesh.units[0], [0.0, -0.5, 0.5])
+    assert numpy.allclose(mesh.normals, [0.0, -1.0, 1.0])
+    assert numpy.allclose(mesh.units[0], [0.0, -0.70710677, 0.70710677])
+    assert numpy.allclose(numpy.linalg.norm(mesh.units, axis=-1), 1)
 
 
 def test_duplicate_polygons():
