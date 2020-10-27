@@ -3,9 +3,11 @@ import sys
 import pytest
 import warnings
 import subprocess
+import io
+import numpy
 
 from stl.utils import b
-from stl import mesh
+from stl import mesh, Mode
 
 
 def test_long_name(tmpdir, speedups):
@@ -104,3 +106,25 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     assert 'File too large' not in out
     assert 'File too large' not in err
     assert p.returncode == 0
+
+
+def test_ascii_io():
+    # Create a vanilla mesh.
+    mesh_ = mesh.Mesh(numpy.empty(3, mesh.Mesh.dtype))
+    mesh_.vectors = numpy.arange(27).reshape((3, 3, 3))
+
+    # Check that unhelpful 'expected str but got bytes' error is caught and
+    # replaced.
+    with pytest.raises(TypeError, match="handles should be in binary mode"):
+        mesh_.save("nameless", fh=io.StringIO(), mode=Mode.ASCII)
+
+    # Write to an io.BytesIO().
+    fh = io.BytesIO()
+    mesh_.save("nameless", fh=fh, mode=Mode.ASCII)
+    # Assert binary file is still only ascii characters.
+    fh.getvalue().decode("ascii")
+
+    # Read the mesh back in.
+    read = mesh.Mesh.from_file("anonymous.stl", fh=io.BytesIO(fh.getvalue()))
+    # Check what comes out is the same as what went in.
+    assert numpy.allclose(mesh_.vectors, read.vectors)

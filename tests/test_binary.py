@@ -1,4 +1,5 @@
 import io
+import numpy
 import pytest
 from stl import mesh, Mode
 
@@ -31,3 +32,18 @@ def _test(tmpdir, speedups, mode, use_filehandle=True):
     else:
         mesh.Mesh.from_file('tests/stl_binary/rear_case.stl',
                             speedups=speedups, mode=mode)
+
+
+@pytest.mark.parametrize("mode", [Mode.BINARY, Mode.AUTOMATIC])
+def test_write_bytes_io(binary_file, mode):
+    mesh_ = mesh.Mesh.from_file(binary_file)
+
+    # Write to io.Bytes() in BINARY mode.
+    fh = io.BytesIO()
+    mesh_.save("mesh.stl", fh, mode=mode)
+
+    assert len(fh.getvalue()) > 84
+    assert fh.getvalue()[84:] == mesh_.data.tobytes()
+
+    read = mesh.Mesh.from_file("nameless", fh=io.BytesIO(fh.getvalue()))
+    assert numpy.allclose(read.vectors, mesh_.vectors)

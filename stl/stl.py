@@ -249,8 +249,17 @@ class BaseStl(base.BaseMesh):
             self.update_normals()
 
         if mode is AUTOMATIC:
-            if fh and os.isatty(fh.fileno()):  # pragma: no cover
-                write = self._write_ascii
+            # Try to determine if the file is a TTY.
+            if fh:
+                try:
+                    if os.isatty(fh.fileno()):  # pragma: no cover
+                        write = self._write_ascii
+                    else:
+                        write = self._write_binary
+                except IOError:
+                    # If TTY checking fails then it's an io.BytesIO() (or one
+                    # of its siblings from io). Assume binary.
+                    write = self._write_binary
             else:
                 write = self._write_binary
         elif mode is BINARY:
@@ -259,6 +268,13 @@ class BaseStl(base.BaseMesh):
             write = self._write_ascii
         else:
             raise ValueError('Mode %r is invalid' % mode)
+
+        if isinstance(fh, io.TextIOBase):
+            # Provide a more helpful error if the user mistakenly
+            # assumes ASCII files should be text files.
+            raise TypeError(
+                "File handles should be in binary mode - even when"
+                " writing an ASCII STL.")
 
         name = os.path.split(filename)[-1]
         try:
@@ -315,8 +331,16 @@ class BaseStl(base.BaseMesh):
 
         fh.write(header)
         fh.write(packed)
-        self.data.tofile(fh)
 
+        if isinstance(fh, io.BufferedWriter):
+            # Write to a true file.
+            self.data.tofile(fh)
+        else:
+            # Write to a pseudo buffer.
+            fh.write(self.data.data)
+
+        # In theory this should no longer be possible but I'll leave it here
+        # anyway...
         if self.data.size:  # pragma: no cover
             assert fh.tell() > 84, (
                 'numpy silently refused to write our file. Note that writing '
