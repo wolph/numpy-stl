@@ -1,3 +1,4 @@
+# cython: language_level=2
 from libc.stdio cimport *                                                                
 from libc.string cimport memcpy, strcmp, strstr, strcpy
 
@@ -33,7 +34,7 @@ cdef packed struct Facet:
 dtype = np.dtype([
     ('normals', np.float32, 3),
     ('vectors', np.float32, (3, 3)),
-    ('attr', np.uint16, 1),
+    ('attr', np.uint16, (1,)),
 ])
 
 DEF ALLOC_SIZE = 200000
