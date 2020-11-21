@@ -589,4 +589,60 @@ class BaseMesh(logger.Logged, abc.Mapping):
         for point in self.points:
             yield point
 
+    def get_mass_properties_with_density(self, density):
+        # add density for mesh,density unit kg/m3 when mesh is unit is m
+        self.check()
+
+        def subexpression(x):
+            w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
+            temp0 = w0 + w1
+            f1 = temp0 + w2
+            temp1 = w0 * w0
+            temp2 = temp1 + w1 * temp0
+            f2 = temp2 + w2 * f1
+            f3 = w0 * temp1 + w1 * temp2 + w2 * f2
+            g0 = f2 + w0 * (f1 + w0)
+            g1 = f2 + w1 * (f1 + w1)
+            g2 = f2 + w2 * (f1 + w2)
+            return f1, f2, f3, g0, g1, g2
+
+        x0, x1, x2 = self.x[:, 0], self.x[:, 1], self.x[:, 2]
+        y0, y1, y2 = self.y[:, 0], self.y[:, 1], self.y[:, 2]
+        z0, z1, z2 = self.z[:, 0], self.z[:, 1], self.z[:, 2]
+        a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
+        a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
+        d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
+
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(self.x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)
+
+        intg = numpy.zeros((10))
+        intg[0] = sum(d0 * f1x)
+        intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
+        intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
+        intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
+        intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
+        intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
+        intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        volume = intg[0]
+        cog = intg[1:4] / volume
+        cogsq = cog ** 2
+        vmass = volume * density
+        inertia = numpy.zeros((3, 3))
+
+        inertia[0, 0] = (intg[5] + intg[6]) * density - vmass * (
+            cogsq[1] + cogsq[2])
+        inertia[1, 1] = (intg[4] + intg[6]) * density - vmass * (
+            cogsq[2] + cogsq[0])
+        inertia[2, 2] = (intg[4] + intg[5]) * density - vmass * (
+            cogsq[0] + cogsq[1])
+        inertia[0, 1] = inertia[1, 0] = -(
+            intg[7] * density - vmass * cog[0] * cog[1])
+        inertia[1, 2] = inertia[2, 1] = -(
+            intg[8] * density - vmass * cog[1] * cog[2])
+        inertia[0, 2] = inertia[2, 0] = -(
+            intg[9] * density - vmass * cog[2] * cog[0])
+
+        return volume, vmass, cog, inertia
 
