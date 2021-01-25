@@ -67,30 +67,45 @@ class BaseStl(base.BaseMesh):
 
         name = ''
 
-        if mode in (AUTOMATIC, ASCII) and header[:5].lower() == b('solid'):
+        if mode is AUTOMATIC:
             try:
-                name, data = cls._load_ascii(
-                    fh, header, speedups=speedups)
-            except RuntimeError as exception:
-                # Disable fallbacks in ASCII mode
-                if mode is ASCII:
-                    raise
+                headerstr = header.decode("ascii").lstrip().lower()
+                possibly_ascii = True if headerstr[:5] == 'solid' else False
+            except UnicodeError:
+                # If the header could not be decoded to string, it is
+                # guaranteed to not be ASCII. If the entire header is
+                # decoded correctly, it might nevertheless still be binary -
+                # a lot of programs fill the header of binary STL's with
+                # valid ASCII characters only (e.g. NULL characters).
+                possibly_ascii = False
 
-                (recoverable, e) = exception.args
-                # If we didn't read beyond the header the stream is still
-                # readable through the binary reader
-                if recoverable:
-                    name, data = cls._load_binary(fh, header, check_size=False)
-                else:
-                    # Apparently we've read beyond the header. Let's try
-                    # seeking :)
-                    # Note that this fails when reading from stdin, we can't
-                    # recover from that.
-                    fh.seek(HEADER_SIZE)
+            if possibly_ascii:
+                try:
+                    name, data = cls._load_ascii(
+                        fh, header, speedups=speedups)
+                except RuntimeError as exception:
+                    (recoverable, e) = exception.args
+                    # If we didn't read beyond the header the stream is still
+                    # readable through the binary reader
+                    if recoverable:
+                        name, data = cls._load_binary(fh, header,
+                                                      check_size=False)
+                    else:
+                        # Apparently we've read beyond the header. Let's try
+                        # seeking :)
+                        # Note that this fails when reading from stdin, we
+                        # can't recover from that.
+                        fh.seek(HEADER_SIZE)
 
-                    # Since we know this is a seekable file now and we're not
-                    # 100% certain it's binary, check the size while reading
-                    name, data = cls._load_binary(fh, header, check_size=True)
+                        # Since we know this is a seekable file now and we're
+                        # not 100% certain it's binary, check the size while
+                        # reading
+                        name, data = cls._load_binary(fh, header,
+                                                      check_size=True)
+            else:
+                name, data = cls._load_binary(fh, header)
+        elif mode is ASCII:
+            name, data = cls._load_ascii(fh, header, speedups=speedups)
         else:
             name, data = cls._load_binary(fh, header)
 
@@ -403,4 +418,3 @@ class BaseStl(base.BaseMesh):
 
 
 StlMesh = BaseStl.from_file
-
