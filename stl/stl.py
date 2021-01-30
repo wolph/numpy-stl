@@ -204,12 +204,12 @@ class BaseStl(base.BaseMesh):
             # buffer and/or StringIO does not work.
             try:
                 normals = get('facet normal')
-                assert get() == b('outer loop')
+                assert get().lower() == b('outer loop')
                 v0 = get('vertex')
                 v1 = get('vertex')
                 v2 = get('vertex')
-                assert get() == b('endloop')
-                assert get() == b('endfacet')
+                assert get().lower() == b('endloop')
+                assert get().lower() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
             except AssertionError as e:  # pragma: no cover
