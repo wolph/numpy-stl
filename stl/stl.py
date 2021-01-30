@@ -287,7 +287,13 @@ class BaseStl(base.BaseMesh):
             pass
 
     def _write_ascii(self, fh, name):
-        if _speedups and self.speedups:  # pragma: no cover
+        try:
+            fh.fileno()
+            speedups = self.speedups
+        except io.UnsupportedOperation:
+            speedups = False
+
+        if _speedups and speedups:  # pragma: no cover
             _speedups.ascii_write(fh, b(name), self.data)
         else:
             def p(s, file):
