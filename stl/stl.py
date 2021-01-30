@@ -69,8 +69,7 @@ class BaseStl(base.BaseMesh):
 
         if mode is AUTOMATIC:
             try:
-                headerstr = header.decode("ascii").lstrip().lower()
-                possibly_ascii = True if headerstr[:5] == 'solid' else False
+                possibly_ascii = header.lstrip().lower().startswith(b'solid')
             except UnicodeError:
                 # If the header could not be decoded to string, it is
                 # guaranteed to not be ASCII. If the entire header is
