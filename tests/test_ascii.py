@@ -3,13 +3,41 @@ import sys
 import pytest
 import warnings
 import subprocess
+import io
+import numpy
 
 from stl.utils import b
-from stl import mesh
+from stl import mesh, Mode
+
+
+def test_chinese_name(tmpdir, speedups):
+    name = 'Test Chinese name 月球'
+    _stl_file = ('''
+    solid %s
+      facet normal -0.014565 0.073223 -0.002897
+        outer loop
+          vertex 0.399344 0.461940 1.044090
+          vertex 0.500000 0.500000 1.500000
+          vertex 0.576120 0.500000 1.117320
+        endloop
+      endfacet
+    endsolid
+    ''' % name).lstrip()
+
+    tmp_file = tmpdir.join('tmp.stl')
+    with tmp_file.open('wb+') as fh:
+        fh.write(b(_stl_file))
+        fh.seek(0)
+        test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
+                                        speedups=speedups)
+        if speedups:
+            assert test_mesh.name.lower() == b(name).lower()
+        else:
+            assert test_mesh.name == b(name)
 
 
 def test_long_name(tmpdir, speedups):
-    name = 'just some very long name which will not fit within the standard'
+    name = 'Just Some Very Long Name which will not fit within the standard'
     name += name
     _stl_file = ('''
     solid %s
@@ -29,7 +57,11 @@ def test_long_name(tmpdir, speedups):
         fh.seek(0)
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
                                         speedups=speedups)
-        assert test_mesh.name == b(name)
+
+        if speedups:
+            assert test_mesh.name.lower() == b(name).lower()
+        else:
+            assert test_mesh.name == b(name)
 
 
 def test_scientific_notation(tmpdir, speedups):
@@ -104,3 +136,25 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     assert 'File too large' not in out
     assert 'File too large' not in err
     assert p.returncode == 0
+
+
+def test_ascii_io():
+    # Create a vanilla mesh.
+    mesh_ = mesh.Mesh(numpy.empty(3, mesh.Mesh.dtype))
+    mesh_.vectors = numpy.arange(27).reshape((3, 3, 3))
+
+    # Check that unhelpful 'expected str but got bytes' error is caught and
+    # replaced.
+    with pytest.raises(TypeError, match="handles should be in binary mode"):
+        mesh_.save("nameless", fh=io.StringIO(), mode=Mode.ASCII)
+
+    # Write to an io.BytesIO().
+    fh = io.BytesIO()
+    mesh_.save("nameless", fh=fh, mode=Mode.ASCII)
+    # Assert binary file is still only ascii characters.
+    fh.getvalue().decode("ascii")
+
+    # Read the mesh back in.
+    read = mesh.Mesh.from_file("anonymous.stl", fh=io.BytesIO(fh.getvalue()))
+    # Check what comes out is the same as what went in.
+    assert numpy.allclose(mesh_.vectors, read.vectors)

@@ -2,6 +2,10 @@ numpy-stl
 ==============================================================================
 
 
+.. image:: https://ci.appveyor.com/api/projects/status/cbv7ak2i59wf3lpj?svg=true
+    :alt: numpy-stl test status 
+    :target: https://ci.appveyor.com/project/WoLpH/numpy-stl
+
 .. image:: https://travis-ci.org/WoLpH/numpy-stl.svg?branch=master
     :alt: numpy-stl test status 
     :target: https://travis-ci.org/WoLpH/numpy-stl
@@ -406,3 +410,8 @@ Combining multiple STL files
 
     combined.save('combined.stl', mode=stl.Mode.ASCII)  # save as ASCII
 
+Known limitations
+------------------------------------------------------------------------------
+
+ - When speedups are enabled the STL name is automatically converted to
+ lowercase.
