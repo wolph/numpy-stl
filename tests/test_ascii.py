@@ -31,7 +31,7 @@ def test_chinese_name(tmpdir, speedups):
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
                                         speedups=speedups)
         if speedups:
-            assert test_mesh.name == b(name).lower()
+            assert test_mesh.name.lower() == b(name).lower()
         else:
             assert test_mesh.name == b(name)
 
@@ -59,7 +59,7 @@ def test_long_name(tmpdir, speedups):
                                         speedups=speedups)
 
         if speedups:
-            assert test_mesh.name == b(name).lower()
+            assert test_mesh.name.lower() == b(name).lower()
         else:
             assert test_mesh.name == b(name)
 

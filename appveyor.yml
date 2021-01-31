@@ -10,7 +10,8 @@ environment:
   - TOXENV: py36
   - TOXENV: py37
   - TOXENV: py38
-  - TOXENV: py39
+  # not yet available on appveyor
+  # - TOXENV: py39
 
 install:
   # Download setup scripts and unzip
