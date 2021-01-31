@@ -38,13 +38,16 @@ environment:
       PYTHON_ARCH: "64"
       TOXENV: py38-windows-64
 
-    - PYTHON_VERSION: "3.9"
-      PYTHON_ARCH: "32"
-      TOXENV: py39-windows-32
-
-    - PYTHON_VERSION: "3.9"
-      PYTHON_ARCH: "64"
-      TOXENV: py39-windows-64
+    # Enable when it works :)
+    # - PYTHON: "C:\\Python39"
+    #   PYTHON_VERSION: "3.9"
+    #   PYTHON_ARCH: "32"
+    #   TOXENV: py39-windows-32
+    #
+    # - PYTHON: "C:\\Python39-x64"
+    #   PYTHON_VERSION: "3.9"
+    #   PYTHON_ARCH: "64"
+    #   TOXENV: py39-windows-64
 
 install:
   # Download setup scripts and unzip
