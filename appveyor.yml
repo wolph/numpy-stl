@@ -4,6 +4,9 @@ environment:
   # See: http://stackoverflow.com/a/13751649/163740
   # CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
+  global:
+    PYTHON: "C:\\Python38-x64\\python.exe"
+
   matrix:
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6"
@@ -35,13 +38,11 @@ environment:
       PYTHON_ARCH: "64"
       TOXENV: py38-windows-64
 
-    - PYTHON: "C:\\Python39"
-      PYTHON_VERSION: "3.9"
+    - PYTHON_VERSION: "3.9"
       PYTHON_ARCH: "32"
       TOXENV: py39-windows-32
 
-    - PYTHON: "C:\\Python39-x64"
-      PYTHON_VERSION: "3.9"
+    - PYTHON_VERSION: "3.9"
       PYTHON_ARCH: "64"
       TOXENV: py39-windows-64
 
