@@ -65,20 +65,8 @@ class BaseStl(base.BaseMesh):
         if isinstance(header, str):  # pragma: no branch
             header = b(header)
 
-        name = ''
-
         if mode is AUTOMATIC:
-            try:
-                possibly_ascii = header.lstrip().lower().startswith(b'solid')
-            except UnicodeError:
-                # If the header could not be decoded to string, it is
-                # guaranteed to not be ASCII. If the entire header is
-                # decoded correctly, it might nevertheless still be binary -
-                # a lot of programs fill the header of binary STL's with
-                # valid ASCII characters only (e.g. NULL characters).
-                possibly_ascii = False
-
-            if possibly_ascii:
+            if header.lstrip().lower().startswith(b'solid'):
                 try:
                     name, data = cls._load_ascii(
                         fh, header, speedups=speedups)
@@ -245,6 +233,7 @@ class BaseStl(base.BaseMesh):
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
+            print('got name', name)
             return name, numpy.fromiter(iterator, dtype=cls.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):

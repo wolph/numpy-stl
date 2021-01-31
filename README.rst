@@ -406,3 +406,8 @@ Combining multiple STL files
 
     combined.save('combined.stl', mode=stl.Mode.ASCII)  # save as ASCII
 
+Known limitations
+------------------------------------------------------------------------------
+
+ - When speedups are enabled the STL name is automatically converted to
+ lowercase.

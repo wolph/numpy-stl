@@ -28,7 +28,10 @@ def test_chinese_name(tmpdir, speedups):
         fh.seek(0)
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
                                         speedups=speedups)
-        assert test_mesh.name == b(name)
+        if speedups:
+            assert test_mesh.name == b(name).lower()
+        else:
+            assert test_mesh.name == b(name)
 
 
 def test_long_name(tmpdir, speedups):
@@ -52,7 +55,11 @@ def test_long_name(tmpdir, speedups):
         fh.seek(0)
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
                                         speedups=speedups)
-        assert test_mesh.name == b(name)
+
+        if speedups:
+            assert test_mesh.name == b(name).lower()
+        else:
+            assert test_mesh.name == b(name)
 
 
 def test_scientific_notation(tmpdir, speedups):
