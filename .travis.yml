@@ -10,13 +10,13 @@ cache:
 env:
 - TOX_ENV=docs
 - TOX_ENV=flake8
-- TOX_ENV=py36-nix
-- TOX_ENV=py37-nix
-- TOX_ENV=py38-nix
-- TOX_ENV=py39-nix
+- TOX_ENV=py36
+- TOX_ENV=py37
+- TOX_ENV=py38
+- TOX_ENV=py39
 matrix:
   include:
-    - env: TOX_ENV=py37-nix
+    - env: TOX_ENV=py37
       python: '3.7-dev'
       install: pip install coveralls flake8 tox
       # be more verbose not to timeout:
