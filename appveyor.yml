@@ -33,10 +33,10 @@ install:
 build: false  # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - %PYTHON% -m pip install tox numpy cython"
+  - "%PYTHON% -m pip install tox numpy cython"
 
 test_script:
-  - %PYTHON% -m tox -e %TOXENV%"
+  - "%PYTHON% -m tox -e %TOXENV%"
 
 after_test:
   - "%PYTHON% setup.py sdist bdist_wheel"
