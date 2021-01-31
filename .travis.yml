@@ -23,7 +23,7 @@ matrix:
       script: tox -vv -e $TOX_ENV
 install:
 - pip install -r tests/requirements.txt
-- pip install coveralls flake8 tox
+- pip install coveralls flake8 tox wheel
 - pip install -e .
 script:
 - tox -e $TOX_ENV
