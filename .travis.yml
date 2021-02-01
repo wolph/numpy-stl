@@ -56,7 +56,7 @@ cache:
 # command to install dependencies, e.g. pip install -r requirements.txt
 install:
   - mkdir -p $PIP_WHEEL_DIR
-  - pip wheel -r _python_utils_tests/requirements.txt
+  - pip wheel -r tests/requirements.txt
   - pip install coveralls flake8 tox wheel
   - pip install -e .
 
