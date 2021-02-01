@@ -233,7 +233,6 @@ class BaseStl(base.BaseMesh):
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
-            print('got name', name)
             return name, numpy.fromiter(iterator, dtype=cls.dtype)
 
     def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
