@@ -47,3 +47,7 @@ def test_write_bytes_io(binary_file, mode):
 
     read = mesh.Mesh.from_file("nameless", fh=io.BytesIO(fh.getvalue()))
     assert numpy.allclose(read.vectors, mesh_.vectors)
+
+
+def test_binary_file():
+    list(mesh.Mesh.from_multi_file('tests/stl_tests/triamid.stl'))
