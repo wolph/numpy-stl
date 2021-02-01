@@ -379,7 +379,7 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def from_multi_file(cls, filename, calculate_normals=True, fh=None,
-                        mode=Mode.ASCII, speedups=True, **kwargs):
+                        mode=Mode.AUTOMATIC, speedups=True, **kwargs):
         '''Load multiple meshes from a STL file
 
         Note: mode is hardcoded to ascii since binary stl files do not support
