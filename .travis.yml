@@ -24,8 +24,6 @@ matrix:
       env: TOXENV=py38
     - python: '3.9-dev'
       env: TOXENV=py39
-    - python: 'pypy'
-      env: TOXENV=pypy
   # Added power support architecture
     - arch: ppc64le
       python: '3.6'
