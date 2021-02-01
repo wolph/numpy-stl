@@ -40,7 +40,7 @@ test_script:
   - "%PYTHON% -m tox -e %TOXENV%"
 
 after_test:
-    "%PYTHON% setup.py build_ext --inplace"
+  - "%PYTHON% setup.py build_ext --inplace"
   - "%PYTHON% setup.py sdist bdist_wheel"
   - ps: "ls dist"
 
