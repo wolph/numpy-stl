@@ -143,8 +143,6 @@ class BaseStl(base.BaseMesh):
             line_separator = b'\r\n'
         elif b'\n' in header:
             pass
-        elif b'\r' in header:
-            line_separator = b'\r'
         else:
             recoverable = [False]
             header += b(fh.read(BUFFER_SIZE))
