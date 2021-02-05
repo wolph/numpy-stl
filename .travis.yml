@@ -13,8 +13,6 @@ matrix:
       env: TOXENV=docs
     - python: '3.6'
       env: TOXENV=flake8
-    - python: '3.5'
-      env: TOXENV=py35
     - python: '3.6'
       env: TOXENV=py36
       script: tox -vv
@@ -22,7 +20,7 @@ matrix:
       env: TOXENV=py37
     - python: '3.8'
       env: TOXENV=py38
-    - python: '3.9-dev'
+    - python: '3.9'
       env: TOXENV=py39
   # Added power support architecture
     - arch: ppc64le
@@ -32,8 +30,6 @@ matrix:
       python: '3.6'
       env: TOXENV=flake8
     - arch: ppc64le
-      python: '3.5'
-      env: TOXENV=py35
     - arch: ppc64le
       python: '3.6'
       env: TOXENV=py36
@@ -44,7 +40,7 @@ matrix:
       python: '3.8'
       env: TOXENV=py38
     - arch: ppc64le
-      python: '3.9-dev'
+      python: '3.9'
       env: TOXENV=py39
 
 cache:
