@@ -71,6 +71,7 @@ class BaseStl(base.BaseMesh):
                     name, data = cls._load_ascii(
                         fh, header, speedups=speedups)
                 except RuntimeError as exception:
+                    print('exception', exception)
                     (recoverable, e) = exception.args
                     # If we didn't read beyond the header the stream is still
                     # readable through the binary reader
@@ -136,18 +137,13 @@ class BaseStl(base.BaseMesh):
 
     @classmethod
     def _ascii_reader(cls, fh, header):
-        recoverable = [True]
-        line_separator = b'\n'
-
-        if b'\r\n' in header:
-            line_separator = b'\r\n'
-        elif b'\n' in header:
-            pass
+        if b'\n' in header:
+            recoverable = [True]
         else:
             recoverable = [False]
             header += b(fh.read(BUFFER_SIZE))
 
-        lines = b(header).split(line_separator)
+        lines = b(header).split(b'\n')
 
         def get(prefix=''):
             prefix = b(prefix).lower()
@@ -161,7 +157,7 @@ class BaseStl(base.BaseMesh):
                 recoverable[0] = False
 
                 # Read more lines and make sure we prepend any old data
-                lines[:] = b(fh.read(BUFFER_SIZE)).split(line_separator)
+                lines[:] = b(fh.read(BUFFER_SIZE)).split(b'\n')
                 raw_line += lines.pop(0)
 
             raw_line = raw_line.strip()
