@@ -1,6 +1,6 @@
 __package_name__ = 'numpy-stl'
 __import_name__ = 'stl'
-__version__ = '2.15.0'
+__version__ = '2.15.1'
 __author__ = 'Rick van Hattem'
 __author_email__ = 'Wolph@Wol.ph'
 __description__ = ' '.join('''
