@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import pathlib
 import warnings
 import subprocess
 import io
@@ -8,6 +9,14 @@ import numpy
 
 from stl.utils import b
 from stl import mesh, Mode
+
+
+FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
+
+
+def test_ascii_file(speedups):
+    filename = FILES_PATH / 'bwb.stl'
+    mesh.Mesh.from_file(filename, speedups=speedups)
 
 
 def test_chinese_name(tmpdir, speedups):
