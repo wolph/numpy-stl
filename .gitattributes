@@ -1,0 +1,3 @@
+# force CRLF line endings for dos test file
+tests/stl_tests/dos.stl text eol=crlf
+
