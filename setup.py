@@ -108,6 +108,7 @@ if __name__ == '__main__':
         url=about['__url__'],
         license='BSD',
         packages=['stl'],
+        package_data={about['__import_name__']: ['py.typed']},
         long_description=long_description,
         tests_require=tests_require,
         entry_points={
