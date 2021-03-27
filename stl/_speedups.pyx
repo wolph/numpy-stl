@@ -107,7 +107,6 @@ def ascii_read(fh, buf):
         cdef locale_t new_locale = newlocale(LC_NUMERIC_MASK, 'C',
                                              <locale_t>NULL)
         cdef locale_t old_locale = uselocale(new_locale)
-        freelocale(new_locale)
 
     try:
         state.size = len(buf)
@@ -167,9 +166,9 @@ def ascii_read(fh, buf):
             fclose(state.fp)
             fh.seek(pos, SEEK_SET)
 
-    IF UNAME_SYSNAME == 'Linux':
-        uselocale(old_locale)
-        freelocale(old_locale)
+        IF UNAME_SYSNAME == 'Linux':
+            uselocale(old_locale)
+            freelocale(new_locale)
 
 
 def ascii_write(fh, name, np.ndarray[Facet, mode = 'c', cast=True] arr):
