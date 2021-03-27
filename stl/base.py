@@ -491,6 +491,15 @@ class BaseMesh(logger.Logged, abc.Mapping):
         self.rotate_using_matrix(self.rotation_matrix(axis, theta), point)
 
     def rotate_using_matrix(self, rotation_matrix, point=None):
+        '''
+        Rotate using a given rotation matrix and optional rotation point
+
+        Note that this rotation produces clockwise rotations for positive
+        angles which is arguably incorrect but will remain for legacy reasons.
+        For more details, read here:
+        https://github.com/WoLpH/numpy-stl/issues/166
+        '''
+
         identity = numpy.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
         if not rotation_matrix.any() or (identity == rotation_matrix).all():
