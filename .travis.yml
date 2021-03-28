@@ -8,42 +8,43 @@ env:
 
 matrix:
   include:
-    - python: '3.6'
-      env: TOXENV=docs
-    - python: '3.6'
-      env: TOXENV=flake8
-    - python: '3.6'
-      env: TOXENV=py36
-      script: tox -vv
-    - python: '3.7'
-      env: TOXENV=py37
+    # - python: '3.6'
+    #   env: TOXENV=docs
+    # - python: '3.6'
+    #   env: TOXENV=flake8
+    # - python: '3.6'
+    #   env: TOXENV=py36
+    #   script: tox -vv
+    # - python: '3.7'
+    #   env: TOXENV=py37
     - python: '3.8'
       env: TOXENV=py38
       before_install:
         - sudo apt update
-        - sudo apt install -y xcb xvfb
+        - sudo apt-cache search xcb
+        - sudo apt install -y xcb xvfb libxcb-xinerama0
     - python: '3.9'
       env: TOXENV=py39
   # Added power support architecture
-    - arch: ppc64le
-      python: '3.6'
-      env: TOXENV=docs
-    - arch: ppc64le
-      python: '3.6'
-      env: TOXENV=flake8
-    - arch: ppc64le
-    - arch: ppc64le
-      python: '3.6'
-      env: TOXENV=py36
-    - arch: ppc64le
-      python: '3.7'
-      env: TOXENV=py37
-    - arch: ppc64le
-      python: '3.8'
-      env: TOXENV=py38
-    - arch: ppc64le
-      python: '3.9'
-      env: TOXENV=py39
+    # - arch: ppc64le
+    #   python: '3.6'
+    #   env: TOXENV=docs
+    # - arch: ppc64le
+    #   python: '3.6'
+    #   env: TOXENV=flake8
+    # - arch: ppc64le
+    # - arch: ppc64le
+    #   python: '3.6'
+    #   env: TOXENV=py36
+    # - arch: ppc64le
+    #   python: '3.7'
+    #   env: TOXENV=py37
+    # - arch: ppc64le
+    #   python: '3.8'
+    #   env: TOXENV=py38
+    # - arch: ppc64le
+    #   python: '3.9'
+    #   env: TOXENV=py39
 
 cache:
   directories:
