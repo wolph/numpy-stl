@@ -1,5 +1,6 @@
 import os
 import sys
+import locale
 import pytest
 import pathlib
 import warnings
@@ -95,6 +96,21 @@ def test_scientific_notation(tmpdir, speedups):
         test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
                                         speedups=speedups)
         assert test_mesh.name == b(name)
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'),
+                    reason='Only makes sense on Unix')
+def test_locale_restore(speedups):
+    if not speedups:
+        pytest.skip('Only makes sense with speedups')
+
+    old_locale = locale.nl_langinfo(locale.CODESET)
+
+    filename = FILES_PATH / 'bwb.stl'
+    mesh.Mesh.from_file(filename, speedups=speedups)
+
+    new_locale = locale.nl_langinfo(locale.CODESET)
+    assert old_locale == new_locale
 
 
 @pytest.mark.skipif(sys.platform.startswith('win'),
