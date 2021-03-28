@@ -21,7 +21,7 @@ matrix:
       env: TOXENV=py38
       before_install:
         - sudo apt update
-        - sudo apt install -y xcb xvfb qt5dxcb-plugin
+        - sudo apt install -y xcb xvfb
     - python: '3.9'
       env: TOXENV=py39
   # Added power support architecture
