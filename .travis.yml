@@ -1,5 +1,4 @@
 dist: xenial
-sudo: false
 language: python
 
 env:
@@ -20,6 +19,8 @@ matrix:
       env: TOXENV=py37
     - python: '3.8'
       env: TOXENV=py38
+      before_install:
+        - sudo apt install -y xcb xvfb qt5dxcb-plugin
     - python: '3.9'
       env: TOXENV=py39
   # Added power support architecture
@@ -70,11 +71,11 @@ notifications:
     on_failure: change
 
 deploy:
+  distributions: bdist_wheel
   provider: pypi
   user: WoLpH
   password:
     secure: HVxDUJ6ns7G7xypuibu01ruDfO4orV5lNr1Mor003MX3HVivvKsTwWqY5K1J+J+C4mgK6ahyvanD5GahYvcWia/Y2xeH2VnytnAgo+W3AI+h72+1oaRpvQHynJ7Fz6Mc0zad0GcbQh3QuA7Pu3IOWs7buUL+MQM6d9QLTkerOvs=
   on:
     tags: true
-    distributions: bdist_wheel
     repo: WoLpH/numpy-stl
