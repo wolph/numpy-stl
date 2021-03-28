@@ -20,6 +20,7 @@ matrix:
     - python: '3.8'
       env: TOXENV=py38
       before_install:
+        - sudo apt update
         - sudo apt install -y xcb xvfb qt5dxcb-plugin
     - python: '3.9'
       env: TOXENV=py39
