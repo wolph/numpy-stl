@@ -279,13 +279,16 @@ class BaseStl(base.BaseMesh):
                 "File handles should be in binary mode - even when"
                 " writing an ASCII STL.")
 
-        name = os.path.split(filename)[-1]
+        name = self.name
+        if not name:
+            name = os.path.split(filename)[-1]
+
         try:
             if fh:
                 write(fh, name)
             else:
                 with open(filename, 'wb') as fh:
-                    write(fh, filename)
+                    write(fh, name)
         except IOError:  # pragma: no cover
             pass
 
