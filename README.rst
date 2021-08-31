@@ -49,9 +49,14 @@ Installation:
 Initial usage:
 ------------------------------------------------------------------------------
 
- - `stl2bin your_ascii_stl_file.stl new_binary_stl_file.stl`
- - `stl2ascii your_binary_stl_file.stl new_ascii_stl_file.stl`
- - `stl your_ascii_stl_file.stl new_binary_stl_file.stl`
+After installing the package, you should be able to run the following commands
+similar to how you can run `pip`.
+
+.. code-block:: shell
+ 
+   $ stl2bin your_ascii_stl_file.stl new_binary_stl_file.stl
+   $ stl2ascii your_binary_stl_file.stl new_ascii_stl_file.stl
+   $ stl your_ascii_stl_file.stl new_binary_stl_file.stl
 
 Contributing:
 ------------------------------------------------------------------------------
