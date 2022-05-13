@@ -6,9 +6,9 @@ numpy-stl
     :alt: numpy-stl test status 
     :target: https://ci.appveyor.com/project/WoLpH/numpy-stl
 
-.. image:: https://travis-ci.org/WoLpH/numpy-stl.svg?branch=master
+.. image:: https://github.com/WoLpH/numpy-stl/actions/workflows/main.yml/badge.svg
     :alt: numpy-stl test status 
-    :target: https://travis-ci.org/WoLpH/numpy-stl
+    :target: https://github.com/WoLpH/numpy-stl/actions
 
 .. image:: https://badge.fury.io/py/numpy-stl.svg
     :alt: numpy-stl Pypi version 

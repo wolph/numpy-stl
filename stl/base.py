@@ -313,12 +313,15 @@ class BaseMesh(logger.Logged, abc.Mapping):
         squared_areas = (normals ** 2).sum(axis=1)
         return data[squared_areas > AREA_SIZE_THRESHOLD ** 2]
 
-    def update_normals(self, update_areas=True):
-        '''Update the normals and areas for all points'''
+    def update_normals(self, update_areas=True, update_centroids=True):
+        '''Update the normals, areas, and centroids for all points'''
         normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
 
         if update_areas:
             self.update_areas(normals)
+
+        if update_centroids:
+            self.update_centroids()
 
         self.normals[:] = normals
 
@@ -342,6 +345,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
         areas = .5 * numpy.sqrt((normals ** 2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
+
+    def update_centroids(self):
+        self.centroids = numpy.mean([self.v0, self.v1, self.v2], axis=0)
 
     def check(self):
         '''Check the mesh is valid or not'''
@@ -582,6 +588,8 @@ class BaseMesh(logger.Logged, abc.Mapping):
                     doc='Mesh maximum value')
     areas = property(_get_or_update('areas'), _set('areas'),
                      doc='Mesh areas')
+    centroids = property(_get_or_update('centroids'), _set('centroids'),
+                         doc='Mesh centroids')
     units = property(_get_or_update('units'), _set('units'),
                      doc='Mesh unit vectors')
 

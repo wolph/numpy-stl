@@ -17,6 +17,7 @@ def test_units_1d():
     mesh.update_units()
 
     assert mesh.areas == 0
+    assert numpy.allclose(mesh.centroids, [[1, 0, 0]])
     utils.array_equals(mesh.normals, [0, 0, 0])
     utils.array_equals(mesh.units, [0, 0, 0])
     utils.array_equals(mesh.get_unit_normals(), [0, 0, 0])
@@ -35,6 +36,9 @@ def test_units_2d():
     mesh.update_units()
 
     assert numpy.allclose(mesh.areas, [0.5, 0.5])
+    assert numpy.allclose(mesh.centroids, [
+                          [1 / 3, 1 / 3, 0],
+                          [2 / 3, 2 / 3, 0]])
     assert numpy.allclose(mesh.normals, [
                           [0.0, 0.0, 1.0],
                           [0.0, 0.0, -1.0]])
@@ -54,6 +58,7 @@ def test_units_3d():
     mesh.update_units()
 
     assert (mesh.areas - 2 ** .5) < 0.0001
+    assert numpy.allclose(mesh.centroids, [1 / 3, 1 / 3, 1 / 3])
     assert numpy.allclose(mesh.normals, [0.0, -1.0, 1.0])
     assert numpy.allclose(mesh.units[0], [0.0, -0.70710677, 0.70710677])
     assert numpy.allclose(numpy.linalg.norm(mesh.units, axis=-1), 1)
@@ -183,11 +188,23 @@ def test_empty_areas():
     mesh.areas[2] = 2
     assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
 
-    mesh.update_normals(update_areas=False)
-    assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
+    mesh.centroids[1] = [1, 2, 3]
+    mesh.centroids[2] = [4, 5, 6]
+    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
+                                           [1, 2, 3],
+                                           [4, 5, 6]])
 
-    mesh.update_normals(update_areas=True)
+    mesh.update_normals(update_areas=False, update_centroids=False)
+    assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
+    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
+                                           [1, 2, 3],
+                                           [4, 5, 6]])
+
+    mesh.update_normals(update_areas=True, update_centroids=True)
     assert numpy.allclose(mesh.areas, [[0.5], [0.0], [0.0]])
+    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
+                                           [2 / 3, 1 / 3, 0],
+                                           [2 / 3, 1 / 3, 0]])
 
     mesh = Mesh(data, remove_empty_areas=True)
     assert mesh.data.size == 1
