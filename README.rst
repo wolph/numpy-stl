@@ -26,6 +26,12 @@ and easy.
 Due to all operations heavily relying on `numpy` this is one of the fastest
 STL editing libraries for Python available.
 
+Issues
+------
+
+If you encounter any issues, make sure you report them `here <https://github.com/WoLpH/numpy-stl/issues>`_. Be sure to search for existing issues however. Many issues have been covered before.
+While this project uses `numpy` as it's main dependency, it is not in any way affiliated to the `numpy` project or the NumFocus organisation.
+
 Links
 -----
 
