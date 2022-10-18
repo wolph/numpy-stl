@@ -110,7 +110,7 @@ Plotting using `matplotlib`_ is equally easy:
 
     # Create a new plot
     figure = pyplot.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
 
     # Load the STL files and add the vectors to the plot
     your_mesh = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
