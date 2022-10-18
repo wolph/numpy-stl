@@ -10,7 +10,6 @@ pyflakes
 pytest
 pytest-cache
 pytest-cov
-pytest-flake8
 python-utils
 Sphinx
 flake8
