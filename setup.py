@@ -24,29 +24,9 @@ except ImportError:
     pass
 
 
-<<<<<<< Updated upstream
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
-
-
 try:
     import numpy
     from Cython import Build
-=======
-if sys.platform.lower() != 'win32':
-    try:
-        import numpy
-        from Cython import Build
->>>>>>> Stashed changes
 
     setup_kwargs['ext_modules'] = Build.cythonize([
         extension.Extension(
