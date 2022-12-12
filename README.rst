@@ -193,7 +193,7 @@ Modifying Mesh objects
 
     # Create a new plot
     figure = pyplot.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
 
     # Render the cube faces
     for m in meshes:
@@ -264,7 +264,7 @@ Extending Mesh objects
 
     # Create a new plot
     figure = pyplot.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
 
     # Render the cube
     axes.add_collection3d(mplot3d.art3d.Poly3DCollection(cube.vectors))

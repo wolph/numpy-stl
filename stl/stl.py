@@ -1,6 +1,3 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import io
 import os
 import enum
@@ -11,7 +8,6 @@ import datetime
 from . import base
 from . import __about__ as metadata
 from .utils import b
-from .utils import s
 
 try:
     from . import _speedups
@@ -106,7 +102,7 @@ class BaseStl(base.BaseMesh):
         if len(count_data) != COUNT_SIZE:
             count = 0
         else:
-            count, = struct.unpack(s('<i'), b(count_data))
+            count, = struct.unpack('<i', b(count_data))
         # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
@@ -333,7 +329,7 @@ class BaseStl(base.BaseMesh):
 
     def _write_binary(self, fh, name):
         header = self.get_header(name)
-        packed = struct.pack(s('<i'), self.data.size)
+        packed = struct.pack('<i', self.data.size)
 
         if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
             packed = str(packed)
