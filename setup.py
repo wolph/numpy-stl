@@ -24,6 +24,7 @@ except ImportError:
     pass
 
 
+<<<<<<< Updated upstream
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
@@ -40,6 +41,12 @@ class PyTest(TestCommand):
 try:
     import numpy
     from Cython import Build
+=======
+if sys.platform.lower() != 'win32':
+    try:
+        import numpy
+        from Cython import Build
+>>>>>>> Stashed changes
 
     setup_kwargs['ext_modules'] = Build.cythonize([
         extension.Extension(
@@ -69,7 +76,7 @@ else:
 
 install_requires = [
     'numpy',
-    'python-utils>=1.6.2',
+    'python-utils>=3.4.5',
 ]
 
 
@@ -128,7 +135,6 @@ if __name__ == '__main__':
         install_requires=install_requires,
         cmdclass=dict(
             build_ext=BuildExt,
-            test=PyTest,
         ),
         **setup_kwargs
     )
