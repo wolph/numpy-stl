@@ -164,7 +164,8 @@ class BaseStl(base.BaseMesh):
             if prefix:
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
-                elif line.startswith(b('endsolid')):
+                elif line.startswith(b('endsolid')) \
+                        or line.startswith(b('end solid')):
                     # go back to the beginning of new solid part
                     size_unprocessedlines = sum(
                         len(line) + 1 for line in lines) - 1
