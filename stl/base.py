@@ -603,6 +603,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
         for point in self.points:
             yield point
 
+    def __repr__(self):
+        return f'<Mesh: {self.name!r} {self.data.size} vertices>'
+
     def get_mass_properties_with_density(self, density):
         # add density for mesh,density unit kg/m3 when mesh is unit is m
         self.check()

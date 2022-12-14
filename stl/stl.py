@@ -1,12 +1,14 @@
+import datetime
+import enum
 import io
 import os
-import enum
-import numpy
 import struct
-import datetime
+import zipfile
+from xml.etree import ElementTree
 
-from . import base
-from . import __about__ as metadata
+import numpy
+
+from . import __about__ as metadata, base
 from .utils import b
 
 try:
@@ -29,7 +31,6 @@ class Mode(enum.IntEnum):
 AUTOMATIC = Mode.AUTOMATIC
 ASCII = Mode.ASCII
 BINARY = Mode.BINARY
-
 
 #: Amount of bytes to read while using buffered reading
 BUFFER_SIZE = 4096
@@ -65,15 +66,18 @@ class BaseStl(base.BaseMesh):
             if header.lstrip().lower().startswith(b'solid'):
                 try:
                     name, data = cls._load_ascii(
-                        fh, header, speedups=speedups)
+                        fh, header, speedups=speedups
+                    )
                 except RuntimeError as exception:
                     print('exception', exception)
                     (recoverable, e) = exception.args
                     # If we didn't read beyond the header the stream is still
                     # readable through the binary reader
                     if recoverable:
-                        name, data = cls._load_binary(fh, header,
-                                                      check_size=False)
+                        name, data = cls._load_binary(
+                            fh, header,
+                            check_size=False
+                        )
                     else:
                         # Apparently we've read beyond the header. Let's try
                         # seeking :)
@@ -84,8 +88,10 @@ class BaseStl(base.BaseMesh):
                         # Since we know this is a seekable file now and we're
                         # not 100% certain it's binary, check the size while
                         # reading
-                        name, data = cls._load_binary(fh, header,
-                                                      check_size=True)
+                        name, data = cls._load_binary(
+                            fh, header,
+                            check_size=True
+                        )
             else:
                 name, data = cls._load_binary(fh, header)
         elif mode is ASCII:
@@ -106,7 +112,7 @@ class BaseStl(base.BaseMesh):
         # raise RuntimeError()
         assert count < MAX_COUNT, ('File too large, got %d triangles which '
                                    'exceeds the maximum of %d') % (
-                                       count, MAX_COUNT)
+                                      count, MAX_COUNT)
 
         if check_size:
             try:
@@ -116,7 +122,7 @@ class BaseStl(base.BaseMesh):
                 expected_count = int(raw_size / cls.dtype.itemsize)
                 assert expected_count == count, ('Expected %d vectors but '
                                                  'header indicates %d') % (
-                                                     expected_count, count)
+                                                    expected_count, count)
                 fh.seek(HEADER_SIZE + COUNT_SIZE)
             except IOError:  # pragma: no cover
                 pass
@@ -165,10 +171,11 @@ class BaseStl(base.BaseMesh):
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
                 elif line.startswith(b('endsolid')) \
-                        or line.startswith(b('end solid')):
+                    or line.startswith(b('end solid')):
                     # go back to the beginning of new solid part
                     size_unprocessedlines = sum(
-                        len(line) + 1 for line in lines) - 1
+                        len(line) + 1 for line in lines
+                    ) - 1
 
                     if size_unprocessedlines > 0:
                         position = fh.tell()
@@ -177,20 +184,25 @@ class BaseStl(base.BaseMesh):
                 else:
                     raise RuntimeError(
                         recoverable[0],
-                        '%r should start with %r' % (line, prefix))
+                        '%r should start with %r' % (line, prefix)
+                    )
 
                 if len(values) == 3:
                     return [float(v) for v in values]
                 else:  # pragma: no cover
-                    raise RuntimeError(recoverable[0],
-                                       'Incorrect value %r' % line)
+                    raise RuntimeError(
+                        recoverable[0],
+                        'Incorrect value %r' % line
+                    )
             else:
                 return b(raw_line)
 
         line = get()
         if not lines:
-            raise RuntimeError(recoverable[0],
-                               'No lines found, impossible to read')
+            raise RuntimeError(
+                recoverable[0],
+                'No lines found, impossible to read'
+            )
 
         # Yield the name
         yield line[5:].strip()
@@ -274,7 +286,8 @@ class BaseStl(base.BaseMesh):
             # assumes ASCII files should be text files.
             raise TypeError(
                 "File handles should be in binary mode - even when"
-                " writing an ASCII STL.")
+                " writing an ASCII STL."
+            )
 
         name = self.name
         if not name:
@@ -356,8 +369,10 @@ class BaseStl(base.BaseMesh):
                 'to `StringIO` objects is not supported by `numpy`')
 
     @classmethod
-    def from_file(cls, filename, calculate_normals=True, fh=None,
-                  mode=Mode.AUTOMATIC, speedups=True, **kwargs):
+    def from_file(
+        cls, filename, calculate_normals=True, fh=None,
+        mode=Mode.AUTOMATIC, speedups=True, **kwargs
+    ):
         '''Load a mesh from a STL file
 
         :param str filename: The file to load
@@ -368,18 +383,24 @@ class BaseStl(base.BaseMesh):
         '''
         if fh:
             name, data = cls.load(
-                fh, mode=mode, speedups=speedups)
+                fh, mode=mode, speedups=speedups
+            )
         else:
             with open(filename, 'rb') as fh:
                 name, data = cls.load(
-                    fh, mode=mode, speedups=speedups)
+                    fh, mode=mode, speedups=speedups
+                )
 
-        return cls(data, calculate_normals, name=name,
-                   speedups=speedups, **kwargs)
+        return cls(
+            data, calculate_normals, name=name,
+            speedups=speedups, **kwargs
+        )
 
     @classmethod
-    def from_multi_file(cls, filename, calculate_normals=True, fh=None,
-                        mode=Mode.AUTOMATIC, speedups=True, **kwargs):
+    def from_multi_file(
+        cls, filename, calculate_normals=True, fh=None,
+        mode=Mode.AUTOMATIC, speedups=True, **kwargs
+    ):
         '''Load multiple meshes from a STL file
 
         Note: mode is hardcoded to ascii since binary stl files do not support
@@ -400,19 +421,25 @@ class BaseStl(base.BaseMesh):
             raw_data = cls.load(fh, mode=mode, speedups=speedups)
             while raw_data:
                 name, data = raw_data
-                yield cls(data, calculate_normals, name=name,
-                          speedups=speedups, **kwargs)
-                raw_data = cls.load(fh, mode=ASCII,
-                                    speedups=speedups)
+                yield cls(
+                    data, calculate_normals, name=name,
+                    speedups=speedups, **kwargs
+                )
+                raw_data = cls.load(
+                    fh, mode=ASCII,
+                    speedups=speedups
+                )
 
         finally:
             if close:
                 fh.close()
 
     @classmethod
-    def from_files(cls, filenames, calculate_normals=True, mode=Mode.AUTOMATIC,
-                   speedups=True, **kwargs):
-        '''Load multiple meshes from a STL file
+    def from_files(
+        cls, filenames, calculate_normals=True, mode=Mode.AUTOMATIC,
+        speedups=True, **kwargs
+    ):
+        '''Load multiple meshes from STL files into a single mesh
 
         Note: mode is hardcoded to ascii since binary stl files do not support
         the multi format
@@ -424,15 +451,66 @@ class BaseStl(base.BaseMesh):
         '''
         meshes = []
         for filename in filenames:
-            meshes.append(cls.from_file(
-                filename,
-                calculate_normals=calculate_normals,
-                mode=mode,
-                speedups=speedups,
-                **kwargs))
+            meshes.append(
+                cls.from_file(
+                    filename,
+                    calculate_normals=calculate_normals,
+                    mode=mode,
+                    speedups=speedups,
+                    **kwargs
+                )
+            )
 
         data = numpy.concatenate([mesh.data for mesh in meshes])
         return cls(data, calculate_normals=calculate_normals, **kwargs)
+
+    @classmethod
+    def from_3mf_file(cls, filename, calculate_normals=True, **kwargs):
+        with zipfile.ZipFile(filename) as zip:
+            with zip.open('_rels/.rels') as rels_fh:
+                model = None
+                root = ElementTree.parse(rels_fh).getroot()
+                for child in root:  # pragma: no branch
+                    type_ = child.attrib.get('Type', '')
+                    if type_.endswith('3dmodel'):  # pragma: no branch
+                        model = child.attrib.get('Target', '')
+                        break
+
+            assert model, 'No 3D model found in %s' % filename
+            with zip.open(model.lstrip('/')) as fh:
+                root = ElementTree.parse(fh).getroot()
+
+                mesh_xpath = './{*}resources/{*}object/{*}mesh'
+                for mesh_element in root.findall(mesh_xpath):
+                    triangles = []
+                    vertices = []
+
+                    for element in mesh_element:
+                        attribs = element.attrib
+                        tag = element.tag
+                        if tag.endswith('vertices'):
+                            # Collect all the vertices
+                            for vertice in element:
+                                a = {k: float(v) for k, v in
+                                     vertice.attrib.items()}
+                                vertices.append([a['x'], a['y'], a['z']])
+
+                        elif tag.endswith('triangles'):  # pragma: no branch
+                            # Map the triangles to the vertices and collect
+                            for triangle in element:
+                                a = {k: int(v) for k, v in
+                                     triangle.attrib.items()}
+                                triangles.append(
+                                    [
+                                        vertices[a['v1']],
+                                        vertices[a['v2']],
+                                        vertices[a['v3']],
+                                    ]
+                                )
+
+                    mesh = cls(numpy.zeros(len(triangles), dtype=cls.dtype))
+                    mesh.vectors[:] = numpy.array(triangles)
+                    yield mesh
 
 
 StlMesh = BaseStl.from_file

@@ -73,3 +73,6 @@ def test_multiple_stl_files(tmpdir, speedups):
         assert m.data.size == 10
 
 
+def test_3mf_file(three_mf_path):
+    for m in mesh.Mesh.from_3mf_file(three_mf_path.join('Moon.3mf')):
+        print(m)

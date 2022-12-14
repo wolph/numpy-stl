@@ -23,6 +23,11 @@ def binary_path(cwd):
     return cwd.join('stl_binary')
 
 
+@pytest.fixture(scope='session')
+def three_mf_path(cwd):
+    return cwd.join('3mf')
+
+
 @pytest.fixture(scope='session', params=['ascii', 'binary'])
 def binary_ascii_path(request, ascii_path, binary_path):
     return ascii_path if request.param == 'ascii' else binary_path
