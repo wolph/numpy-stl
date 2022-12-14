@@ -480,13 +480,12 @@ class BaseStl(base.BaseMesh):
             with zip.open(model.lstrip('/')) as fh:
                 root = ElementTree.parse(fh).getroot()
 
-                mesh_xpath = './{*}resources/{*}object/{*}mesh'
-                for mesh_element in root.findall(mesh_xpath):
+                elements = root.findall('./{*}resources/{*}object/{*}mesh')
+                for mesh_element in elements:  # pragma: no branch
                     triangles = []
                     vertices = []
 
                     for element in mesh_element:
-                        attribs = element.attrib
                         tag = element.tag
                         if tag.endswith('vertices'):
                             # Collect all the vertices
