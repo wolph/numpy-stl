@@ -1,5 +1,3 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 import enum
 import math
 import numpy
@@ -11,7 +9,6 @@ except ImportError:  # pragma: no cover
 
 from python_utils import logger
 
-from .utils import s
 
 #: When removing empty areas, remove areas that are smaller than this
 AREA_SIZE_THRESHOLD = 0
@@ -170,9 +167,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
     dtype = numpy.dtype([
-        (s('normals'), numpy.float32, (3, )),
-        (s('vectors'), numpy.float32, (3, 3)),
-        (s('attr'), numpy.uint16, (1, )),
+        ('normals', numpy.float32, (3, )),
+        ('vectors', numpy.float32, (3, 3)),
+        ('attr', numpy.uint16, (1, )),
     ])
     dtype = dtype.newbyteorder('<')  # Even on big endian arches, use little e.
 
@@ -605,6 +602,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
     def __iter__(self):
         for point in self.points:
             yield point
+
+    def __repr__(self):
+        return f'<Mesh: {self.name!r} {self.data.size} vertices>'
 
     def get_mass_properties_with_density(self, density):
         # add density for mesh,density unit kg/m3 when mesh is unit is m

@@ -130,7 +130,8 @@ def ascii_read(fh, buf):
             line = readline(&state)
             line = state.line
 
-            if strstr(line, 'endsolid') != NULL:
+            if strstr(line, 'endsolid') != NULL \
+                    or strstr(line, 'end solid') != NULL:
                 arr.resize(facet - <Facet*>arr.data, refcheck=False)
                 return (<object>name).strip(), arr
 

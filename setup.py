@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import sys
 import warnings
@@ -26,35 +24,21 @@ except ImportError:
     pass
 
 
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
+try:
+    import numpy
+    from Cython import Build
 
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
-
-
-if sys.version_info.major == 2 or sys.platform.lower() != 'win32':
-    try:
-        import numpy
-        from Cython import Build
-
-        setup_kwargs['ext_modules'] = Build.cythonize([
-            extension.Extension(
-                'stl._speedups',
-                ['stl/_speedups.pyx'],
-                include_dirs=[numpy.get_include()],
-            ),
-        ])
-    except ImportError:
-        error('WARNING',
-              'Cython and Numpy is required for building extension.',
-              'Falling back to pure Python implementation.')
+    setup_kwargs['ext_modules'] = Build.cythonize([
+        extension.Extension(
+            'stl._speedups',
+            ['stl/_speedups.pyx'],
+            include_dirs=[numpy.get_include()],
+        ),
+    ])
+except ImportError:
+    error('WARNING',
+          'Cython and Numpy is required for building extension.',
+          'Falling back to pure Python implementation.')
 
 # To prevent importing about and thereby breaking the coverage info we use this
 # exec hack
@@ -72,14 +56,8 @@ else:
 
 install_requires = [
     'numpy',
-    'python-utils>=1.6.2',
+    'python-utils>=3.4.5',
 ]
-
-try:
-    import enum
-    assert enum
-except ImportError:
-    install_requires.append('enum34')
 
 
 tests_require = ['pytest']
@@ -100,6 +78,7 @@ class BuildExt(build_ext):
 
 if __name__ == '__main__':
     setup(
+        python_requires='>3.6.0',
         name=about['__package_name__'],
         version=about['__version__'],
         author=about['__author__'],
@@ -125,19 +104,17 @@ if __name__ == '__main__':
             'Operating System :: OS Independent',
             'Natural Language :: English',
             'Programming Language :: Python',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.10',
             'Topic :: Software Development :: Libraries :: Python Modules',
         ],
         install_requires=install_requires,
         cmdclass=dict(
             build_ext=BuildExt,
-            test=PyTest,
         ),
         **setup_kwargs
     )

@@ -127,6 +127,24 @@ Plotting using `matplotlib`_ is equally easy:
 .. _matplotlib: http://matplotlib.org/
 .. _python-utils: https://github.com/WoLpH/python-utils
 
+Experimental support for reading 3MF files
+------------------------------------------------------------------------------
+
+.. code-block:: python
+
+    import pathlib
+    import stl
+
+    path = pathlib.Path('tests/3mf/Moon.3mf')
+
+    # Load the 3MF file
+    for m in stl.Mesh.from_3mf_file(path):
+        # Do something with the mesh
+        print('mesh', m)
+
+Note that this is still experimental and may not work for all 3MF files.
+Additionally it only allows reading 3mf files, not writing them.
+
 Modifying Mesh objects
 ------------------------------------------------------------------------------
 
@@ -193,7 +211,7 @@ Modifying Mesh objects
 
     # Create a new plot
     figure = pyplot.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
 
     # Render the cube faces
     for m in meshes:
@@ -264,7 +282,7 @@ Extending Mesh objects
 
     # Create a new plot
     figure = pyplot.figure()
-    axes = mplot3d.Axes3D(figure)
+    axes = figure.add_subplot(projection='3d')
 
     # Render the cube
     axes.add_collection3d(mplot3d.art3d.Poly3DCollection(cube.vectors))

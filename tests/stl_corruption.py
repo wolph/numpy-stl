@@ -27,6 +27,14 @@ def test_valid_ascii(tmpdir, speedups):
         mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
 
+def test_end_solid(tmpdir, speedups):
+    tmp_file = tmpdir.join('tmp.stl')
+    with tmp_file.open('w+') as fh:
+        fh.write(_STL_FILE.replace('endsolid', 'end solid'))
+        fh.seek(0)
+        mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
+
+
 def test_ascii_with_missing_name(tmpdir, speedups):
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
