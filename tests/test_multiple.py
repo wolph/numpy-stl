@@ -5,19 +5,19 @@ import pytest
 from stl import mesh
 from stl.utils import b
 
-_STL_FILE = b(
-    '''
-    solid test.stl
-    facet normal -0.014565 0.073223 -0.002897
-      outer loop
-        vertex 0.399344 0.461940 1.044090
-        vertex 0.500000 0.500000 1.500000
-        vertex 0.576120 0.500000 1.117320
-      endloop
-    endfacet
-    endsolid test.stl
-    '''.lstrip()
-)
+_STL_FILE = '''
+solid test.stl
+facet normal -0.014565 0.073223 -0.002897
+  outer loop
+    vertex 0.399344 0.461940 1.044090
+    vertex 0.500000 0.500000 1.500000
+    vertex 0.576120 0.500000 1.117320
+  endloop
+endfacet
+endsolid test.stl
+'''
+# This is split because the pycharm autoformatter breaks the tests otherwise
+_STL_FILE = b(_STL_FILE.lstrip())
 
 
 def test_single_stl(tmpdir, speedups):
