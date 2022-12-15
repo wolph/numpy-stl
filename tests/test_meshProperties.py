@@ -18,7 +18,7 @@ def test_mass_properties_for_half_donut(binary_ascii_path, speedups):
     One checks the results obtained with stl
     with the ones obtained with meshlab
     '''
-    filename = binary_ascii_path.join('HalfDonut.stl')
+    filename = binary_ascii_path/'HalfDonut.stl'
     mesh = stl.StlMesh(str(filename), speedups=speedups)
     volume, cog, inertia = mesh.get_mass_properties()
     assert close([volume], [2.343149])
@@ -35,7 +35,7 @@ def test_mass_properties_for_moon(binary_ascii_path, speedups):
     One checks the results obtained with stl
     with the ones obtained with meshlab
     '''
-    filename = binary_ascii_path.join('Moon.stl')
+    filename = binary_ascii_path/'Moon.stl'
     mesh = stl.StlMesh(str(filename), speedups=speedups)
     volume, cog, inertia = mesh.get_mass_properties()
     assert close([volume], [0.888723])
@@ -54,7 +54,7 @@ def test_mass_properties_for_star(binary_ascii_path, filename, speedups):
     One checks the results obtained with stl
     with the ones obtained with meshlab
     '''
-    filename = binary_ascii_path.join(filename)
+    filename = binary_ascii_path/filename
     if not filename.exists():
         pytest.skip('STL file does not exist')
     mesh = stl.StlMesh(str(filename), speedups=speedups)
@@ -74,7 +74,7 @@ def test_mass_properties_for_half_donut_with_density(
     One checks the results obtained with stl
     with the ones obtained with meshlab
     '''
-    filename = binary_ascii_path.join('HalfDonut.stl')
+    filename = binary_ascii_path/'HalfDonut.stl'
     mesh = stl.StlMesh(str(filename), speedups=speedups)
     volume, mass, cog, inertia = mesh.get_mass_properties_with_density(1.23)
 

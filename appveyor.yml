@@ -3,12 +3,9 @@ image:
 
 environment:
   matrix:
-  - TOXENV: py36
-  - TOXENV: py37
   - TOXENV: py38
-  # Does not work because of str of py.path
-  # - TOXENV: py39
-  # - TOXENV: py310
+  - TOXENV: py39
+  - TOXENV: py310
 
 install:
   # Download setup scripts and unzip

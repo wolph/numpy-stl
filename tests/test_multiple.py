@@ -3,9 +3,8 @@ import zipfile
 import pytest
 
 from stl import mesh
-from stl.utils import b
 
-_STL_FILE = '''
+_STL_FILE = b'''
 solid test.stl
 facet normal -0.014565 0.073223 -0.002897
   outer loop
@@ -16,12 +15,10 @@ facet normal -0.014565 0.073223 -0.002897
 endfacet
 endsolid test.stl
 '''
-# This is split because the pycharm autoformatter breaks the tests otherwise
-_STL_FILE = b(_STL_FILE.lstrip())
 
 
 def test_single_stl(tmpdir, speedups):
-    tmp_file = tmpdir.join('tmp.stl')
+    tmp_file = tmpdir / 'tmp.stl'
     with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
@@ -32,7 +29,7 @@ def test_single_stl(tmpdir, speedups):
 
 
 def test_multiple_stl(tmpdir, speedups):
-    tmp_file = tmpdir.join('tmp.stl')
+    tmp_file = tmpdir / 'tmp.stl'
     with tmp_file.open('wb+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
@@ -48,7 +45,7 @@ def test_multiple_stl(tmpdir, speedups):
 
 
 def test_single_stl_file(tmpdir, speedups):
-    tmp_file = tmpdir.join('tmp.stl')
+    tmp_file = tmpdir / 'tmp.stl'
     with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
@@ -59,7 +56,7 @@ def test_single_stl_file(tmpdir, speedups):
 
 
 def test_multiple_stl_file(tmpdir, speedups):
-    tmp_file = tmpdir.join('tmp.stl')
+    tmp_file = tmpdir / 'tmp.stl'
     with tmp_file.open('wb+') as fh:
         for _ in range(10):
             fh.write(_STL_FILE)
@@ -76,7 +73,7 @@ def test_multiple_stl_file(tmpdir, speedups):
 
 
 def test_multiple_stl_files(tmpdir, speedups):
-    tmp_file = tmpdir.join('tmp.stl')
+    tmp_file = tmpdir / 'tmp.stl'
     with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
@@ -88,13 +85,13 @@ def test_multiple_stl_files(tmpdir, speedups):
 
 
 def test_3mf_file(three_mf_path):
-    for m in mesh.Mesh.from_3mf_file(three_mf_path.join('Moon.3mf')):
+    for m in mesh.Mesh.from_3mf_file(three_mf_path / 'Moon.3mf'):
         print(m)
 
 
 def test_3mf_missing_file(three_mf_path):
     with pytest.raises(FileNotFoundError):
-        for m in mesh.Mesh.from_3mf_file(three_mf_path.join('some_file.3mf')):
+        for m in mesh.Mesh.from_3mf_file(three_mf_path / 'some_file.3mf'):
             print(m)
 
 

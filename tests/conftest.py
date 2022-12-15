@@ -1,4 +1,5 @@
-import py
+import pathlib
+
 import pytest
 
 
@@ -9,35 +10,35 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture(scope='session')
-def cwd():
-    return py.path.local(__file__).dirpath()
+def cwd() -> pathlib.Path:
+    return pathlib.Path(__file__).parent
 
 
 @pytest.fixture(scope='session')
-def ascii_path(cwd):
-    return cwd.join('stl_ascii')
+def ascii_path(cwd) -> pathlib.Path:
+    return cwd / 'stl_ascii'
 
 
 @pytest.fixture(scope='session')
-def binary_path(cwd):
-    return cwd.join('stl_binary')
+def binary_path(cwd) -> pathlib.Path:
+    return cwd / 'stl_binary'
 
 
 @pytest.fixture(scope='session')
-def three_mf_path(cwd):
-    return cwd.join('3mf')
+def three_mf_path(cwd) -> pathlib.Path:
+    return cwd / '3mf'
 
 
 @pytest.fixture(scope='session', params=['ascii', 'binary'])
-def binary_ascii_path(request, ascii_path, binary_path):
+def binary_ascii_path(request, ascii_path, binary_path) -> pathlib.Path:
     return ascii_path if request.param == 'ascii' else binary_path
 
 
 @pytest.fixture(scope='session')
-def ascii_file(ascii_path):
-    return str(ascii_path.join('HalfDonut.stl'))
+def ascii_file(ascii_path) -> str:
+    return str(ascii_path / 'HalfDonut.stl')
 
 
 @pytest.fixture(scope='session')
-def binary_file(binary_path):
-    return str(binary_path.join('HalfDonut.stl'))
+def binary_file(binary_path) -> str:
+    return str(binary_path / 'HalfDonut.stl')
