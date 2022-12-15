@@ -31,6 +31,8 @@ def _get_name(args):
         getattr(args.infile, 'name', None),
         'numpy-stl-%06d' % random.randint(0, 1_000_000),
     ]
+    print('names', names)
+    print('args', args)
 
     for name in names:  # pragma: no branch
         if name and isinstance(name, str) and not name.startswith('<'):
