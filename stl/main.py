@@ -43,7 +43,7 @@ def _get_name(args):
     for name in names:  # pragma: no branch
         if not isinstance(name, str):
             continue
-        elif name.startswith('<'):
+        elif name.startswith('<'):  # pragma: no cover
             continue
         elif r'\AppData\Local\Temp' in name:  # pragma: no cover
             # Windows temp file
