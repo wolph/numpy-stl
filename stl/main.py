@@ -1,5 +1,4 @@
 import argparse
-import pprint
 import random
 import sys
 
@@ -46,7 +45,7 @@ def _get_name(args):
             continue
         elif name.startswith('<'):
             continue
-        elif r'\AppData\Local\Temp' in name:
+        elif r'\AppData\Local\Temp' in name:  # pragma: no cover
             # Windows temp file
             continue
         else:
