@@ -1,4 +1,4 @@
-# import os
+import py.path
 import pytest
 import tempfile
 
@@ -6,6 +6,9 @@ from stl import stl
 
 
 def _test_conversion(from_, to, mode, speedups):
+    # For some reason the test fails when using pathlib instead of py.path
+    from_ = py.path.local(from_)
+    to = py.path.local(to)
 
     for name in from_.listdir():
         source_file = from_.join(name)
