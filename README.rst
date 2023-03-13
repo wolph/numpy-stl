@@ -25,6 +25,13 @@ and easy.
 Due to all operations heavily relying on `numpy` this is one of the fastest
 STL editing libraries for Python available.
 
+Security contact information
+------------------------------------------------------------------------------
+
+To report a security vulnerability, please use the
+`Tidelift security contact <https://tidelift.com/security>`_.
+Tidelift will coordinate the fix and disclosure.
+
 Issues
 ------
 
