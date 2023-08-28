@@ -1,5 +1,6 @@
 import enum
 import math
+import itertools
 import numpy
 import logging
 try:  # pragma: no cover
@@ -346,21 +347,64 @@ class BaseMesh(logger.Logged, abc.Mapping):
     def update_centroids(self):
         self.centroids = numpy.mean([self.v0, self.v1, self.v2], axis=0)
 
-    def check(self):
-        '''Check the mesh is valid or not'''
-        return self.is_closed()
+    def check(self, exact=False):
+        """Check the mesh is valid or not
 
-    def is_closed(self):  # pragma: no cover
-        """Check the mesh is closed or not"""
-        if numpy.isclose(self.normals.sum(axis=0), 0, atol=1e-4).all():
-            return True
+        :param bool exact: Perform exact checks.
+        """
+        return self.is_closed(exact=exact)
+
+    def is_closed(self, exact=False):  # pragma: no cover
+        """Check the mesh is closed or not
+
+        :param bool exact: Perform a exact check on edges.
+        """
+
+        if not exact:
+            self.warning(
+                """
+            Use of not exact is_closed check. This check can lead to misleading
+            results. You could try to use `exact=True`.
+            See: https://github.com/wolph/numpy-stl/issues/198
+            """.strip()
+            )
+            normals = numpy.asarray(self.normals, dtype=numpy.float64)
+            allowed_max_errors = (
+                numpy.abs(normals).sum(axis=0) * numpy.finfo(numpy.float32).eps
+            )
+            if (numpy.abs(normals.sum(axis=0)) <= allowed_max_errors).all():
+                return True
+
         else:
-            self.warning('''
-            Your mesh is not closed, the mass methods will not function
-            correctly on this mesh.  For more info:
-            https://github.com/WoLpH/numpy-stl/issues/69
-            '''.strip())
-            return False
+            reversed_triangles = (
+                numpy.cross(self.v1 - self.v0, self.v2 - self.v0) * self.normals
+            ).sum(axis=1) < 0
+            directed_edges = set(
+                tuple(edge.ravel() if not rev else edge[::-1, :].ravel())
+                for rev, edge in zip(
+                    itertools.cycle(reversed_triangles),
+                    itertools.chain(
+                        self.vectors[:, (0, 1), :],
+                        self.vectors[:, (1, 2), :],
+                        self.vectors[:, (2, 0), :],
+                    ),
+                )
+            )
+            if len(directed_edges) == 3 * self.data.size:
+                undirected_edges = set(
+                    frozenset((edge[:3], edge[3:])) for edge in directed_edges
+                )
+                if len(directed_edges) == 2 * len(undirected_edges):
+                    return True
+
+        self.warning(
+            """
+        Your mesh is not closed, the mass methods will not function
+        correctly on this mesh.  For more info:
+        https://github.com/WoLpH/numpy-stl/issues/69
+        """.strip()
+        )
+        return False
 
     def get_mass_properties(self):
         '''
