@@ -365,7 +365,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
                 """
             Use of not exact is_closed check. This check can lead to misleading
             results. You could try to use `exact=True`.
-            See: https://github.com/wolph/numpy-stl/issues/198
+            See:
+             - false positive: https://github.com/wolph/numpy-stl/issues/198
+             - false negative: https://github.com/wolph/numpy-stl/pull/213
             """.strip()
             )
             normals = numpy.asarray(self.normals, dtype=numpy.float64)
