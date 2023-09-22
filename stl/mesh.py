@@ -1,6 +1,6 @@
-from . import stl
+from .stl import BaseStl
 
 
-class Mesh(stl.BaseStl):
+class Mesh(BaseStl):
     pass
 
