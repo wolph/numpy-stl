@@ -1,15 +1,16 @@
 import enum
-import math
 import itertools
-import numpy
 import logging
+import math
+
+import numpy
+
 try:  # pragma: no cover
     from collections import abc
 except ImportError:  # pragma: no cover
     import collections as abc
 
 from python_utils import logger
-
 
 #: When removing empty areas, remove areas that are smaller than this
 AREA_SIZE_THRESHOLD = 0
@@ -168,9 +169,9 @@ class BaseMesh(logger.Logged, abc.Mapping):
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
     dtype = numpy.dtype([
-        ('normals', numpy.float32, (3, )),
+        ('normals', numpy.float32, (3,)),
         ('vectors', numpy.float32, (3, 3)),
-        ('attr', numpy.uint16, (1, )),
+        ('attr', numpy.uint16, (1,)),
     ])
     dtype = dtype.newbyteorder('<')  # Even on big endian arches, use little e.
 
@@ -348,40 +349,24 @@ class BaseMesh(logger.Logged, abc.Mapping):
         self.centroids = numpy.mean([self.v0, self.v1, self.v2], axis=0)
 
     def check(self, exact=False):
-        """Check the mesh is valid or not
+        '''Check the mesh is valid or not
 
         :param bool exact: Perform exact checks.
-        """
+        '''
         return self.is_closed(exact=exact)
 
     def is_closed(self, exact=False):  # pragma: no cover
-        """Check the mesh is closed or not
+        '''Check the mesh is closed or not
 
         :param bool exact: Perform a exact check on edges.
-        """
+        '''
 
-        if not exact:
-            self.warning(
-                """
-            Use of not exact is_closed check. This check can lead to misleading
-            results. You could try to use `exact=True`.
-            See:
-             - false positive: https://github.com/wolph/numpy-stl/issues/198
-             - false negative: https://github.com/wolph/numpy-stl/pull/213
-            """.strip()
-            )
-            normals = numpy.asarray(self.normals, dtype=numpy.float64)
-            allowed_max_errors = (
-                numpy.abs(normals).sum(axis=0) * numpy.finfo(numpy.float32).eps
-            )
-            if (numpy.abs(normals.sum(axis=0)) <= allowed_max_errors).all():
-                return True
-
-        else:
+        if exact:
             reversed_triangles = (
-                numpy.cross(self.v1 - self.v0, self.v2 - self.v0) * self.normals
-            ).sum(axis=1) < 0
-            directed_edges = set(
+                                         numpy.cross(self.v1 - self.v0,
+                                                     self.v2 - self.v0) * self.normals
+                                 ).sum(axis=1) < 0
+            directed_edges = {
                 tuple(edge.ravel() if not rev else edge[::-1, :].ravel())
                 for rev, edge in zip(
                     itertools.cycle(reversed_triangles),
@@ -391,20 +376,36 @@ class BaseMesh(logger.Logged, abc.Mapping):
                         self.vectors[:, (2, 0), :],
                     ),
                 )
-            )
+            }
             if len(directed_edges) == 3 * self.data.size:
-                undirected_edges = set(
-                    frozenset((edge[:3], edge[3:])) for edge in directed_edges
-                )
+                undirected_edges = {frozenset((edge[:3], edge[3:])) for edge in
+                                    directed_edges}
                 if len(directed_edges) == 2 * len(undirected_edges):
                     return True
 
+        else:
+            self.warning('''
+            Use of not exact is_closed check. This check can lead to misleading
+            results. You could try to use `exact=True`.
+            See:
+             - false positive: https://github.com/wolph/numpy-stl/issues/198
+             - false negative: https://github.com/wolph/numpy-stl/pull/213
+            '''.strip()
+                         )
+            normals = numpy.asarray(self.normals, dtype=numpy.float64)
+            allowed_max_errors = (
+                    numpy.abs(normals).sum(axis=0) * numpy.finfo(
+                numpy.float32).eps
+            )
+            if (numpy.abs(normals.sum(axis=0)) <= allowed_max_errors).all():
+                return True
+
         self.warning(
-            """
+            '''
         Your mesh is not closed, the mass methods will not function
         correctly on this mesh.  For more info:
         https://github.com/WoLpH/numpy-stl/issues/69
-        """.strip()
+        '''.strip()
         )
         return False
 
@@ -584,7 +585,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
         :param numpy.array translation: Translation vector (x, y, z)
         '''
-        assert len(translation) == 3, "Translation vector must be of length 3"
+        assert len(translation) == 3, 'Translation vector must be of length 3'
         self.x += translation[0]
         self.y += translation[1]
         self.z += translation[2]
@@ -601,10 +602,10 @@ class BaseMesh(logger.Logged, abc.Mapping):
                                    part of the transformation
         '''
         is_a_4x4_matrix = matrix.shape == (4, 4)
-        assert is_a_4x4_matrix, "Transformation matrix must be of shape (4, 4)"
+        assert is_a_4x4_matrix, 'Transformation matrix must be of shape (4, 4)'
         rotation = matrix[0:3, 0:3]
         unit_det_rotation = numpy.allclose(numpy.linalg.det(rotation), 1.0)
-        assert unit_det_rotation, "Rotation matrix has not a unit determinant"
+        assert unit_det_rotation, 'Rotation matrix has not a unit determinant'
         for i in range(3):
             self.vectors[:, i] = numpy.dot(rotation, self.vectors[:, i].T).T
         self.x += matrix[0, 3]
@@ -695,17 +696,16 @@ class BaseMesh(logger.Logged, abc.Mapping):
         inertia = numpy.zeros((3, 3))
 
         inertia[0, 0] = (intg[5] + intg[6]) * density - vmass * (
-            cogsq[1] + cogsq[2])
+                cogsq[1] + cogsq[2])
         inertia[1, 1] = (intg[4] + intg[6]) * density - vmass * (
-            cogsq[2] + cogsq[0])
+                cogsq[2] + cogsq[0])
         inertia[2, 2] = (intg[4] + intg[5]) * density - vmass * (
-            cogsq[0] + cogsq[1])
+                cogsq[0] + cogsq[1])
         inertia[0, 1] = inertia[1, 0] = -(
-            intg[7] * density - vmass * cog[0] * cog[1])
+                intg[7] * density - vmass * cog[0] * cog[1])
         inertia[1, 2] = inertia[2, 1] = -(
-            intg[8] * density - vmass * cog[1] * cog[2])
+                intg[8] * density - vmass * cog[1] * cog[2])
         inertia[0, 2] = inertia[2, 0] = -(
-            intg[9] * density - vmass * cog[2] * cog[0])
+                intg[9] * density - vmass * cog[2] * cog[0])
 
         return volume, vmass, cog, inertia
-
