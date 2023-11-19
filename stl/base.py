@@ -419,7 +419,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         Documentation can be found here:
         http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
         '''
-        self.check()
+        self.check(True)
 
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
