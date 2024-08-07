@@ -3,7 +3,6 @@ import sys
 import warnings
 from setuptools import setup, extension
 from setuptools.command.build_ext import build_ext
-from setuptools.command.test import test as TestCommand
 
 setup_kwargs = {}
 
