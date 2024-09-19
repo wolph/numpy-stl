@@ -319,11 +319,11 @@ class BaseStl(base.BaseMesh):
 
             for row in self.data:
                 vectors = row['vectors']
-                p('facet normal %r %r %r' % tuple(row['normals']), file=fh)
+                p('facet normal %r %r %r' % tuple(row['normals'].tolist()), file=fh)
                 p('  outer loop', file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[0]), file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[1]), file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[2]), file=fh)
+                p('    vertex %r %r %r' % tuple(vectors[0].tolist()), file=fh)
+                p('    vertex %r %r %r' % tuple(vectors[1].tolist()), file=fh)
+                p('    vertex %r %r %r' % tuple(vectors[2].tolist()), file=fh)
                 p('  endloop', file=fh)
                 p('endfacet', file=fh)
 
