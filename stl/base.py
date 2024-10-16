@@ -137,7 +137,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     >>> len(mesh) == len(list(mesh))
     True
-    >>> (mesh.min_ < mesh.max_).all()
+    >>>  bool((mesh.min_ < mesh.max_).all())
     True
     >>> mesh.update_normals()
     >>> mesh.units.sum()
