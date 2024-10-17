@@ -150,19 +150,19 @@ class BaseMesh(logger.Logged, abc.Mapping):
     >>> mesh.x = mesh.y = mesh.z = 0
 
     >>> mesh.attr = 1
-    >>> (mesh.attr == 1).all()
+    >>> bool((mesh.attr == 1).all())
     True
 
     >>> mesh.normals = 2
-    >>> (mesh.normals == 2).all()
+    >>> bool((mesh.normals == 2).all())
     True
 
     >>> mesh.vectors = 3
-    >>> (mesh.vectors == 3).all()
+    >>> bool((mesh.vectors == 3).all())
     True
 
     >>> mesh.points = 4
-    >>> (mesh.points == 4).all()
+    >>> bool((mesh.points == 4).all())
     True
     '''
     #: - normals: :func:`numpy.float32`, `(3, )`
