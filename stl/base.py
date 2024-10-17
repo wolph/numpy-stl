@@ -140,10 +140,10 @@ class BaseMesh(logger.Logged, abc.Mapping):
     >>> bool((mesh.min_ < mesh.max_).all())
     True
     >>> mesh.update_normals()
-    >>> mesh.units.sum()
+    >>> float(mesh.units.sum())
     0.0
     >>> mesh.v0[:] = mesh.v1[:] = mesh.v2[:] = 0
-    >>> mesh.points.sum()
+    >>> float(mesh.points.sum())
     0.0
 
     >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
