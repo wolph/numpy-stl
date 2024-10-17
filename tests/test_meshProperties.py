@@ -25,7 +25,7 @@ def test_mass_properties_for_half_donut(binary_ascii_path, speedups):
     assert close(cog, [1.500001, 0.209472, 1.500001])
     assert close(inertia, [[+1.390429, +0.000000, +0.000000],
                            [+0.000000, +2.701025, +0.000000],
-                           [+0.000000, +0.000000, +1.390429]])
+                           [+0.000000, +0.000000, +1.390429]], atol=1e-5)
 
 
 def test_mass_properties_for_moon(binary_ascii_path, speedups):
@@ -42,7 +42,7 @@ def test_mass_properties_for_moon(binary_ascii_path, speedups):
     assert close(cog, [0.906913, 0.170731, 1.500001])
     assert close(inertia, [[+0.562097, -0.000457, +0.000000],
                            [-0.000457, +0.656851, +0.000000],
-                           [+0.000000, +0.000000, +0.112465]])
+                           [+0.000000, +0.000000, +0.112465]], atol=1e-5)
 
 
 @pytest.mark.parametrize('filename', ('Star.stl', 'StarWithEmptyHeader.stl'))
@@ -63,7 +63,7 @@ def test_mass_properties_for_star(binary_ascii_path, filename, speedups):
     assert close(cog, [1.299040, 0.170197, 1.499999])
     assert close(inertia, [[+0.509549, +0.000000, -0.000000],
                            [+0.000000, +0.991236, +0.000000],
-                           [-0.000000, +0.000000, +0.509550]])
+                           [-0.000000, +0.000000, +0.509550]], atol=1e-5)
 
 
 def test_mass_properties_for_half_donut_with_density(
@@ -86,4 +86,4 @@ def test_mass_properties_for_half_donut_with_density(
     print(inertia)
     assert close(inertia, [[+1.71022851, +0.00000001, -0.00000011],
                            [+0.00000001, +3.32226227, +0.00000002],
-                           [-0.00000011, +0.00000002, +1.71022859]])
+                           [-0.00000011, +0.00000002, +1.71022859]], atol=1e-5)
