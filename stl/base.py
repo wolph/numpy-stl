@@ -655,7 +655,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     def get_mass_properties_with_density(self, density):
         # add density for mesh,density unit kg/m3 when mesh is unit is m
-        self.check()
+        self.check(True)
 
         def subexpression(x):
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
