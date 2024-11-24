@@ -36,13 +36,15 @@ def _test_conversion(from_, to, mode, speedups):
 
 
 def test_ascii_to_binary(ascii_path, binary_path, speedups):
-    _test_conversion(ascii_path, binary_path, mode=stl.BINARY,
-                     speedups=speedups)
+    _test_conversion(
+        ascii_path, binary_path, mode=stl.BINARY, speedups=speedups
+    )
 
 
 def test_binary_to_ascii(ascii_path, binary_path, speedups):
-    _test_conversion(binary_path, ascii_path, mode=stl.ASCII,
-                     speedups=speedups)
+    _test_conversion(
+        binary_path, ascii_path, mode=stl.ASCII, speedups=speedups
+    )
 
 
 def test_stl_mesh(ascii_file, tmpdir, speedups):
