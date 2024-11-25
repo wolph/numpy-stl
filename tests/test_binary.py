@@ -26,17 +26,14 @@ def _test(tmpdir, speedups, mode, use_filehandle=True):
     filename = TESTS_PATH / 'stl_binary' / 'rear_case.stl'
     if use_filehandle:
         with open(filename, 'rb') as fh:
-            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups,
-                                mode=mode)
+            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups, mode=mode)
 
         with open(filename, 'rb') as fh:
             # Test with BytesIO
             fh = io.BytesIO(fh.read())
-            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups,
-                                mode=mode)
+            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups, mode=mode)
     else:
-        mesh.Mesh.from_file(filename,
-                            speedups=speedups, mode=mode)
+        mesh.Mesh.from_file(filename, speedups=speedups, mode=mode)
 
 
 @pytest.mark.parametrize('mode', [Mode.BINARY, Mode.AUTOMATIC])
