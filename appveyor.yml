@@ -28,7 +28,7 @@ install:
 build: false  # Not a C# project, build stuff at the test step instead.
 
 before_test:
-  - py -m pip install tox numpy cython wheel
+  - py -m pip install tox numpy cython wheel setuptools
 
 test_script:
   - "py -m tox -e %TOXENV%"

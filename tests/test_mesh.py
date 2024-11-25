@@ -9,9 +9,7 @@ from . import utils
 
 def test_units_1d():
     data = numpy.zeros(1, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [2, 0, 0]])
+    data['vectors'][0] = numpy.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]])
 
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
@@ -25,67 +23,48 @@ def test_units_1d():
 
 def test_units_2d():
     data = numpy.zeros(2, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [0, 1, 0]])
-    data['vectors'][1] = numpy.array([[1, 0, 0],
-                                      [0, 1, 0],
-                                      [1, 1, 0]])
+    data['vectors'][0] = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    data['vectors'][1] = numpy.array([[1, 0, 0], [0, 1, 0], [1, 1, 0]])
 
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
     assert numpy.allclose(mesh.areas, [0.5, 0.5])
-    assert numpy.allclose(mesh.centroids, [
-                          [1 / 3, 1 / 3, 0],
-                          [2 / 3, 2 / 3, 0]])
-    assert numpy.allclose(mesh.normals, [
-                          [0.0, 0.0, 1.0],
-                          [0.0, 0.0, -1.0]])
+    assert numpy.allclose(
+        mesh.centroids, [[1 / 3, 1 / 3, 0], [2 / 3, 2 / 3, 0]]
+    )
+    assert numpy.allclose(mesh.normals, [[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]])
     assert numpy.allclose(mesh.units, [[0, 0, 1], [0, 0, -1]])
-    assert numpy.allclose(mesh.get_unit_normals(), [
-                          [0.0, 0.0, 1.0],
-                          [0.0, 0.0, -1.0]])
+    assert numpy.allclose(
+        mesh.get_unit_normals(), [[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]]
+    )
 
 
 def test_units_3d():
     data = numpy.zeros(1, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [0, 1, 1.]])
+    data['vectors'][0] = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 1.0]])
 
     mesh = Mesh(data, remove_empty_areas=False)
     mesh.update_units()
 
-    assert (mesh.areas - 2 ** .5) < 0.0001
+    assert (mesh.areas - 2**0.5) < 0.0001
     assert numpy.allclose(mesh.centroids, [1 / 3, 1 / 3, 1 / 3])
     assert numpy.allclose(mesh.normals, [0.0, -1.0, 1.0])
     assert numpy.allclose(mesh.units[0], [0.0, -0.70710677, 0.70710677])
     assert numpy.allclose(numpy.linalg.norm(mesh.units, axis=-1), 1)
-    assert numpy.allclose(mesh.get_unit_normals(),
-                          [0.0, -0.70710677, 0.70710677])
+    assert numpy.allclose(
+        mesh.get_unit_normals(), [0.0, -0.70710677, 0.70710677]
+    )
 
 
 def test_duplicate_polygons():
     data = numpy.zeros(6, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[1, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][1] = numpy.array([[2, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][2] = numpy.array([[0, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][3] = numpy.array([[2, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][4] = numpy.array([[1, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][5] = numpy.array([[0, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
+    data['vectors'][0] = numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][1] = numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][2] = numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][3] = numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][4] = numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][5] = numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
     mesh = Mesh(data)
     assert mesh.data.size == 6
@@ -108,47 +87,37 @@ def test_duplicate_polygons():
     mesh = Mesh(data, remove_duplicate_polygons=True)
     assert mesh.data.size == 3
 
-    assert numpy.allclose(mesh.vectors[0], numpy.array([[1, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
-    assert numpy.allclose(mesh.vectors[1], numpy.array([[2, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
-    assert numpy.allclose(mesh.vectors[2], numpy.array([[0, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
+    assert numpy.allclose(
+        mesh.vectors[0], numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
+    assert numpy.allclose(
+        mesh.vectors[1], numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
+    assert numpy.allclose(
+        mesh.vectors[2], numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
 
     mesh = Mesh(data, remove_duplicate_polygons=RemoveDuplicates.ALL)
     assert mesh.data.size == 3
 
-    assert numpy.allclose(mesh.vectors[0], numpy.array([[1, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
-    assert numpy.allclose(mesh.vectors[1], numpy.array([[2, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
-    assert numpy.allclose(mesh.vectors[2], numpy.array([[0, 0, 0],
-                                                        [0, 0, 0],
-                                                        [0, 0, 0]]))
+    assert numpy.allclose(
+        mesh.vectors[0], numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
+    assert numpy.allclose(
+        mesh.vectors[1], numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
+    assert numpy.allclose(
+        mesh.vectors[2], numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    )
 
 
 def test_remove_all_duplicate_polygons():
     data = numpy.zeros(5, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][1] = numpy.array([[1, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][2] = numpy.array([[2, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][3] = numpy.array([[3, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
-    data['vectors'][4] = numpy.array([[3, 0, 0],
-                                      [0, 0, 0],
-                                      [0, 0, 0]])
+    data['vectors'][0] = numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][1] = numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][2] = numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][3] = numpy.array([[3, 0, 0], [0, 0, 0], [0, 0, 0]])
+    data['vectors'][4] = numpy.array([[3, 0, 0], [0, 0, 0], [0, 0, 0]])
 
     mesh = Mesh(data, remove_duplicate_polygons=False)
     assert mesh.data.size == 5
@@ -157,28 +126,22 @@ def test_remove_all_duplicate_polygons():
     mesh = Mesh(data, remove_duplicate_polygons=RemoveDuplicates.ALL)
     assert mesh.data.size == 3
 
-    assert (mesh.vectors[0] == numpy.array([[0, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[1] == numpy.array([[1, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
-    assert (mesh.vectors[2] == numpy.array([[2, 0, 0],
-                                            [0, 0, 0],
-                                            [0, 0, 0]])).all()
+    assert (
+        mesh.vectors[0] == numpy.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    ).all()
+    assert (
+        mesh.vectors[1] == numpy.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    ).all()
+    assert (
+        mesh.vectors[2] == numpy.array([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    ).all()
 
 
 def test_empty_areas():
     data = numpy.zeros(3, dtype=Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [0, 1, 0]])
-    data['vectors'][1] = numpy.array([[1, 0, 0],
-                                      [0, 1, 0],
-                                      [1, 0, 0]])
-    data['vectors'][2] = numpy.array([[1, 0, 0],
-                                      [0, 1, 0],
-                                      [1, 0, 0]])
+    data['vectors'][0] = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    data['vectors'][1] = numpy.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]])
+    data['vectors'][2] = numpy.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]])
 
     mesh = Mesh(data, calculate_normals=False, remove_empty_areas=False)
     assert mesh.data.size == 3
@@ -190,21 +153,22 @@ def test_empty_areas():
 
     mesh.centroids[1] = [1, 2, 3]
     mesh.centroids[2] = [4, 5, 6]
-    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
-                                           [1, 2, 3],
-                                           [4, 5, 6]])
+    assert numpy.allclose(
+        mesh.centroids, [[1 / 3, 1 / 3, 0], [1, 2, 3], [4, 5, 6]]
+    )
 
     mesh.update_normals(update_areas=False, update_centroids=False)
     assert numpy.allclose(mesh.areas, [[0.5], [1.0], [2.0]])
-    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
-                                           [1, 2, 3],
-                                           [4, 5, 6]])
+    assert numpy.allclose(
+        mesh.centroids, [[1 / 3, 1 / 3, 0], [1, 2, 3], [4, 5, 6]]
+    )
 
     mesh.update_normals(update_areas=True, update_centroids=True)
     assert numpy.allclose(mesh.areas, [[0.5], [0.0], [0.0]])
-    assert numpy.allclose(mesh.centroids, [[1 / 3, 1 / 3, 0],
-                                           [2 / 3, 1 / 3, 0],
-                                           [2 / 3, 1 / 3, 0]])
+    assert numpy.allclose(
+        mesh.centroids,
+        [[1 / 3, 1 / 3, 0], [2 / 3, 1 / 3, 0], [2 / 3, 1 / 3, 0]],
+    )
 
     mesh = Mesh(data, remove_empty_areas=True)
     assert mesh.data.size == 1
@@ -218,23 +182,38 @@ def test_base_mesh():
     mesh.v1[0] += 2
 
     # Check item 0 (contains v0, v1 and v2)
-    assert (mesh[0] == numpy.array(
-        [1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=numpy.float32)
-    ).all()
-    assert (mesh.vectors[0] == numpy.array([
-            [1., 1., 1.],
-            [2., 2., 2.],
-            [0., 0., 0.]], dtype=numpy.float32)).all()
-    assert (mesh.v0[0] == numpy.array([1., 1., 1.], dtype=numpy.float32)).all()
-    assert (mesh.points[0] == numpy.array(
-        [1., 1., 1., 2., 2., 2., 0., 0., 0.], dtype=numpy.float32)
+    assert (
+        mesh[0]
+        == numpy.array(
+            [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0], dtype=numpy.float32
+        )
     ).all()
     assert (
-        mesh.x[0] == numpy.array([1., 2., 0.], dtype=numpy.float32)).all()
+        mesh.vectors[0]
+        == numpy.array(
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
+            dtype=numpy.float32,
+        )
+    ).all()
+    assert (
+        mesh.v0[0] == numpy.array([1.0, 1.0, 1.0], dtype=numpy.float32)
+    ).all()
+    assert (
+        mesh.points[0]
+        == numpy.array(
+            [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0], dtype=numpy.float32
+        )
+    ).all()
+    assert (
+        mesh.x[0] == numpy.array([1.0, 2.0, 0.0], dtype=numpy.float32)
+    ).all()
 
     mesh[0] = 3
-    assert (mesh[0] == numpy.array(
-        [3., 3., 3., 3., 3., 3., 3., 3., 3.], dtype=numpy.float32)
+    assert (
+        mesh[0]
+        == numpy.array(
+            [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0], dtype=numpy.float32
+        )
     ).all()
 
     assert len(mesh) == len(list(mesh))
