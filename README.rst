@@ -300,6 +300,39 @@ Extending Mesh objects
     # Show the plot to the screen
     pyplot.show()
 
+Creating a single triangle
+----------------------------------
+
+.. code-block:: python
+
+    import numpy
+    from stl import mesh
+
+    # A unit triangle
+    tri_vectors = [[0,0,0],[0,1,0],[0,0,1]]
+
+    # Create the vector data. It’s a numpy structured array with N entries, where N is the number of triangles (here N=1), and each entry is in the format ('normals','vectors','attr')
+    data = numpy.array([(
+        0, # Set 'normals' to zero, and the mesh class will automatically calculate them at initialization
+        tri_vectors, # 'vectors'
+        0 # 'attr'
+    )], dtype = mesh.Mesh.dtype) # The structure defined by the mesh class (N x ('normals','vectors','attr'))
+
+    # Create the mesh object from the structured array
+    tri_mesh = mesh.Mesh(data)
+
+    # Optionally make a plot for fun
+    # Load the plot tools
+    from matplotlib import pyplot
+    from mpl_toolkits import mplot3d
+
+    # Create a new plot
+    figure = pyplot.figure()
+    axes = figure.add_subplot(projection='3d')
+
+    # Add mesh to plot
+    axes.add_collection3d(mplot3d.art3d.Poly3DCollection(tri_mesh.vectors)) # Just need the 'vectors' attribute for display
+
 Creating Mesh objects from a list of vertices and faces
 ------------------------------------------------------------------------------
 

@@ -1,16 +1,17 @@
-import os
-import sys
-import locale
-import pytest
-import pathlib
-import warnings
-import subprocess
+# type: ignore[reportAttributeAccessIssue]
 import io
-import numpy
+import locale
+import os
+import pathlib
+import subprocess
+import sys
+import warnings
 
+import numpy as np
+import pytest
+
+from stl import Mode, mesh
 from stl.utils import b
-from stl import mesh, Mode
-
 
 FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
 
@@ -22,8 +23,9 @@ def test_ascii_file(speedups):
 
 def test_chinese_name(tmpdir, speedups):
     name = 'Test Chinese name 月球'
-    _stl_file = ('''
-    solid %s
+    _stl_file = (
+        f"""
+    solid {name}
       facet normal -0.014565 0.073223 -0.002897
         outer loop
           vertex 0.399344 0.461940 1.044090
@@ -32,14 +34,16 @@ def test_chinese_name(tmpdir, speedups):
         endloop
       endfacet
     endsolid
-    ''' % name).lstrip()
+    """
+    ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('wb+') as fh:
         fh.write(b(_stl_file))
         fh.seek(0)
-        test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
-                                        speedups=speedups)
+        test_mesh = mesh.Mesh.from_file(
+            str(tmp_file), fh=fh, speedups=speedups
+        )
         if speedups:
             assert test_mesh.name.lower() == b(name).lower()
         else:
@@ -49,8 +53,9 @@ def test_chinese_name(tmpdir, speedups):
 def test_long_name(tmpdir, speedups):
     name = 'Just Some Very Long Name which will not fit within the standard'
     name += name
-    _stl_file = ('''
-    solid %s
+    _stl_file = (
+        f"""
+    solid {name}
       facet normal -0.014565 0.073223 -0.002897
         outer loop
           vertex 0.399344 0.461940 1.044090
@@ -59,14 +64,16 @@ def test_long_name(tmpdir, speedups):
         endloop
       endfacet
     endsolid
-    ''' % name).lstrip()
+    """
+    ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('wb+') as fh:
         fh.write(b(_stl_file))
         fh.seek(0)
-        test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
-                                        speedups=speedups)
+        test_mesh = mesh.Mesh.from_file(
+            str(tmp_file), fh=fh, speedups=speedups
+        )
 
         if speedups:
             assert test_mesh.name.lower() == b(name).lower()
@@ -77,8 +84,9 @@ def test_long_name(tmpdir, speedups):
 def test_scientific_notation(tmpdir, speedups):
     name = 'just some very long name which will not fit within the standard'
     name += name
-    _stl_file = ('''
-    solid %s
+    _stl_file = (
+        f"""
+    solid {name}
       facet normal 1.014565e-10 7.3223e-5 -10
         outer loop
           vertex 0.399344 0.461940 1.044090e-5
@@ -87,19 +95,22 @@ def test_scientific_notation(tmpdir, speedups):
         endloop
       endfacet
     endsolid
-    ''' % name).lstrip()
+    """
+    ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('wb+') as fh:
         fh.write(b(_stl_file))
         fh.seek(0)
-        test_mesh = mesh.Mesh.from_file(str(tmp_file), fh=fh,
-                                        speedups=speedups)
+        test_mesh = mesh.Mesh.from_file(
+            str(tmp_file), fh=fh, speedups=speedups
+        )
         assert test_mesh.name == b(name)
 
 
-@pytest.mark.skipif(sys.platform.startswith('win'),
-                    reason='Only makes sense on Unix')
+@pytest.mark.skipif(
+    sys.platform.startswith('win'), reason='Only makes sense on Unix'
+)
 def test_locale_restore(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
@@ -113,14 +124,15 @@ def test_locale_restore(speedups):
     assert old_locale == new_locale
 
 
-@pytest.mark.skipif(sys.platform.startswith('win'),
-                    reason='Only makes sense on Unix')
+@pytest.mark.skipif(
+    sys.platform.startswith('win'), reason='Only makes sense on Unix'
+)
 def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
 
     venv = os.environ.get('VIRTUAL_ENV', '')
-    if (3, 6) == sys.version_info[:2] and venv.startswith('/home/travis/'):
+    if sys.version_info[:2] == (3, 6) and venv.startswith('/home/travis/'):
         pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
 
     try:
@@ -132,6 +144,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
             warnings.warn(
                 'Unable to import PySide2/PyQt5, skipping locale tests',
                 ImportWarning,
+                stacklevel=1,
             )
             pytest.skip('PySide2/PyQt5 missing')
     assert QtWidgets
@@ -146,11 +159,13 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if sys.platform.startswith('linux'):
         prefix = ('xvfb-run', '-a')
 
-    p = subprocess.Popen(prefix + (sys.executable, script_path),
-                         env=env,
-                         universal_newlines=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        (*prefix, sys.executable, script_path),
+        env=env,
+        universal_newlines=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     out, err = p.communicate()
 
     # Unable to read the file with speedups, retrying
@@ -165,21 +180,30 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
 
 def test_ascii_io():
     # Create a vanilla mesh.
-    mesh_ = mesh.Mesh(numpy.empty(3, mesh.Mesh.dtype))
-    mesh_.vectors = numpy.arange(27).reshape((3, 3, 3))
+    mesh_ = mesh.Mesh(np.empty(3, mesh.Mesh.dtype))
+    mesh_.vectors = np.arange(27).reshape((3, 3, 3))
 
     # Check that unhelpful 'expected str but got bytes' error is caught and
     # replaced.
-    with pytest.raises(TypeError, match="handles should be in binary mode"):
-        mesh_.save("nameless", fh=io.StringIO(), mode=Mode.ASCII)
+    with pytest.raises(TypeError, match='handles should be in binary mode'):
+        mesh_.save('nameless', fh=io.StringIO(), mode=Mode.ASCII)
 
     # Write to an io.BytesIO().
     fh = io.BytesIO()
-    mesh_.save("nameless", fh=fh, mode=Mode.ASCII)
+    mesh_.save('nameless', fh=fh, mode=Mode.ASCII)
     # Assert binary file is still only ascii characters.
-    fh.getvalue().decode("ascii")
+    fh.getvalue().decode('ascii')
+
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        # Save the mesh to the temporary file
+        mesh_.save(temp_file.name, mode=Mode.ASCII)
+
+        # Read the mesh back from the temporary file
+        read = mesh.Mesh.from_file(temp_file.name)
 
     # Read the mesh back in.
-    read = mesh.Mesh.from_file("anonymous.stl", fh=io.BytesIO(fh.getvalue()))
+    read = mesh.Mesh.from_file('anonymous.stl', fh=io.BytesIO(fh.getvalue()))
     # Check what comes out is the same as what went in.
-    assert numpy.allclose(mesh_.vectors, read.vectors)
+    assert np.allclose(mesh_.vectors, read.vectors)

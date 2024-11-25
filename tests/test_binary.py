@@ -1,9 +1,10 @@
 import io
-import numpy
-import pytest
 import pathlib
-from stl import mesh, Mode
 
+import numpy as np
+import pytest
+
+from stl import Mode, mesh
 
 TESTS_PATH = pathlib.Path(__file__).parent
 
@@ -26,17 +27,14 @@ def _test(tmpdir, speedups, mode, use_filehandle=True):
     filename = TESTS_PATH / 'stl_binary' / 'rear_case.stl'
     if use_filehandle:
         with open(filename, 'rb') as fh:
-            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups,
-                                mode=mode)
+            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups, mode=mode)
 
         with open(filename, 'rb') as fh:
             # Test with BytesIO
             fh = io.BytesIO(fh.read())
-            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups,
-                                mode=mode)
+            mesh.Mesh.from_file(filename, fh=fh, speedups=speedups, mode=mode)
     else:
-        mesh.Mesh.from_file(filename,
-                            speedups=speedups, mode=mode)
+        mesh.Mesh.from_file(filename, speedups=speedups, mode=mode)
 
 
 @pytest.mark.parametrize('mode', [Mode.BINARY, Mode.AUTOMATIC])
@@ -51,7 +49,7 @@ def test_write_bytes_io(binary_file, mode):
     assert fh.getvalue()[84:] == mesh_.data.tobytes()
 
     read = mesh.Mesh.from_file('nameless', fh=io.BytesIO(fh.getvalue()))
-    assert numpy.allclose(read.vectors, mesh_.vectors)
+    assert np.allclose(read.vectors, mesh_.vectors)
 
 
 def test_binary_file():

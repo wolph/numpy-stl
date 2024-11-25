@@ -4,7 +4,7 @@ import pytest
 
 from stl import mesh
 
-_STL_FILE = b'''
+_STL_FILE = b"""
 solid test.stl
 facet normal -0.014565 0.073223 -0.002897
   outer loop
@@ -14,7 +14,7 @@ facet normal -0.014565 0.073223 -0.002897
   endloop
 endfacet
 endsolid test.stl
-'''
+"""
 
 
 def test_single_stl(tmpdir, speedups):
@@ -34,10 +34,9 @@ def test_multiple_stl(tmpdir, speedups):
         for _ in range(10):
             fh.write(_STL_FILE)
         fh.seek(0)
+        i = 0
         for i, m in enumerate(
-            mesh.Mesh.from_multi_file(
-                str(tmp_file), fh=fh, speedups=speedups
-            )
+            mesh.Mesh.from_multi_file(str(tmp_file), fh=fh, speedups=speedups)
         ):
             assert m.name == b'test.stl'
 
@@ -49,9 +48,7 @@ def test_single_stl_file(tmpdir, speedups):
     with tmp_file.open('wb+') as fh:
         fh.write(_STL_FILE)
         fh.seek(0)
-        for m in mesh.Mesh.from_multi_file(
-            str(tmp_file), speedups=speedups
-        ):
+        for m in mesh.Mesh.from_multi_file(str(tmp_file), speedups=speedups):
             pass
 
 
@@ -62,10 +59,9 @@ def test_multiple_stl_file(tmpdir, speedups):
             fh.write(_STL_FILE)
 
         fh.seek(0)
+        i = -1
         for i, m in enumerate(
-            mesh.Mesh.from_multi_file(
-                str(tmp_file), speedups=speedups
-            )
+            mesh.Mesh.from_multi_file(str(tmp_file), speedups=speedups)
         ):
             assert m.name == b'test.stl'
 

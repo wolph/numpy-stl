@@ -1,12 +1,12 @@
-from __future__ import print_function
-import sys
-import numpy
-import pytest
 import struct
+import sys
+
+import numpy as np
+import pytest
 
 from stl import mesh
 
-_STL_FILE = '''
+_STL_FILE = """
 solid test.stl
 facet normal -0.014565 0.073223 -0.002897
   outer loop
@@ -16,7 +16,7 @@ facet normal -0.014565 0.073223 -0.002897
   endloop
 endfacet
 endsolid test.stl
-'''.lstrip()
+""".lstrip()
 
 
 def test_valid_ascii(tmpdir, speedups):
@@ -51,7 +51,7 @@ def test_ascii_with_missing_name(tmpdir, speedups):
 
 
 def test_ascii_with_blank_lines(tmpdir, speedups):
-    _stl_file = '''
+    _stl_file = """
     solid test.stl
 
 
@@ -69,7 +69,7 @@ def test_ascii_with_blank_lines(tmpdir, speedups):
       endfacet
 
     endsolid test.stl
-    '''.lstrip()
+    """.lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
     with tmp_file.open('w+') as fh:
@@ -140,15 +140,9 @@ def test_corrupt_binary_file(tmpdir, speedups):
 
 
 def test_duplicate_polygons():
-    data = numpy.zeros(3, dtype=mesh.Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [1, 0, 0],
-                                      [0, 1, 1.]])
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [2, 0, 0],
-                                      [0, 2, 1.]])
-    data['vectors'][0] = numpy.array([[0, 0, 0],
-                                      [3, 0, 0],
-                                      [0, 3, 1.]])
+    data = np.zeros(3, dtype=mesh.Mesh.dtype)
+    data['vectors'][0] = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 1.0]])
+    data['vectors'][0] = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
+    data['vectors'][0] = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
 
-    assert not mesh.Mesh(data, remove_empty_areas=False).check()
+    assert not mesh.Mesh(data, remove_empty_areas=False).check()  # type: ignore[reportAttributeAccessIssue]

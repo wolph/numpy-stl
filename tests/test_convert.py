@@ -1,6 +1,7 @@
-import py.path
-import pytest
 import tempfile
+
+import py.path  # type: ignore[import]
+import pytest
 
 from stl import stl
 
@@ -36,13 +37,15 @@ def _test_conversion(from_, to, mode, speedups):
 
 
 def test_ascii_to_binary(ascii_path, binary_path, speedups):
-    _test_conversion(ascii_path, binary_path, mode=stl.BINARY,
-                     speedups=speedups)
+    _test_conversion(
+        ascii_path, binary_path, mode=stl.BINARY, speedups=speedups
+    )
 
 
 def test_binary_to_ascii(ascii_path, binary_path, speedups):
-    _test_conversion(binary_path, ascii_path, mode=stl.ASCII,
-                     speedups=speedups)
+    _test_conversion(
+        binary_path, ascii_path, mode=stl.ASCII, speedups=speedups
+    )
 
 
 def test_stl_mesh(ascii_file, tmpdir, speedups):
@@ -50,7 +53,7 @@ def test_stl_mesh(ascii_file, tmpdir, speedups):
 
     mesh = stl.StlMesh(ascii_file, speedups=speedups)
     with pytest.raises(ValueError):
-        mesh.save(filename=str(tmp_file), mode='test')
+        mesh.save(filename=str(tmp_file), mode='test')  # type: ignore[reportArgumentType]
 
     mesh.save(str(tmp_file))
     mesh.save(str(tmp_file), update_normals=False)

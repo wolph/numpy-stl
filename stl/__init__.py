@@ -1,12 +1,6 @@
-from .stl import BUFFER_SIZE
-from .stl import HEADER_SIZE
-from .stl import COUNT_SIZE
-from .stl import MAX_COUNT
-
-from .stl import Mode
-from .base import Dimension
-from .base import RemoveDuplicates
+from .base import Dimension, RemoveDuplicates
 from .mesh import Mesh
+from .stl import BUFFER_SIZE, COUNT_SIZE, HEADER_SIZE, MAX_COUNT, Mode
 
 __all__ = [
     'BUFFER_SIZE',
