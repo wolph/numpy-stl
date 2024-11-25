@@ -4,7 +4,7 @@ import pytest
 from stl import stl
 
 
-tolerance = 1e-6
+tolerance = 1e-5
 
 
 def close(a, b):

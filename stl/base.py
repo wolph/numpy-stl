@@ -140,32 +140,32 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     >>> len(mesh) == len(list(mesh))
     True
-    >>> (mesh.min_ < mesh.max_).all()
+    >>> bool((mesh.min_ < mesh.max_).all())
     True
     >>> mesh.update_normals()
-    >>> mesh.units.sum()
+    >>> float(mesh.units.sum())
     0.0
     >>> mesh.v0[:] = mesh.v1[:] = mesh.v2[:] = 0
-    >>> mesh.points.sum()
+    >>> float(mesh.points.sum())
     0.0
 
     >>> mesh.v0 = mesh.v1 = mesh.v2 = 0
     >>> mesh.x = mesh.y = mesh.z = 0
 
     >>> mesh.attr = 1
-    >>> (mesh.attr == 1).all()
+    >>> bool((mesh.attr == 1).all())
     True
 
     >>> mesh.normals = 2
-    >>> (mesh.normals == 2).all()
+    >>> bool((mesh.normals == 2).all())
     True
 
     >>> mesh.vectors = 3
-    >>> (mesh.vectors == 3).all()
+    >>> bool((mesh.vectors == 3).all())
     True
 
     >>> mesh.points = 4
-    >>> (mesh.points == 4).all()
+    >>> bool((mesh.points == 4).all())
     True
     """
 

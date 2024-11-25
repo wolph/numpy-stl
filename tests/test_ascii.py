@@ -195,6 +195,15 @@ def test_ascii_io():
     # Assert binary file is still only ascii characters.
     fh.getvalue().decode('ascii')
 
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        # Save the mesh to the temporary file
+        mesh_.save(temp_file.name, mode=Mode.ASCII)
+
+        # Read the mesh back from the temporary file
+        read = mesh.Mesh.from_file(temp_file.name)
+
     # Read the mesh back in.
     read = mesh.Mesh.from_file('anonymous.stl', fh=io.BytesIO(fh.getvalue()))
     # Check what comes out is the same as what went in.
