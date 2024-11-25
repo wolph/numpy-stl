@@ -314,15 +314,14 @@ class BaseStl(base.BaseMesh):
             p('solid %s' % name, file=fh)
 
             for row in self.data:
+                # Explicitly convert each component to standard float for normals and vertices
+                normals = tuple(float(n) for n in row['normals'])
                 vectors = row['vectors']
-                p(
-                    'facet normal %r %r %r' % tuple(row['normals'].tolist()),
-                    file=fh,
-                )
+                p('facet normal %f %f %f' % normals, file=fh)
                 p('  outer loop', file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[0].tolist()), file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[1].tolist()), file=fh)
-                p('    vertex %r %r %r' % tuple(vectors[2].tolist()), file=fh)
+                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[0]), file=fh)
+                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[1]), file=fh)
+                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[2]), file=fh)
                 p('  endloop', file=fh)
                 p('endfacet', file=fh)
 
