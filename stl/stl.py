@@ -4,11 +4,14 @@ import io
 import os
 import struct
 import zipfile
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
-import numpy
+import numpy as np
 
-from . import __about__ as metadata, base
+from . import (
+    __about__ as metadata,
+    base,
+)
 from .utils import b
 
 try:
@@ -56,7 +59,7 @@ class BaseStl(base.BaseMesh):
         """
         header = fh.read(HEADER_SIZE)
         if not header:
-            return
+            return None
 
         if isinstance(header, str):  # pragma: no branch
             header = b(header)
@@ -66,7 +69,6 @@ class BaseStl(base.BaseMesh):
                 try:
                     name, data = cls._load_ascii(fh, header, speedups=speedups)
                 except RuntimeError as exception:
-                    print('exception', exception)
                     (recoverable, e) = exception.args
                     # If we didn't read beyond the header the stream is still
                     # readable through the binary reader
@@ -120,21 +122,21 @@ class BaseStl(base.BaseMesh):
                     'Expected %d vectors but ' 'header indicates %d'
                 ) % (expected_count, count)
                 fh.seek(HEADER_SIZE + COUNT_SIZE)
-            except IOError:  # pragma: no cover
+            except OSError:  # pragma: no cover
                 pass
 
         name = header.strip()
 
         # Read the rest of the binary data
         try:
-            return name, numpy.fromfile(fh, dtype=cls.dtype, count=count)
+            return name, np.fromfile(fh, dtype=cls.dtype, count=count)
         except io.UnsupportedOperation:
-            data = numpy.frombuffer(fh.read(), dtype=cls.dtype, count=count)
+            data = np.frombuffer(fh.read(), dtype=cls.dtype, count=count)
             # Copy to make the buffer writable
             return name, data.copy()
 
     @classmethod
-    def _ascii_reader(cls, fh, header):
+    def _ascii_reader(cls, fh, header):  # noqa: C901
         if b'\n' in header:
             recoverable = [True]
         else:
@@ -166,9 +168,7 @@ class BaseStl(base.BaseMesh):
             if prefix:
                 if line.startswith(prefix):
                     values = line.replace(prefix, b(''), 1).strip().split()
-                elif line.startswith(b('endsolid')) or line.startswith(
-                    b('end solid')
-                ):
+                elif line.startswith((b('endsolid'), b('end solid'))):
                     # go back to the beginning of new solid part
                     size_unprocessedlines = (
                         sum(len(line) + 1 for line in lines) - 1
@@ -181,14 +181,14 @@ class BaseStl(base.BaseMesh):
                 else:
                     raise RuntimeError(
                         recoverable[0],
-                        '%r should start with %r' % (line, prefix),
+                        f'{line!r} should start with {prefix!r}',
                     )
 
                 if len(values) == 3:
                     return [float(v) for v in values]
                 else:  # pragma: no cover
                     raise RuntimeError(
-                        recoverable[0], 'Incorrect value %r' % line
+                        recoverable[0], f'Incorrect value {line!r}'
                     )
             else:
                 return b(raw_line)
@@ -219,8 +219,8 @@ class BaseStl(base.BaseMesh):
                 assert get().lower() == b('endfacet')
                 attrs = 0
                 yield (normals, (v0, v1, v2), attrs)
-            except AssertionError as e:  # pragma: no cover
-                raise RuntimeError(recoverable[0], e)
+            except AssertionError as e:  # pragma: no cover  # noqa: PERF203
+                raise RuntimeError(recoverable[0], e) from e
             except StopIteration:
                 return
 
@@ -238,9 +238,9 @@ class BaseStl(base.BaseMesh):
         else:
             iterator = cls._ascii_reader(fh, header)
             name = next(iterator)
-            return name, numpy.fromiter(iterator, dtype=cls.dtype)
+            return name, np.fromiter(iterator, dtype=cls.dtype)
 
-    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
+    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):  # noqa: C901
         """Save the STL to a (binary) file
 
         If mode is :py:data:`AUTOMATIC` an :py:data:`ASCII` file will be
@@ -263,7 +263,7 @@ class BaseStl(base.BaseMesh):
                         write = self._write_ascii
                     else:
                         write = self._write_binary
-                except IOError:
+                except OSError:
                     # If TTY checking fails then it's an io.BytesIO() (or one
                     # of its siblings from io). Assume binary.
                     write = self._write_binary
@@ -274,7 +274,7 @@ class BaseStl(base.BaseMesh):
         elif mode is ASCII:
             write = self._write_ascii
         else:
-            raise ValueError('Mode %r is invalid' % mode)
+            raise ValueError(f'Mode {mode!r} is invalid')
 
         if isinstance(fh, io.TextIOBase):
             # Provide a more helpful error if the user mistakenly
@@ -294,7 +294,7 @@ class BaseStl(base.BaseMesh):
             else:
                 with open(filename, 'wb') as fh:
                     write(fh, name)
-        except IOError:  # pragma: no cover
+        except OSError:  # pragma: no cover
             pass
 
     def _write_ascii(self, fh, name):
@@ -309,23 +309,39 @@ class BaseStl(base.BaseMesh):
         else:
 
             def p(s, file):
-                file.write(b('%s\n' % s))
+                file.write(b(f'{s}\n'))
 
-            p('solid %s' % name, file=fh)
+            p(f'solid {name}', file=fh)
 
             for row in self.data:
-                # Explicitly convert each component to standard float for normals and vertices
+                # Explicitly convert each component to standard float for
+                # normals and vertices to be compatible with numpy 2.x
                 normals = tuple(float(n) for n in row['normals'])
                 vectors = row['vectors']
-                p('facet normal %f %f %f' % normals, file=fh)
+                p('facet normal {:f} {:f} {:f}'.format(*normals), file=fh)
                 p('  outer loop', file=fh)
-                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[0]), file=fh)
-                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[1]), file=fh)
-                p('    vertex %f %f %f' % tuple(float(v) for v in vectors[2]), file=fh)
+                p(
+                    '    vertex {:f} {:f} {:f}'.format(
+                        *tuple(float(v) for v in vectors[0])
+                    ),
+                    file=fh,
+                )
+                p(
+                    '    vertex {:f} {:f} {:f}'.format(
+                        *tuple(float(v) for v in vectors[1])
+                    ),
+                    file=fh,
+                )
+                p(
+                    '    vertex {:f} {:f} {:f}'.format(
+                        *tuple(float(v) for v in vectors[2])
+                    ),
+                    file=fh,
+                )
                 p('  endloop', file=fh)
                 p('endfacet', file=fh)
 
-            p('endsolid %s' % name, file=fh)
+            p(f'endsolid {name}', file=fh)
 
     def get_header(self, name):
         # Format the header
@@ -418,7 +434,7 @@ class BaseStl(base.BaseMesh):
         if fh:
             close = False
         else:
-            fh = open(filename, 'rb')
+            fh = open(filename, 'rb')  # noqa: SIM115
             close = True
 
         try:
@@ -457,19 +473,18 @@ class BaseStl(base.BaseMesh):
         :param file fh: The file handle to open
         :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
         """
-        meshes = []
-        for filename in filenames:
-            meshes.append(
-                cls.from_file(
-                    filename,
-                    calculate_normals=calculate_normals,
-                    mode=mode,
-                    speedups=speedups,
-                    **kwargs,
-                )
+        meshes = [
+            cls.from_file(
+                filename,
+                calculate_normals=calculate_normals,
+                mode=mode,
+                speedups=speedups,
+                **kwargs,
             )
+            for filename in filenames
+        ]
 
-        data = numpy.concatenate([mesh.data for mesh in meshes])
+        data = np.concatenate([mesh.data for mesh in meshes])
         return cls(data, calculate_normals=calculate_normals, **kwargs)
 
     @classmethod
@@ -477,16 +492,16 @@ class BaseStl(base.BaseMesh):
         with zipfile.ZipFile(filename) as zip:
             with zip.open('_rels/.rels') as rels_fh:
                 model = None
-                root = ElementTree.parse(rels_fh).getroot()
+                root = ET.parse(rels_fh).getroot()
                 for child in root:  # pragma: no branch
                     type_ = child.attrib.get('Type', '')
                     if type_.endswith('3dmodel'):  # pragma: no branch
                         model = child.attrib.get('Target', '')
                         break
 
-            assert model, 'No 3D model found in %s' % filename
+            assert model, f'No 3D model found in {filename}'
             with zip.open(model.lstrip('/')) as fh:
-                root = ElementTree.parse(fh).getroot()
+                root = ET.parse(fh).getroot()
 
                 elements = root.findall('./{*}resources/{*}object/{*}mesh')
                 for mesh_element in elements:  # pragma: no branch
@@ -519,8 +534,8 @@ class BaseStl(base.BaseMesh):
                                     ]
                                 )
 
-                    mesh = cls(numpy.zeros(len(triangles), dtype=cls.dtype))
-                    mesh.vectors[:] = numpy.array(triangles)
+                    mesh = cls(np.zeros(len(triangles), dtype=cls.dtype))
+                    mesh.vectors[:] = np.array(triangles)
                     yield mesh
 
 

@@ -1,9 +1,10 @@
 import io
-import numpy
-import pytest
 import pathlib
-from stl import mesh, Mode
 
+import numpy as np
+import pytest
+
+from stl import Mode, mesh
 
 TESTS_PATH = pathlib.Path(__file__).parent
 
@@ -48,7 +49,7 @@ def test_write_bytes_io(binary_file, mode):
     assert fh.getvalue()[84:] == mesh_.data.tobytes()
 
     read = mesh.Mesh.from_file('nameless', fh=io.BytesIO(fh.getvalue()))
-    assert numpy.allclose(read.vectors, mesh_.vectors)
+    assert np.allclose(read.vectors, mesh_.vectors)
 
 
 def test_binary_file():

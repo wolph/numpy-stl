@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb 27 20:00:23 2014.
@@ -12,19 +11,18 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
 import os
 import sys
-import datetime
 
 try:
-    import numpy
+    import numpy as np
 
-    assert numpy
+    assert np
 except ImportError:
     # From the readthedocs manual
     # http://read-the-docs.readthedocs.org/en/latest/faq.html?highlight=numpy
-    print('Unable to import numpy, falling back to mock', file=sys.stderr)
-    import mock
+    from unittest import mock
 
     MOCK_MODULES = ['pygtk', 'gtk', 'gobject', 'argparse', 'numpy', 'pandas']
     for mod_name in MOCK_MODULES:
@@ -35,7 +33,6 @@ except ImportError:
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 from stl import __about__ as metadata
-
 
 # -- General configuration ------------------------------------------------
 
@@ -70,10 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = metadata.__package_name__.replace('-', ' ').capitalize()
-copyright = '%s,  <a href="https://wol.ph/">%s</a>' % (
-    datetime.date.today().year,
-    metadata.__author__,
-)
+copyright = f'{datetime.date.today().year},  <a href="https://wol.ph/">{metadata.__author__}</a>'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -219,14 +213,15 @@ latex_elements = {
     #'preamble': '',
 }
 
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title, author, documentclass [howto/manual]).
+# Grouping the document tree into LaTeX files. List of tuples (source start
+# file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
     (
         'index',
-        '%s.tex' % metadata.__package_name__,
-        '%s Documentation'
-        % metadata.__package_name__.replace('-', ' ').capitalize(),
+        f'{metadata.__package_name__}.tex',
+        '{} Documentation'.format(
+            metadata.__package_name__.replace('-', ' ').capitalize()
+        ),
         metadata.__author__,
         'manual',
     )
@@ -261,8 +256,9 @@ man_pages = [
     (
         'index',
         metadata.__package_name__,
-        '%s Documentation'
-        % metadata.__package_name__.replace('-', ' ').capitalize(),
+        '{} Documentation'.format(
+            metadata.__package_name__.replace('-', ' ').capitalize()
+        ),
         [metadata.__author__],
         1,
     )
@@ -281,8 +277,9 @@ texinfo_documents = [
     (
         'index',
         metadata.__package_name__,
-        '%s Documentation'
-        % metadata.__package_name__.replace('-', ' ').capitalize(),
+        '{} Documentation'.format(
+            metadata.__package_name__.replace('-', ' ').capitalize()
+        ),
         metadata.__author__,
         metadata.__package_name__,
         metadata.__description__,
@@ -311,11 +308,10 @@ epub_author = metadata.__author__
 epub_publisher = metadata.__author__
 epub_copyright = copyright
 
-# The HTML theme for the epub output. Since the default themes are not optimized
-# for small screen space, using the same theme for HTML and epub output is
-# usually not wise. This defaults to 'epub', a theme designed to save visual
-# space.
-# epub_theme = 'epub'
+# The HTML theme for the epub output. Since the default themes are not
+# optimized for small screen space, using the same theme for HTML and epub
+# output is usually not wise. This defaults to 'epub', a theme designed to
+# save visual space. epub_theme = 'epub'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

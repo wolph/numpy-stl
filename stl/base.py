@@ -3,7 +3,7 @@ import itertools
 import logging
 import math
 
-import numpy
+import numpy as np
 
 try:  # pragma: no cover
     from collections import abc
@@ -76,6 +76,23 @@ def logged(class_):
     return class_
 
 
+def _get_or_update(key):
+    def _get(self):
+        attr = f'_{key}'
+        if not hasattr(self, attr):
+            getattr(self, f'update_{key}')()
+        return getattr(self, attr)
+
+    return _get
+
+
+def _set(key):
+    def __set(self, value):
+        setattr(self, f'_{key}', value)
+
+    return __set
+
+
 @logged
 class BaseMesh(logger.Logged, abc.Mapping):
     """
@@ -101,28 +118,28 @@ class BaseMesh(logger.Logged, abc.Mapping):
     :ivar numpy.array v1: Points in vector 1 (Nx3)
     :ivar numpy.array v2: Points in vector 2 (Nx3)
 
-    >>> data = numpy.zeros(10, dtype=BaseMesh.dtype)
+    >>> data = np.zeros(10, dtype=BaseMesh.dtype)
     >>> mesh = BaseMesh(data, remove_empty_areas=False)
     >>> # Increment vector 0 item 0
     >>> mesh.v0[0] += 1
     >>> mesh.v1[0] += 2
 
     >>> # Check item 0 (contains v0, v1 and v2)
-    >>> assert numpy.array_equal(
-    ...     mesh[0], numpy.array([1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0])
+    >>> assert np.array_equal(
+    ...     mesh[0], np.array([1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0])
     ... )
-    >>> assert numpy.array_equal(
+    >>> assert np.array_equal(
     ...     mesh.vectors[0],
-    ...     numpy.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]]),
+    ...     np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]]),
     ... )
-    >>> assert numpy.array_equal(mesh.v0[0], numpy.array([1.0, 1.0, 1.0]))
-    >>> assert numpy.array_equal(
+    >>> assert np.array_equal(mesh.v0[0], np.array([1.0, 1.0, 1.0]))
+    >>> assert np.array_equal(
     ...     mesh.points[0],
-    ...     numpy.array([1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
+    ...     np.array([1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0]),
     ... )
-    >>> assert numpy.array_equal(
+    >>> assert np.array_equal(
     ...     mesh.data[0],
-    ...     numpy.array(
+    ...     np.array(
     ...         (
     ...             [0.0, 0.0, 0.0],
     ...             [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
@@ -131,11 +148,11 @@ class BaseMesh(logger.Logged, abc.Mapping):
     ...         dtype=BaseMesh.dtype,
     ...     ),
     ... )
-    >>> assert numpy.array_equal(mesh.x[0], numpy.array([1.0, 2.0, 0.0]))
+    >>> assert np.array_equal(mesh.x[0], np.array([1.0, 2.0, 0.0]))
 
     >>> mesh[0] = 3
-    >>> assert numpy.array_equal(
-    ...     mesh[0], numpy.array([3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0])
+    >>> assert np.array_equal(
+    ...     mesh[0], np.array([3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0])
     ... )
 
     >>> len(mesh) == len(list(mesh))
@@ -172,11 +189,11 @@ class BaseMesh(logger.Logged, abc.Mapping):
     #: - normals: :func:`numpy.float32`, `(3, )`
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
-    dtype = numpy.dtype(
+    dtype = np.dtype(
         [
-            ('normals', numpy.float32, (3,)),
-            ('vectors', numpy.float32, (3, 3)),
-            ('attr', numpy.uint16, (1,)),
+            ('normals', np.float32, (3,)),
+            ('vectors', np.float32, (3, 3)),
+            ('attr', np.uint16, (1,)),
         ]
     )
     dtype = dtype.newbyteorder('<')  # Even on big endian arches, use little e.
@@ -191,7 +208,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         speedups=True,
         **kwargs,
     ):
-        super(BaseMesh, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.speedups = speedups
         if remove_empty_areas:
             data = self.remove_empty_areas(data)
@@ -292,26 +309,26 @@ class BaseMesh(logger.Logged, abc.Mapping):
         value = RemoveDuplicates.map(value)
         polygons = data['vectors'].sum(axis=1)
         # Get a sorted list of indices
-        idx = numpy.lexsort(polygons.T)
+        idx = np.lexsort(polygons.T)
         # Get the indices of all different indices
-        diff = numpy.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
+        diff = np.any(polygons[idx[1:]] != polygons[idx[:-1]], axis=1)
 
         if value is RemoveDuplicates.SINGLE:
             # Only return the unique data, the True is so we always get at
             # least the originals
-            return data[numpy.sort(idx[numpy.concatenate(([True], diff))])]
+            return data[np.sort(idx[np.concatenate(([True], diff))])]
         elif value is RemoveDuplicates.ALL:
             # We need to return both items of the shifted diff
-            diff_a = numpy.concatenate(([True], diff))
-            diff_b = numpy.concatenate((diff, [True]))
-            diff = numpy.concatenate((diff, [False]))
+            diff_a = np.concatenate(([True], diff))
+            diff_b = np.concatenate((diff, [True]))
+            diff = np.concatenate((diff, [False]))
 
             # Combine both unique lists
-            filtered_data = data[numpy.sort(idx[diff_a & diff_b])]
+            filtered_data = data[np.sort(idx[diff_a & diff_b])]
             if len(filtered_data) <= len(data) / 2:
-                return data[numpy.sort(idx[diff_a])]
+                return data[np.sort(idx[diff_a])]
             else:
-                return data[numpy.sort(idx[diff])]
+                return data[np.sort(idx[diff])]
         else:
             return data
 
@@ -321,13 +338,13 @@ class BaseMesh(logger.Logged, abc.Mapping):
         v0 = vectors[:, 0]
         v1 = vectors[:, 1]
         v2 = vectors[:, 2]
-        normals = numpy.cross(v1 - v0, v2 - v0)
+        normals = np.cross(v1 - v0, v2 - v0)
         squared_areas = (normals**2).sum(axis=1)
         return data[squared_areas > AREA_SIZE_THRESHOLD**2]
 
     def update_normals(self, update_areas=True, update_centroids=True):
         """Update the normals, areas, and centroids for all points"""
-        normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+        normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)
 
         if update_areas:
             self.update_areas(normals)
@@ -339,7 +356,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     def get_unit_normals(self):
         normals = self.normals.copy()
-        normal = numpy.linalg.norm(normals, axis=1)
+        normal = np.linalg.norm(normals, axis=1)
         non_zero = normal > 0
         if non_zero.any():
             normals[non_zero] /= normal[non_zero][:, None]
@@ -353,13 +370,13 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
     def update_areas(self, normals=None):
         if normals is None:
-            normals = numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
+            normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)
 
-        areas = 0.5 * numpy.sqrt((normals**2).sum(axis=1))
+        areas = 0.5 * np.sqrt((normals**2).sum(axis=1))
         self.areas = areas.reshape((areas.size, 1))
 
     def update_centroids(self):
-        self.centroids = numpy.mean([self.v0, self.v1, self.v2], axis=0)
+        self.centroids = np.mean([self.v0, self.v1, self.v2], axis=0)
 
     def check(self, exact=False):
         """Check the mesh is valid or not
@@ -376,8 +393,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
         if exact:
             reversed_triangles = (
-                numpy.cross(self.v1 - self.v0, self.v2 - self.v0)
-                * self.normals
+                np.cross(self.v1 - self.v0, self.v2 - self.v0) * self.normals
             ).sum(axis=1) < 0
             directed_edges = {
                 tuple(edge.ravel() if not rev else edge[::-1, :].ravel())
@@ -407,11 +423,11 @@ class BaseMesh(logger.Logged, abc.Mapping):
              - false negative: https://github.com/wolph/numpy-stl/pull/213
             """.strip()
             )
-            normals = numpy.asarray(self.normals, dtype=numpy.float64)
+            normals = np.asarray(self.normals, dtype=np.float64)
             allowed_max_errors = (
-                numpy.abs(normals).sum(axis=0) * numpy.finfo(numpy.float32).eps
+                np.abs(normals).sum(axis=0) * np.finfo(np.float32).eps
             )
-            if (numpy.abs(normals.sum(axis=0)) <= allowed_max_errors).all():
+            if (np.abs(normals.sum(axis=0)) <= allowed_max_errors).all():
                 return True
 
         self.warning(
@@ -459,18 +475,18 @@ class BaseMesh(logger.Logged, abc.Mapping):
         f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)
         f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)
 
-        intg = numpy.zeros((10))
+        intg = np.zeros(10)
         intg[0] = sum(d0 * f1x)
         intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
         intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
         intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
         intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
         intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
-        intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         volume = intg[0]
         cog = intg[1:4] / volume
         cogsq = cog**2
-        inertia = numpy.zeros((3, 3))
+        inertia = np.zeros((3, 3))
         inertia[0, 0] = intg[5] + intg[6] - volume * (cogsq[1] + cogsq[2])
         inertia[1, 1] = intg[4] + intg[6] - volume * (cogsq[2] + cogsq[0])
         inertia[2, 2] = intg[4] + intg[5] - volume * (cogsq[0] + cogsq[1])
@@ -492,7 +508,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
 
         if non_zero_areas.any():
             non_zero_areas.shape = non_zero_areas.shape[0]
-            areas = numpy.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
+            areas = np.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
             units[non_zero_areas] /= areas
 
         self.units = units
@@ -511,14 +527,14 @@ class BaseMesh(logger.Logged, abc.Mapping):
         :param float theta: Rotation angle in radians, use `math.radians` to
                      convert degrees to radians if needed.
         """
-        axis = numpy.asarray(axis)
+        axis = np.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis.any():
-            return numpy.identity(3)
+            return np.identity(3)
 
-        theta = 0.5 * numpy.asarray(theta)
+        theta = 0.5 * np.asarray(theta)
 
-        axis = axis / numpy.linalg.norm(axis)
+        axis = axis / np.linalg.norm(axis)
 
         a = math.cos(theta)
         b, c, d = -axis * math.sin(theta)
@@ -529,7 +545,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         ca, cb, cc, cd = powers[8:12]
         da, db, dc, dd = powers[12:16]
 
-        return numpy.array(
+        return np.array(
             [
                 [aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
                 [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
@@ -570,17 +586,17 @@ class BaseMesh(logger.Logged, abc.Mapping):
         https://github.com/WoLpH/numpy-stl/issues/166
         """
 
-        identity = numpy.identity(rotation_matrix.shape[0])
+        identity = np.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
         if not rotation_matrix.any() or (identity == rotation_matrix).all():
             return
 
-        if isinstance(point, (numpy.ndarray, list, tuple)) and len(point) == 3:
-            point = numpy.asarray(point)
+        if isinstance(point, (np.ndarray, list, tuple)) and len(point) == 3:
+            point = np.asarray(point)
         elif point is None:
-            point = numpy.array([0, 0, 0])
+            point = np.array([0, 0, 0])
         elif isinstance(point, (int, float)):
-            point = numpy.asarray([point] * 3)
+            point = np.asarray([point] * 3)
         else:
             raise TypeError('Incorrect type for point', point)
 
@@ -624,27 +640,13 @@ class BaseMesh(logger.Logged, abc.Mapping):
         is_a_4x4_matrix = matrix.shape == (4, 4)
         assert is_a_4x4_matrix, 'Transformation matrix must be of shape (4, 4)'
         rotation = matrix[0:3, 0:3]
-        unit_det_rotation = numpy.allclose(numpy.linalg.det(rotation), 1.0)
+        unit_det_rotation = np.allclose(np.linalg.det(rotation), 1.0)
         assert unit_det_rotation, 'Rotation matrix has not a unit determinant'
         for i in range(3):
-            self.vectors[:, i] = numpy.dot(rotation, self.vectors[:, i].T).T
+            self.vectors[:, i] = np.dot(rotation, self.vectors[:, i].T).T
         self.x += matrix[0, 3]
         self.y += matrix[1, 3]
         self.z += matrix[2, 3]
-
-    def _get_or_update(key):
-        def _get(self):
-            if not hasattr(self, '_%s' % key):
-                getattr(self, 'update_%s' % key)()
-            return getattr(self, '_%s' % key)
-
-        return _get
-
-    def _set(key):
-        def _set(self, value):
-            setattr(self, '_%s' % key, value)
-
-        return _set
 
     min_ = property(
         _get_or_update('min'), _set('min'), doc='Mesh minimum value'
@@ -670,8 +672,7 @@ class BaseMesh(logger.Logged, abc.Mapping):
         return self.points.shape[0]
 
     def __iter__(self):
-        for point in self.points:
-            yield point
+        yield from self.points
 
     def __repr__(self):
         return f'<Mesh: {self.name!r} {self.data.size} vertices>'
@@ -704,19 +705,19 @@ class BaseMesh(logger.Logged, abc.Mapping):
         f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)
         f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)
 
-        intg = numpy.zeros((10))
+        intg = np.zeros(10)
         intg[0] = sum(d0 * f1x)
         intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
         intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
         intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
         intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
         intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
-        intg /= numpy.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         volume = intg[0]
         cog = intg[1:4] / volume
         cogsq = cog**2
         vmass = volume * density
-        inertia = numpy.zeros((3, 3))
+        inertia = np.zeros((3, 3))
 
         inertia[0, 0] = (intg[5] + intg[6]) * density - vmass * (
             cogsq[1] + cogsq[2]

@@ -62,6 +62,7 @@ def _get_name(args):
             continue
         else:
             return name
+    return None  # pragma: no cover
 
 
 def main():

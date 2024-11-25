@@ -1,6 +1,7 @@
+import tempfile
+
 import py.path
 import pytest
-import tempfile
 
 from stl import stl
 

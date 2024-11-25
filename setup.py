@@ -1,15 +1,16 @@
 import os
 import sys
 import warnings
-from setuptools import setup, extension
+
+from setuptools import extension, setup
 from setuptools.command.build_ext import build_ext
 
 setup_kwargs = {}
 
 
 def error(*lines):
-    for line in lines:
-        print(line, file=sys.stderr)
+    for _line in lines:
+        pass
 
 
 try:
@@ -27,7 +28,7 @@ except ImportError:
 
 
 try:
-    import numpy
+    import numpy as np
     from Cython import Build
 
     setup_kwargs['ext_modules'] = Build.cythonize(
@@ -35,7 +36,7 @@ try:
             extension.Extension(
                 'stl._speedups',
                 ['stl/_speedups.pyx'],
-                include_dirs=[numpy.get_include()],
+                include_dirs=[np.get_include()],
             ),
         ]
     )
@@ -57,8 +58,8 @@ if os.path.isfile('README.rst'):
     with open('README.rst') as fh:
         long_description = fh.read()
 else:
-    long_description = (
-        'See http://pypi.python.org/pypi/%s/' % (about['__package_name__'])
+    long_description = 'See http://pypi.python.org/pypi/{}/'.format(
+        about['__package_name__']
     )
 
 install_requires = [
@@ -76,12 +77,12 @@ class BuildExt(build_ext):
             build_ext.run(self)
         except Exception as e:
             warnings.warn(
-                """
+                f"""
             Unable to build speedups module, defaulting to pure Python. Note
             that the pure Python version is more than fast enough in most cases
-            %r
-            """
-                % e
+            {e!r}
+            """,
+                stacklevel=2,
             )
 
 
@@ -101,9 +102,11 @@ if __name__ == '__main__':
         tests_require=tests_require,
         entry_points={
             'console_scripts': [
-                'stl = %s.main:main' % about['__import_name__'],
-                'stl2ascii = %s.main:to_ascii' % about['__import_name__'],
-                'stl2bin = %s.main:to_binary' % about['__import_name__'],
+                'stl = {}.main:main'.format(about['__import_name__']),
+                'stl2ascii = {}.main:to_ascii'.format(
+                    about['__import_name__']
+                ),
+                'stl2bin = {}.main:to_binary'.format(about['__import_name__']),
             ],
         },
         classifiers=[

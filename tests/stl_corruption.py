@@ -1,8 +1,8 @@
-from __future__ import print_function
-import sys
-import numpy
-import pytest
 import struct
+import sys
+
+import numpy as np
+import pytest
 
 from stl import mesh
 
@@ -140,9 +140,9 @@ def test_corrupt_binary_file(tmpdir, speedups):
 
 
 def test_duplicate_polygons():
-    data = numpy.zeros(3, dtype=mesh.Mesh.dtype)
-    data['vectors'][0] = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 1.0]])
-    data['vectors'][0] = numpy.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
-    data['vectors'][0] = numpy.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
+    data = np.zeros(3, dtype=mesh.Mesh.dtype)
+    data['vectors'][0] = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 1.0]])
+    data['vectors'][0] = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
+    data['vectors'][0] = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
 
     assert not mesh.Mesh(data, remove_empty_areas=False).check()

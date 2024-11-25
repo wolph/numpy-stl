@@ -1,16 +1,16 @@
-import os
-import sys
-import locale
-import pytest
-import pathlib
-import warnings
-import subprocess
 import io
-import numpy
+import locale
+import os
+import pathlib
+import subprocess
+import sys
+import warnings
 
+import numpy as np
+import pytest
+
+from stl import Mode, mesh
 from stl.utils import b
-from stl import mesh, Mode
-
 
 FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
 
@@ -23,8 +23,8 @@ def test_ascii_file(speedups):
 def test_chinese_name(tmpdir, speedups):
     name = 'Test Chinese name 月球'
     _stl_file = (
-        """
-    solid %s
+        f"""
+    solid {name}
       facet normal -0.014565 0.073223 -0.002897
         outer loop
           vertex 0.399344 0.461940 1.044090
@@ -34,7 +34,6 @@ def test_chinese_name(tmpdir, speedups):
       endfacet
     endsolid
     """
-        % name
     ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
@@ -54,8 +53,8 @@ def test_long_name(tmpdir, speedups):
     name = 'Just Some Very Long Name which will not fit within the standard'
     name += name
     _stl_file = (
-        """
-    solid %s
+        f"""
+    solid {name}
       facet normal -0.014565 0.073223 -0.002897
         outer loop
           vertex 0.399344 0.461940 1.044090
@@ -65,7 +64,6 @@ def test_long_name(tmpdir, speedups):
       endfacet
     endsolid
     """
-        % name
     ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
@@ -86,8 +84,8 @@ def test_scientific_notation(tmpdir, speedups):
     name = 'just some very long name which will not fit within the standard'
     name += name
     _stl_file = (
-        """
-    solid %s
+        f"""
+    solid {name}
       facet normal 1.014565e-10 7.3223e-5 -10
         outer loop
           vertex 0.399344 0.461940 1.044090e-5
@@ -97,7 +95,6 @@ def test_scientific_notation(tmpdir, speedups):
       endfacet
     endsolid
     """
-        % name
     ).lstrip()
 
     tmp_file = tmpdir.join('tmp.stl')
@@ -134,7 +131,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
         pytest.skip('Only makes sense with speedups')
 
     venv = os.environ.get('VIRTUAL_ENV', '')
-    if (3, 6) == sys.version_info[:2] and venv.startswith('/home/travis/'):
+    if sys.version_info[:2] == (3, 6) and venv.startswith('/home/travis/'):
         pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
 
     try:
@@ -146,6 +143,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
             warnings.warn(
                 'Unable to import PySide2/PyQt5, skipping locale tests',
                 ImportWarning,
+                stacklevel=1,
             )
             pytest.skip('PySide2/PyQt5 missing')
     assert QtWidgets
@@ -161,7 +159,7 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
         prefix = ('xvfb-run', '-a')
 
     p = subprocess.Popen(
-        prefix + (sys.executable, script_path),
+        (*prefix, sys.executable, script_path),
         env=env,
         universal_newlines=True,
         stdout=subprocess.PIPE,
@@ -181,8 +179,8 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
 
 def test_ascii_io():
     # Create a vanilla mesh.
-    mesh_ = mesh.Mesh(numpy.empty(3, mesh.Mesh.dtype))
-    mesh_.vectors = numpy.arange(27).reshape((3, 3, 3))
+    mesh_ = mesh.Mesh(np.empty(3, mesh.Mesh.dtype))
+    mesh_.vectors = np.arange(27).reshape((3, 3, 3))
 
     # Check that unhelpful 'expected str but got bytes' error is caught and
     # replaced.
@@ -207,4 +205,4 @@ def test_ascii_io():
     # Read the mesh back in.
     read = mesh.Mesh.from_file('anonymous.stl', fh=io.BytesIO(fh.getvalue()))
     # Check what comes out is the same as what went in.
-    assert numpy.allclose(mesh_.vectors, read.vectors)
+    assert np.allclose(mesh_.vectors, read.vectors)

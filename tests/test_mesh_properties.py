@@ -1,14 +1,13 @@
-import numpy
+import numpy as np
 import pytest
 
 from stl import stl
-
 
 tolerance = 1e-5
 
 
 def close(a, b):
-    return numpy.allclose(a, b, atol=tolerance)
+    return np.allclose(a, b, atol=tolerance)
 
 
 def test_mass_properties_for_half_donut(binary_ascii_path, speedups):
@@ -98,7 +97,7 @@ def test_mass_properties_for_half_donut_with_density(
     assert close([volume], [2.343149026234945])
     assert close(cog, [1.500001, 0.209472, 1.500001])
     print('inertia')
-    numpy.set_printoptions(suppress=True)
+    np.set_printoptions(suppress=True)
     print(inertia)
     assert close(
         inertia,
