@@ -1,3 +1,4 @@
+# type: ignore[reportAttributeAccessIssue]
 import math
 
 import numpy as np

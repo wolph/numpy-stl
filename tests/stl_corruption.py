@@ -145,4 +145,4 @@ def test_duplicate_polygons():
     data['vectors'][0] = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
     data['vectors'][0] = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
 
-    assert not mesh.Mesh(data, remove_empty_areas=False).check()
+    assert not mesh.Mesh(data, remove_empty_areas=False).check()  # type: ignore[reportAttributeAccessIssue]

@@ -34,6 +34,7 @@ def test_multiple_stl(tmpdir, speedups):
         for _ in range(10):
             fh.write(_STL_FILE)
         fh.seek(0)
+        i = 0
         for i, m in enumerate(
             mesh.Mesh.from_multi_file(str(tmp_file), fh=fh, speedups=speedups)
         ):
@@ -58,6 +59,7 @@ def test_multiple_stl_file(tmpdir, speedups):
             fh.write(_STL_FILE)
 
         fh.seek(0)
+        i = -1
         for i, m in enumerate(
             mesh.Mesh.from_multi_file(str(tmp_file), speedups=speedups)
         ):

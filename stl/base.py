@@ -62,7 +62,7 @@ def logged(class_):
     # systems while this works on OS X. Please let me know if you can tell me
     # what silly mistake I made here
 
-    logger_name = logger.Logged._Logged__get_name(
+    logger_name = logger.Logged._Logged__get_name(  # type: ignore[reportAttributeAccessIssue]
         __name__,
         class_.__name__,
     )
@@ -94,7 +94,7 @@ def _set(key):
 
 
 @logged
-class BaseMesh(logger.Logged, abc.Mapping):
+class BaseMesh(logger.Logged, abc.Mapping):  # type: ignore[reportGeneralTypeIssues]
     """
     Mesh object with easy access to the vectors through v0, v1 and v2.
     The normals, areas, min, max and units are calculated automatically.

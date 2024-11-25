@@ -28,8 +28,8 @@ def test_main(ascii_file, binary_file, tmpdir, speedups):
 def test_args(ascii_file, tmpdir):
     parser = main._get_parser('')
 
-    def _get_name(*args):
-        return main._get_name(parser.parse_args(list(map(str, args))))
+    def _get_name(*args) -> str:
+        return str(main._get_name(parser.parse_args(list(map(str, args)))))
 
     assert _get_name('--name', 'foobar') == 'foobar'
     assert _get_name('-', tmpdir.join('binary.stl')).endswith('binary.stl')

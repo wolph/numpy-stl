@@ -1,3 +1,4 @@
+# type: ignore[reportAttributeAccessIssue]
 import io
 import locale
 import os

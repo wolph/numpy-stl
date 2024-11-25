@@ -1,3 +1,4 @@
+# type: ignore[reportAttributeAccessIssue]
 import datetime
 import enum
 import io
