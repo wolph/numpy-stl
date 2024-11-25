@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
-        numpy-version: ['1', '2']
+        numpy-version: ['numpy1', 'numpy2']
 
     steps:
     - uses: actions/checkout@v3
@@ -26,7 +26,7 @@ jobs:
         pip install tox tox-gh-actions
     - name: python version
       env:
-        TOXENV: "py${{ matrix.python }}-numpy${{ matrix.numpy-version }}"
+        TOXENV: "py${{ matrix.python }}-${{ matrix.numpy-version }}"
       run: |
         TOXENV=${{ env.TOXENV }}
         TOXENV=${TOXENV//.} # replace all dots
