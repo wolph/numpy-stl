@@ -495,6 +495,31 @@ class BaseMesh(logger.Logged, abc.Mapping):  # type: ignore[reportGeneralTypeIss
         inertia[0, 2] = inertia[2, 0] = -(intg[9] - volume * cog[2] * cog[0])
         return volume, cog, inertia
 
+    def is_convex(self):
+        """Return True if the mesh is convex, False otherwise."""
+        # For each face, project every vertex onto the normal vector and make
+        # sure it isn't longer than the projection of the face itself.
+        # The dot product is a scaled projection: (a dot b) = |a||b| cos(angle)
+        for i, normal_vector in enumerate(self.normals):
+            face_projection = np.dot(self.v0[i], normal_vector)
+            normal_vector_2d = np.expand_dims(normal_vector, axis=-1)
+            all_vertex_projection = np.matmul(self.vectors, normal_vector_2d)
+            if not np.all(all_vertex_projection <= face_projection):
+                return False
+
+        return True
+
+    def get_equilibrium_points(self):
+        """
+        Return classified equilibrium points of the mesh.
+
+        For each point, edge, and face in the mesh, determine whether it
+        contains an equilibrium point, and whether it is stable or unstable.
+        An equilibrium point occurs if and only if a vector normal to the
+        surface passes through the center of mass.
+        """
+        pass
+
     def update_units(self):
         units = self.normals.copy()
         non_zero_areas = self.areas > 0
