@@ -179,22 +179,19 @@ def test_base_mesh():
 
     # Check item 0 (contains v0, v1 and v2)
     assert (
-        mesh[0]
-        == np.array(
+        mesh[0] == np.array(
             [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0], dtype=np.float32
         )
     ).all()
     assert (
-        mesh.vectors[0]
-        == np.array(
+        mesh.vectors[0] == np.array(
             [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [0.0, 0.0, 0.0]],
             dtype=np.float32,
         )
     ).all()
     assert (mesh.v0[0] == np.array([1.0, 1.0, 1.0], dtype=np.float32)).all()
     assert (
-        mesh.points[0]
-        == np.array(
+        mesh.points[0] == np.array(
             [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0], dtype=np.float32
         )
     ).all()
@@ -202,8 +199,7 @@ def test_base_mesh():
 
     mesh[0] = 3
     assert (
-        mesh[0]
-        == np.array(
+        mesh[0] == np.array(
             [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0], dtype=np.float32
         )
     ).all()

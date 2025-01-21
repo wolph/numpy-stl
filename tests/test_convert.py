@@ -53,7 +53,8 @@ def test_stl_mesh(ascii_file, tmpdir, speedups):
 
     mesh = stl.StlMesh(ascii_file, speedups=speedups)
     with pytest.raises(ValueError):
-        mesh.save(filename=str(tmp_file), mode='test')  # type: ignore[reportArgumentType]
+        mesh.save(filename=str(tmp_file), mode='test')
+        # type: ignore[reportArgumentType]
 
     mesh.save(str(tmp_file))
     mesh.save(str(tmp_file), update_normals=False)
