@@ -509,17 +509,6 @@ class BaseMesh(logger.Logged, abc.Mapping):  # type: ignore[reportGeneralTypeIss
 
         return True
 
-    def get_equilibrium_points(self):
-        """
-        Return classified equilibrium points of the mesh.
-
-        For each point, edge, and face in the mesh, determine whether it
-        contains an equilibrium point, and whether it is stable or unstable.
-        An equilibrium point occurs if and only if a vector normal to the
-        surface passes through the center of mass.
-        """
-        pass
-
     def update_units(self):
         units = self.normals.copy()
         non_zero_areas = self.areas > 0
