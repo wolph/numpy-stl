@@ -376,7 +376,7 @@ Creating Mesh objects from a list of vertices and faces
     cube.save('cube.stl')
 
 
-Evaluating Mesh properties (Volume, Center of gravity, Inertia)
+Evaluating Mesh properties (Volume, Center of gravity, Inertia, Convexity)
 ------------------------------------------------------------------------------
 
 .. code-block:: python
@@ -393,7 +393,7 @@ Evaluating Mesh properties (Volume, Center of gravity, Inertia)
     print("Inertia matrix at expressed at the COG  = {0}".format(inertia[0,:]))
     print("                                          {0}".format(inertia[1,:]))
     print("                                          {0}".format(inertia[2,:]))
-
+    print("Your mesh is convex: {0}".format(your_mesh.is_convex()))
 Combining multiple STL files
 ------------------------------------------------------------------------------
 

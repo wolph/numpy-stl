@@ -241,7 +241,8 @@ class BaseStl(base.BaseMesh):
             name = next(iterator)
             return name, np.fromiter(iterator, dtype=cls.dtype)
 
-    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):  # noqa: C901
+    def save(self, filename, fh=None, mode=AUTOMATIC, update_normals=True):
+        # noqa: C901
         """Save the STL to a (binary) file
 
         If mode is :py:data:`AUTOMATIC` an :py:data:`ASCII` file will be
