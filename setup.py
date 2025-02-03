@@ -88,7 +88,7 @@ class BuildExt(build_ext):
 
 if __name__ == '__main__':
     setup(
-        python_requires='>3.9.0',
+        python_requires='>=3.9.0',
         name=about['__package_name__'],
         version=about['__version__'],
         author=about['__author__'],
@@ -117,11 +117,11 @@ if __name__ == '__main__':
             'Natural Language :: English',
             'Programming Language :: Python',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-            'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
+            'Programming Language :: Python :: 3.13',
             'Topic :: Software Development :: Libraries :: Python Modules',
         ],
         install_requires=install_requires,
