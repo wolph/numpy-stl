@@ -311,9 +311,9 @@ class BaseStl(base.BaseMesh):
         else:
 
             def p(s, file):
-                file.write(b(f'{s}\n'))
+                file.write(b(s) + b'\n')
 
-            p(f'solid {name}', file=fh)
+            p(b'solid ' + b(name), file=fh)
 
             for row in self.data:
                 # Explicitly convert each component to standard float for
@@ -343,7 +343,7 @@ class BaseStl(base.BaseMesh):
                 p('  endloop', file=fh)
                 p('endfacet', file=fh)
 
-            p(f'endsolid {name}', file=fh)
+            p(b'endsolid ' + b(name), file=fh)
 
     def get_header(self, name):
         # Format the header
