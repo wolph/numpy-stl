@@ -5,7 +5,7 @@ import sys
 from . import stl
 
 
-def _get_parser(description):
+def _get_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         'infile',
@@ -44,12 +44,12 @@ def _get_parser(description):
     return parser
 
 
-def _get_name(args):
+def _get_name(args: argparse.Namespace) -> str:
     names = [
         args.name,
         getattr(args.outfile, 'name', None),
         getattr(args.infile, 'name', None),
-        'numpy-stl-%06d' % random.randint(0, 1_000_000),
+        'numpy-stl-%06d' % random.randint(0, 1_000_000),  # noqa: UP031
     ]
 
     for name in names:  # pragma: no branch
@@ -62,10 +62,10 @@ def _get_name(args):
             continue
         else:
             return name
-    return None  # pragma: no cover
+    return None  # type: ignore[return-value]  # pragma: no cover
 
 
-def main():
+def main() -> None:
     parser = _get_parser('Convert STL files from ascii to binary and back')
     parser.add_argument(
         '-a',
@@ -102,7 +102,7 @@ def main():
     )
 
 
-def to_ascii():
+def to_ascii() -> None:
     parser = _get_parser('Convert STL files to ASCII (text) format')
     args = parser.parse_args()
     name = _get_name(args)
@@ -121,7 +121,7 @@ def to_ascii():
     )
 
 
-def to_binary():
+def to_binary() -> None:
     parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
     name = _get_name(args)

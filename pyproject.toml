@@ -1,0 +1,23 @@
+[tool.mypy]
+packages = ["stl"]
+local_partial_types = true
+allow_redefinition_new = true
+strict = true
+enable_error_code = [
+  "exhaustive-match",
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+]
+warn_return_any = false
+
+
+[tool.pyright]
+pythonPlatform = "All"
+include = ["stl"]
+ignore = [".venv"]
+stubPath = "."
+typeCheckingMode = "strict"
+reportPrivateUsage = false # dupe of PLC2701
+reportUnusedParameter = false # dupe of F841
+reportUnusedVariable = false # dupe of F841
