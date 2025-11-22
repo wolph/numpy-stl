@@ -464,6 +464,7 @@ class BaseStl(base.BaseMesh):
             with open(filename, 'rb') as fh:
                 name, data = cls.load(fh, mode=mode, speedups=speedups)
 
+        # pyrefly: ignore[bad-return]
         return cls(
             data, calculate_normals, name=name, speedups=speedups, **kwargs
         )
@@ -498,6 +499,7 @@ class BaseStl(base.BaseMesh):
             raw_data = cls.load(fh, mode=mode, speedups=speedups)
             while raw_data:
                 name, data = raw_data
+                # pyrefly: ignore[invalid-yield]
                 yield cls(
                     data,
                     calculate_normals,
@@ -542,6 +544,7 @@ class BaseStl(base.BaseMesh):
         ]
 
         data = np.concatenate([mesh.data for mesh in meshes])
+        # pyrefly: ignore[bad-return]
         return cls(data, calculate_normals=calculate_normals, **kwargs)
 
     @classmethod
@@ -597,7 +600,9 @@ class BaseStl(base.BaseMesh):
                                 )
 
                     mesh = cls(np.zeros(len(triangles), dtype=cls.dtype))
+                    # pyrefly: ignore[missing-attribute]
                     mesh.vectors[:] = np.array(triangles)
+                    # pyrefly: ignore[invalid-yield]
                     yield mesh
 
 

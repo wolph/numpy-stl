@@ -22,13 +22,16 @@ jobs:
           activate-environment: true
 
       - name: install
-        run: uv pip install cython mypy basedpyright .
-
-      - name: run mypy
-        run: mypy --no-incremental --cache-dir=/dev/null stl
+        run: uv pip install cython basedpyright pyrefly mypy .
 
       - name: run basedpyright
         run: basedpyright
 
       - name: run basedpyright --verifytypes
         run: basedpyright --ignoreexternal --verifytypes stl
+
+      - name: run pyrefly check
+        run: pyrefly check
+
+      - name: run mypy
+        run: mypy --no-incremental --cache-dir=/dev/null stl

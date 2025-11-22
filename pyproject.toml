@@ -21,3 +21,7 @@ typeCheckingMode = "strict"
 reportPrivateUsage = false # dupe of PLC2701
 reportUnusedParameter = false # dupe of F841
 reportUnusedVariable = false # dupe of F841
+
+
+[tool.pyrefly]
+project-includes = ["stl"]

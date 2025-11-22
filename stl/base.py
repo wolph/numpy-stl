@@ -27,6 +27,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from numpy._typing import _ArrayLikeFloat_co, _ArrayLikeInt_co
     from typing_extensions import TypeAlias
 
+    # pyrefly: ignore[invalid-inheritance]
     class _Logged(logger.LoggerProtocol, Protocol):  # pragma: no cover
         logger: logging.Logger
 
