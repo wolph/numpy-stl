@@ -123,6 +123,7 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.12',
             'Programming Language :: Python :: 3.13',
             'Topic :: Software Development :: Libraries :: Python Modules',
+            'Typing :: Typed',
         ],
         install_requires=install_requires,
         cmdclass=dict(

@@ -1,0 +1,37 @@
+name: Type-check
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  type-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+
+      - name: install
+        run: uv pip install cython basedpyright pyrefly mypy .
+
+      - name: run basedpyright
+        run: basedpyright
+
+      - name: run basedpyright --verifytypes
+        run: basedpyright --ignoreexternal --verifytypes stl
+
+      - name: run pyrefly check
+        run: pyrefly check
+
+      - name: run mypy
+        run: mypy --no-incremental --cache-dir=/dev/null stl
