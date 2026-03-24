@@ -9,9 +9,9 @@ import warnings
 
 import numpy as np
 import pytest
+from stl.utils import b
 
 from stl import Mode, mesh
-from stl.utils import b
 
 FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
 

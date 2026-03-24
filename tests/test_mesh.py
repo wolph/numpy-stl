@@ -1,6 +1,5 @@
 # type: ignore[reportAttributeAccessIssue]
 import numpy as np
-
 from stl.base import BaseMesh, RemoveDuplicates
 from stl.mesh import Mesh
 

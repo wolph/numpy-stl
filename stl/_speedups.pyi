@@ -1,7 +1,7 @@
-from typing import IO
+from typing import IO, TypeAlias
 
 import numpy as np
-from typing_extensions import Buffer, TypeAlias
+from typing_extensions import Buffer
 
 _DataArray: TypeAlias = np.ndarray[tuple[int], np.dtype[np.void]]
 

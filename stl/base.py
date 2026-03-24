@@ -21,11 +21,10 @@ from python_utils import logger
 
 if TYPE_CHECKING:  # pragma: no cover
     from types import EllipsisType
-    from typing import Protocol
+    from typing import Protocol, TypeAlias
 
     # this won't be changing anytime soon, so safe to import here
     from numpy._typing import _ArrayLikeFloat_co, _ArrayLikeInt_co
-    from typing_extensions import TypeAlias
 
     # pyrefly: ignore[invalid-inheritance]
     class _Logged(logger.LoggerProtocol, Protocol):  # pragma: no cover
@@ -236,11 +235,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     #: - normals: :func:`numpy.float32`, `(3, )`
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
     #: - attr: :func:`numpy.uint16`, `(1, )`
-    dtype: ClassVar[np.dtype[np.void]] = np.dtype([
-        ('normals', np.float32, (3,)),
-        ('vectors', np.float32, (3, 3)),
-        ('attr', np.uint16, (1,)),
-    ]).newbyteorder('<')  # Even on big endian arches, use little e.
+    dtype: ClassVar[np.dtype[np.void]] = np.dtype(
+        [
+            ('normals', np.float32, (3,)),
+            ('vectors', np.float32, (3, 3)),
+            ('attr', np.uint16, (1,)),
+        ]
+    ).newbyteorder('<')  # Even on big endian arches, use little e.
 
     speedups: Final[bool]
     name: Final['bytes | str']
@@ -630,11 +631,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         ca, cb, cc, cd = powers[8:12]  # noqa: RUF059
         da, db, dc, dd = powers[12:16]  # noqa: RUF059
 
-        return np.array([
-            [aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
-            [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
-            [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc],
-        ])
+        return np.array(
+            [
+                [aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc],
+            ]
+        )
 
     def rotate(
         self,

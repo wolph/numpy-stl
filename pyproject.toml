@@ -40,7 +40,8 @@ stl2bin = "stl.main:to_binary"
 
 [project.optional-dependencies]
 docs = [
-    "sphinx>=9.0",
+    "sphinx>=8.0; python_version < '3.11'",
+    "sphinx>=9.0; python_version >= '3.11'",
 ]
 tests = [
     "pytest>=9.0",
@@ -57,6 +58,7 @@ dev = [
 
 [tool.uv.build-backend]
 module-root = ""
+module-name = "stl"
 
 [tool.pytest.ini_options]
 doctest_optionflags = "NORMALIZE_WHITESPACE"
