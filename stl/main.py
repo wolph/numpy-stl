@@ -35,12 +35,6 @@ def _get_parser(description: str) -> argparse.ArgumentParser:
         help='Remove areas with 0 surface areas to prevent errors during '
         'normal calculation',
     )
-    parser.add_argument(
-        '-s',
-        '--disable-speedups',
-        action='store_true',
-        help='Disable Cython speedups',
-    )
     return parser
 
 
@@ -87,7 +81,7 @@ def main() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=not args.disable_speedups,
+        speedups=True,
     )
 
     if args.binary:
@@ -111,7 +105,7 @@ def to_ascii() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=not args.disable_speedups,
+        speedups=True,
     )
     stl_file.save(
         name,
@@ -130,7 +124,7 @@ def to_binary() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=not args.disable_speedups,
+        speedups=True,
     )
     stl_file.save(
         name,

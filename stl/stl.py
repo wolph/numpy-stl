@@ -23,14 +23,10 @@ from . import (
 )
 from .utils import b
 
-# NOTE: This is needed because pyright will otherwise complain about
-# the `# type: ignore[assignment]` below.
-# pyright: reportUnnecessaryTypeIgnoreComment=false
-
-try:
-    from . import _speedups
-except ImportError:  # pragma: no cover
-    _speedups = None  # type: ignore[assignment]
+from ._compat import (
+    ascii_read as _ascii_read,
+    ascii_write as _ascii_write,
+)
 
 if TYPE_CHECKING:
     from typing import Protocol, type_check_only
@@ -282,8 +278,8 @@ class BaseStl(base.BaseMesh):
             speedups = False
         # The speedups module is covered by travis but it can't be tested in
         # all environments, this makes coverage checks easier
-        if _speedups is not None and speedups:  # type: ignore[redundant-expr]  # pragma: no cover
-            return _speedups.ascii_read(fh, header)
+        if _ascii_read is not None and speedups:  # pragma: no cover
+            return _ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
             name = cast('bytes', next(iterator))
@@ -359,8 +355,8 @@ class BaseStl(base.BaseMesh):
         except io.UnsupportedOperation:
             speedups = False
 
-        if _speedups is not None and speedups:  # type: ignore[redundant-expr]  # pragma: no cover
-            _speedups.ascii_write(fh, b(name), self.data)
+        if _ascii_write is not None and speedups:  # pragma: no cover
+            _ascii_write(fh, b(name), self.data)
         else:
 
             def p(s: '_Name', file: 'SupportsWrite[bytes]') -> None:

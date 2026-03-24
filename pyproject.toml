@@ -55,6 +55,7 @@ dev = [
     "basedpyright>=1.0",
     "pyrefly>=0.1",
 ]
+fast = ["speedups"]
 
 [tool.uv.build-backend]
 module-root = ""
@@ -97,9 +98,6 @@ reportPrivateUsage = false # dupe of PLC2701
 reportUnusedParameter = false # dupe of F841
 reportUnusedVariable = false # dupe of F841
 
-
-[project.optional-dependencies]
-fast = ["speedups"]
 
 [tool.pyrefly]
 project-includes = ["stl"]
