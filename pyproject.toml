@@ -23,5 +23,8 @@ reportUnusedParameter = false # dupe of F841
 reportUnusedVariable = false # dupe of F841
 
 
+[project.optional-dependencies]
+fast = ["speedups"]
+
 [tool.pyrefly]
 project-includes = ["stl"]
