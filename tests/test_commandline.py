@@ -9,9 +9,6 @@ def test_main(ascii_file, binary_file, tmpdir, speedups):
     args_pre = ['stl']
     args_post = [str(tmpdir.join('output.stl'))]
 
-    if not speedups:
-        args_pre.append('-s')
-
     try:
         sys.argv[:] = [*args_pre, ascii_file, *args_post]
         main.main()
@@ -42,7 +39,6 @@ def test_ascii(binary_file, tmpdir, speedups):
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not speedups else '',
             binary_file,
             str(tmpdir.join('ascii.stl')),
         ]
@@ -57,7 +53,6 @@ def test_binary(ascii_file, tmpdir, speedups):
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not speedups else '',
             ascii_file,
             str(tmpdir.join('binary.stl')),
         ]
