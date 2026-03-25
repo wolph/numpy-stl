@@ -1,21 +1,13 @@
 numpy-stl
 ==============================================================================
 
-.. image:: https://github.com/WoLpH/numpy-stl/actions/workflows/main.yml/badge.svg?branch=master
-    :alt: numpy-stl test status 
-    :target: https://github.com/WoLpH/numpy-stl/actions/workflows/main.yml
-
-.. image:: https://ci.appveyor.com/api/projects/status/cbv7ak2i59wf3lpj?svg=true
-    :alt: numpy-stl test status 
-    :target: https://ci.appveyor.com/project/WoLpH/numpy-stl
+.. image:: https://github.com/WoLpH/numpy-stl/actions/workflows/ci.yml/badge.svg?branch=master
+    :alt: numpy-stl test status
+    :target: https://github.com/WoLpH/numpy-stl/actions/workflows/ci.yml
 
 .. image:: https://badge.fury.io/py/numpy-stl.svg
-    :alt: numpy-stl Pypi version 
+    :alt: numpy-stl Pypi version
     :target: https://pypi.python.org/pypi/numpy-stl
-
-.. image:: https://coveralls.io/repos/WoLpH/numpy-stl/badge.svg?branch=master
-    :alt: numpy-stl code coverage 
-    :target: https://coveralls.io/r/WoLpH/numpy-stl?branch=master
 
 .. image:: https://img.shields.io/pypi/pyversions/numpy-stl.svg
 

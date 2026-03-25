@@ -280,7 +280,7 @@ class BaseStl(base.BaseMesh):
             fh.fileno()
         except io.UnsupportedOperation:
             speedups = False
-        # The speedups module is covered by travis but it can't be tested in
+        # The speedups module is covered by CI but it can't be tested in
         # all environments, this makes coverage checks easier
         if _speedups is not None and speedups:  # type: ignore[redundant-expr]  # pragma: no cover
             return _speedups.ascii_read(fh, header)
