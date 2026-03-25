@@ -408,6 +408,19 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         data: _data_1d,
         value: '_Dedupe' = RemoveDuplicates.SINGLE,
     ) -> _data_1d:
+        '''Remove duplicate triangles from mesh data.
+
+        Args:
+            data: Structured mesh array.
+            value: Deduplication strategy. Use
+                :attr:`RemoveDuplicates.SINGLE` to keep one
+                copy, :attr:`RemoveDuplicates.ALL` to remove
+                all copies, or :attr:`RemoveDuplicates.NONE`
+                to keep everything.
+
+        Returns:
+            Filtered mesh data array.
+        '''
         value = RemoveDuplicates.map(value)
         polygons: _f32_2d = data['vectors'].sum(axis=1)
         # Get a sorted list of indices
@@ -439,6 +452,18 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @staticmethod
     def remove_empty_areas(data: _data_1d) -> _data_1d:
+        '''Remove triangles with zero surface area.
+
+        Filters out degenerate triangles where all three
+        vertices are collinear or coincident.
+
+        Args:
+            data: Structured mesh array.
+
+        Returns:
+            Filtered mesh data array with zero-area
+            triangles removed.
+        '''
         # https://github.com/numpy/numpy/pull/30261
         vectors: _f32_3d = data['vectors']  # type: ignore[assignment]
         v0 = vectors[:, 0]
@@ -453,7 +478,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         update_areas: bool = True,
         update_centroids: bool = True,
     ) -> None:
-        """Update the normals, areas, and centroids for all points"""
+        '''Recalculate normals from current vertex positions.
+
+        Also refreshes areas and centroids by default.
+
+        Args:
+            update_areas: Whether to also refresh cached
+                areas. Defaults to True.
+            update_centroids: Whether to also refresh cached
+                centroids. Defaults to True.
+        '''
         normals: _f32_2d = np.cross(self.v1 - self.v0, self.v2 - self.v0)
 
         if update_areas:
@@ -465,6 +499,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self.normals[:] = normals
 
     def get_unit_normals(self) -> _f32_2d:
+        '''Return a copy of normals normalized to unit length.
+
+        Unlike the :attr:`units` property, this method
+        always recomputes from the current :attr:`normals`
+        array.
+
+        Returns:
+            Array of shape (N, 3) with unit-length normals.
+            Zero-length normals remain as zeros.
+        '''
         normals = self.normals.copy()
         normal: _f32_1d = np.linalg.norm(normals, axis=1)
         non_zero = normal > 0
@@ -473,12 +517,20 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         return normals
 
     def update_min(self) -> None:
+        '''Refresh the cached bounding box minimum.'''
         self._min = self.vectors.min(axis=(0, 1))
 
     def update_max(self) -> None:
+        '''Refresh the cached bounding box maximum.'''
         self._max = self.vectors.max(axis=(0, 1))
 
     def update_areas(self, normals: '_f32_2d | None' = None) -> None:
+        '''Refresh the cached per-triangle areas.
+
+        Args:
+            normals: Pre-computed cross products. If None,
+                recomputes from current vertices.
+        '''
         if normals is None:
             normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)
 
@@ -486,21 +538,50 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self._areas = areas.reshape((areas.size, 1))
 
     def update_centroids(self) -> None:
+        '''Refresh the cached per-triangle centroids.'''
         self._centroids = np.mean([self.v0, self.v1, self.v2], axis=0)
 
     def check(self, exact: bool = False) -> bool:
-        """Check the mesh is valid or not
+        '''Check whether the mesh is valid (closed).
 
-        :param bool exact: Perform exact checks.
-        """
+        Args:
+            exact: If True, perform an exact edge-matching
+                check. If False, use a faster normal-sum
+                heuristic.
+
+        Returns:
+            True if the mesh is closed, False otherwise.
+
+        Warning:
+            The non-exact check (``exact=False``) can
+            produce false positives and false negatives.
+            For reliable results, use ``exact=True``. See
+            `#198 <https://github.com/WoLpH/numpy-stl/issues/198>`_
+            and `#213 <https://github.com/WoLpH/numpy-stl/issues/213>`_.
+        '''
         return self.is_closed(exact=exact)
 
     def is_closed(self, exact: bool = False) -> bool:  # pragma: no cover
-        """Check the mesh is closed or not
+        '''Check whether the mesh is watertight.
 
-        :param bool exact: Perform a exact check on edges.
-        """
+        A closed mesh has every edge shared by exactly two
+        triangles with consistent winding.
 
+        Args:
+            exact: If True, checks directed edges for
+                matching pairs. If False, uses a faster
+                normal-sum heuristic.
+
+        Returns:
+            True if the mesh is closed, False otherwise.
+
+        Warning:
+            The non-exact check (``exact=False``) can give
+            false positives and false negatives for certain
+            mesh geometries. Use ``exact=True`` for reliable
+            results. See
+            `#198 <https://github.com/WoLpH/numpy-stl/issues/198>`_.
+        '''
         if exact:
             reversed_triangles: _bool_1d = (
                 np.cross(self.v1 - self.v0, self.v2 - self.v0) * self.normals
@@ -525,13 +606,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
         else:
             self.logger.warning(
-                """
+                '''
             Use of not exact is_closed check. This check can lead to misleading
             results. You could try to use `exact=True`.
             See:
              - false positive: https://github.com/wolph/numpy-stl/issues/198
              - false negative: https://github.com/wolph/numpy-stl/pull/213
-            """.strip()
+            '''.strip()
             )
             normals = np.asarray(self.normals, dtype=np.float64)
             allowed_max_errors = (
@@ -541,24 +622,45 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 return True
 
         self.logger.warning(
-            """
+            '''
         Your mesh is not closed, the mass methods will not function
         correctly on this mesh.  For more info:
         https://github.com/WoLpH/numpy-stl/issues/69
-        """.strip()
+        '''.strip()
         )
         return False
 
     def get_mass_properties(self) -> tuple[np.float32, _f32_1d, _f64_2d]:
-        """
-        Evaluate and return a tuple with the following elements:
-          - the volume
-          - the position of the center of gravity (COG)
-          - the inertia matrix expressed at the COG
+        '''Compute volume, center of gravity, and inertia.
 
-        Documentation can be found here:
-        http://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
-        """
+        Uses the polyhedral mass properties algorithm from
+        Eberly (Geometric Tools).
+
+        Returns:
+            A tuple of (volume, center_of_gravity, inertia):
+
+            - **volume** -- Mesh volume as float32.
+            - **center_of_gravity** -- COG as (3,) array.
+            - **inertia** -- Inertia tensor as (3, 3) array
+              expressed at the COG.
+
+        Raises:
+            RuntimeError: If the mesh is not closed.
+
+        Example:
+            >>> from stl import mesh
+            >>> m = mesh.Mesh.from_file(
+            ...     'tests/stl_binary/HalfDonut.stl')
+            >>> vol, cog, inertia = m.get_mass_properties()
+            >>> float(vol) > 0
+            True
+
+        Warning:
+            This method calls ``check(exact=True)``
+            internally. If the mesh is not watertight,
+            a ``RuntimeError`` is raised. Use
+            :meth:`is_closed` to verify beforehand.
+        '''
         self.check(True)
 
         def subexpression(x: _f32_2d) -> tuple[_f32_1d, ...]:
@@ -606,7 +708,14 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         return volume, cog, inertia
 
     def is_convex(self) -> bool:
-        """Return True if the mesh is convex, False otherwise."""
+        '''Return True if the mesh is convex.
+
+        Tests whether every vertex lies on or behind every
+        face plane.
+
+        Returns:
+            True if convex, False otherwise.
+        '''
         # For each face, project every vertex onto the normal vector and make
         # sure it isn't longer than the projection of the face itself.
         # The dot product is a scaled projection: (a dot b) = |a||b| cos(angle)
@@ -620,6 +729,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         return True
 
     def update_units(self) -> None:
+        '''Refresh the cached unit normal vectors.'''
         units = self.normals.copy()
         non_zero_areas = self.areas > 0
         areas = self.areas
@@ -639,18 +749,20 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @staticmethod
     def rotation_matrix(axis: '_ToAxis', theta: float) -> _f64_2d:
-        """
-        Generate a rotation matrix to Rotate the matrix over the given axis by
-        the given theta (angle)
+        '''Generate a 3x3 rotation matrix.
 
-        Uses the `Euler-Rodrigues
-        <https://en.wikipedia.org/wiki/Euler%E2%80%93Rodrigues_formula>`_
-        formula for fast rotations.
+        Uses the Euler-Rodrigues formula for fast rotation
+        matrix construction.
 
-        :param numpy.array axis: Axis to rotate over (x, y, z)
-        :param float theta: Rotation angle in radians, use `math.radians` to
-                     convert degrees to radians if needed.
-        """
+        Args:
+            axis: Axis to rotate around as [x, y, z].
+            theta: Rotation angle in radians. Use
+                ``math.radians()`` to convert from degrees.
+
+        Returns:
+            A (3, 3) rotation matrix. Returns the identity
+            matrix if the axis is zero.
+        '''
         axis_ = np.asarray(axis)
         # No need to rotate if there is no actual rotation
         if not axis_.any():
@@ -680,22 +792,30 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         theta: float = 0,
         point: '_ToPoint | None' = None,
     ) -> None:
-        """
-        Rotate the matrix over the given axis by the given theta (angle)
+        '''Rotate the mesh around an axis.
 
-        Uses the :py:func:`rotation_matrix` in the background.
+        Args:
+            axis: Axis to rotate around as [x, y, z].
+            theta: Rotation angle in radians. Use
+                ``math.radians()`` to convert from degrees.
+            point: Optional point to rotate around. If
+                None, rotates around the origin.
 
-        .. note:: Note that the `point` was accidentaly inverted with the
-           old version of the code. To get the old and incorrect behaviour
-           simply pass `-point` instead of `point` or `-numpy.array(point)` if
-           you're passing along an array.
+        Example:
+            >>> import math
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(1, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[1, 0, 0],
+            ...     [0, 1, 0], [0, 0, 1]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> m.rotate([0, 0, 1], math.radians(90))
 
-        :param numpy.array axis: Axis to rotate over (x, y, z)
-        :param float theta: Rotation angle in radians, use `math.radians` to
-                            convert degrees to radians if needed.
-        :param numpy.array point: Rotation point so manual translation is not
-                                  required
-        """
+        Warning:
+            In older versions, the ``point`` parameter was
+            accidentally inverted. If you relied on the old
+            behavior, pass ``-point`` instead.
+        '''
         # No need to rotate if there is no actual rotation
         if not theta:
             return
@@ -707,15 +827,19 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         rotation_matrix: '_f32_2d | _f64_2d',
         point: '_ToPoint | None' = None,
     ) -> None:
-        """
-        Rotate using a given rotation matrix and optional rotation point
+        '''Rotate using a pre-computed rotation matrix.
 
-        Note that this rotation produces clockwise rotations for positive
-        angles which is arguably incorrect but will remain for legacy reasons.
-        For more details, read here:
-        https://github.com/WoLpH/numpy-stl/issues/166
-        """
+        Args:
+            rotation_matrix: A (3, 3) rotation matrix.
+            point: Optional point to rotate around. If
+                None, rotates around the origin.
 
+        Warning:
+            This method produces clockwise rotations for
+            positive angles, which is arguably incorrect
+            but retained for backwards compatibility. See
+            `#166 <https://github.com/WoLpH/numpy-stl/issues/166>`_.
+        '''
         identity = np.identity(rotation_matrix.shape[0])
         # No need to rotate if there is no actual rotation
         if not rotation_matrix.any() or (identity == rotation_matrix).all():
@@ -746,27 +870,44 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
 
     def translate(self, translation: '_ToTranslation') -> None:
-        """
-        Translate the mesh in the three directions
+        '''Translate (move) the mesh.
 
-        :param numpy.array translation: Translation vector (x, y, z)
-        """
+        Args:
+            translation: Translation vector [x, y, z].
+
+        Raises:
+            AssertionError: If translation is not length 3.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(1, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [1, 0, 0], [0, 1, 0]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> m.translate([10, 20, 30])
+            >>> float(m.v0[0][0])
+            10.0
+        '''
         assert len(translation) == 3, 'Translation vector must be of length 3'
         self.x += translation[0]
         self.y += translation[1]
         self.z += translation[2]
 
     def transform(self, matrix: '_f32_2d | _f64_2d') -> None:
-        """
-        Transform the mesh with a rotation and a translation stored in a
-        single 4x4 matrix
+        '''Apply a 4x4 transformation matrix.
 
-        :param numpy.array matrix: Transform matrix with shape (4, 4), where
-                                   matrix[0:3, 0:3] represents the rotation
-                                   part of the transformation
-                                   matrix[0:3, 3] represents the translation
-                                   part of the transformation
-        """
+        The upper-left 3x3 submatrix is the rotation.
+        The rightmost column (0:3, 3) is the translation.
+
+        Args:
+            matrix: A (4, 4) transformation matrix. The
+                rotation part must have unit determinant.
+
+        Raises:
+            AssertionError: If matrix shape is not (4, 4)
+                or rotation determinant is not 1.0.
+        '''
         is_a_4x4_matrix = matrix.shape == (4, 4)
         assert is_a_4x4_matrix, 'Transformation matrix must be of shape (4, 4)'
         rotation = matrix[0:3, 0:3]
@@ -937,7 +1078,27 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self,
         density: float,
     ) -> tuple[np.float32, np.float32, _f32_1d, _f64_2d]:
-        # add density for mesh,density unit kg/m3 when mesh is unit is m
+        '''Compute mass properties with a given density.
+
+        Like :meth:`get_mass_properties` but scales volume
+        to mass using the provided density.
+
+        Args:
+            density: Material density in consistent units
+                (e.g., kg/m^3 when mesh units are meters).
+
+        Returns:
+            A tuple of (volume, mass, cog, inertia):
+
+            - **volume** -- Mesh volume.
+            - **mass** -- Volume * density.
+            - **cog** -- Center of gravity as (3,) array.
+            - **inertia** -- Inertia tensor as (3, 3)
+              array.
+
+        Raises:
+            RuntimeError: If the mesh is not closed.
+        '''
         self.check(True)
 
         def subexpression(x: _f32_2d) -> tuple[_f32_1d, ...]:
