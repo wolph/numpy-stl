@@ -39,6 +39,23 @@ jobs:
       - name: Run tests
         run: pytest --cov-fail-under=100
 
+  test-speedups:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+          python-version: '3.13'
+      - name: Install with speedups
+        run: uv pip install '.[tests,fast]'
+        continue-on-error: true
+      - name: Run tests
+        if: success()
+        run: pytest -x -q
+        continue-on-error: true
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5

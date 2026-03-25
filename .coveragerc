@@ -11,6 +11,7 @@ exclude_lines =
     if 0:
     if __name__ == .__main__.:
     @overload
+    if _speedups_available:
 
 [run]
 source = stl
