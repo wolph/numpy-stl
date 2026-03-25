@@ -84,6 +84,8 @@ DIMENSIONS: Final[L[3]] = 3
 
 
 class Dimension(enum.IntEnum):
+    '''Named indices for X/Y/Z axes.'''
+
     #: X index (for example, `mesh.v0[0][X]`)
     X = 0
     #: Y index (for example, `mesh.v0[0][Y]`)
@@ -99,10 +101,10 @@ Z: Final[L[Dimension.Z]] = Dimension.Z
 
 
 class RemoveDuplicates(enum.Enum):
-    """
-    Choose whether to remove no duplicates, leave only a single of the
-    duplicates or remove all duplicates (leaving holes).
-    """
+    '''Strategy for handling duplicate triangles.
+
+    Use with :meth:`BaseMesh.remove_duplicate_polygons`.
+    '''
 
     NONE = 0
     SINGLE = 1
@@ -110,6 +112,14 @@ class RemoveDuplicates(enum.Enum):
 
     @classmethod
     def map(cls, /, value: '_Dedupe') -> 'RemoveDuplicates':
+        '''Convert an int or RemoveDuplicates to RemoveDuplicates.
+
+        Args:
+            value: Integer or RemoveDuplicates enum value.
+
+        Returns:
+            The corresponding RemoveDuplicates member.
+        '''
         if value is True:
             return cls.SINGLE
         elif value and value in cls:
@@ -122,10 +132,17 @@ _LoggedT = TypeVar('_LoggedT', bound='_Logged')
 
 
 def logged(class_: type[_LoggedT]) -> type[_LoggedT]:
-    # For some reason the Logged baseclass is not properly initiated on Linux
-    # systems while this works on OS X. Please let me know if you can tell me
-    # what silly mistake I made here
+    '''Initialize the logger for a class.
 
+    Workaround for the Logged base class not properly
+    initializing on Linux.
+
+    Args:
+        class_: The class to add logging to.
+
+    Returns:
+        The class with logger initialized.
+    '''
     logger_name = cast(
         'str',
         logger.Logged._Logged__get_name(__name__, class_.__name__),  # type: ignore[attr-defined]
@@ -142,28 +159,24 @@ def logged(class_: type[_LoggedT]) -> type[_LoggedT]:
 
 @logged
 class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
-    """
-    Mesh object with easy access to the vectors through v0, v1 and v2.
-    The normals, areas, min, max and units are calculated automatically.
+    '''Mesh object with easy access to vectors through v0, v1, v2.
 
-    :param numpy.array data: The data for this mesh
-    :param bool calculate_normals: Whether to calculate the normals
-    :param bool remove_empty_areas: Whether to remove triangles with 0 area
-            (due to rounding errors for example)
+    Normals, areas, min, max, and units are calculated
+    automatically.
 
-    :ivar str name: Name of the solid, only exists in ASCII files
-    :ivar numpy.array data: Data as :func:`BaseMesh.dtype`
-    :ivar numpy.array points: All points (Nx9)
-    :ivar numpy.array normals: Normals for this mesh, calculated automatically
-        by default (Nx3)
-    :ivar numpy.array vectors: Vectors in the mesh (Nx3x3)
-    :ivar numpy.array attr: Attributes per vector (used by binary STL)
-    :ivar numpy.array x: Points on the X axis by vertex (Nx3)
-    :ivar numpy.array y: Points on the Y axis by vertex (Nx3)
-    :ivar numpy.array z: Points on the Z axis by vertex (Nx3)
-    :ivar numpy.array v0: Points in vector 0 (Nx3)
-    :ivar numpy.array v1: Points in vector 1 (Nx3)
-    :ivar numpy.array v2: Points in vector 2 (Nx3)
+    Args:
+        data: Structured NumPy array with dtype
+            :attr:`BaseMesh.dtype`.
+        calculate_normals: Whether to recalculate normals
+            after loading. Defaults to True.
+        remove_empty_areas: Whether to remove triangles
+            with zero area. Defaults to False.
+        remove_duplicate_polygons: Strategy for handling
+            duplicate triangles. Defaults to
+            :attr:`RemoveDuplicates.NONE`.
+        name: Name of the solid (from ASCII STL header).
+        speedups: Use Cython speedups when available.
+            Defaults to True.
 
     >>> data = np.zeros(10, dtype=BaseMesh.dtype)
     >>> mesh = BaseMesh(data, remove_empty_areas=False)
@@ -231,7 +244,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     >>> mesh.points = 4
     >>> bool((mesh.points == 4).all())
     True
-    """
+    '''
 
     #: - normals: :func:`numpy.float32`, `(3, )`
     #: - vectors: :func:`numpy.float32`, `(3, 3)`
@@ -284,6 +297,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def attr(self) -> _u16_2d:
+        '''Per-triangle attribute field (uint16), shape (N, 1).'''
         # https://github.com/numpy/numpy/pull/30261
         return self.data['attr']  # type: ignore[return-value]
 
@@ -293,6 +307,22 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def normals(self) -> _f32_2d:
+        '''Per-triangle normal vectors, shape (N, 3).
+
+        Lazily computed on first access. Call
+        :meth:`update_normals` after modifying vertices
+        to refresh.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(1, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [1, 0, 0], [0, 1, 0]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> m.normals[0].tolist()
+            [0.0, 0.0, 1.0]
+        '''
         # https://github.com/numpy/numpy/pull/30261
         return self.data['normals']  # type: ignore[return-value]
 
@@ -302,6 +332,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def vectors(self) -> _f32_3d:
+        '''Triangle vertices as (N, 3, 3) array.'''
         # https://github.com/numpy/numpy/pull/30261
         return self.data['vectors']  # type: ignore[return-value]
 
@@ -311,6 +342,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def points(self) -> _f32_2d:
+        '''All vertices flattened as (N, 9) array.'''
         return self.vectors.reshape(self.data.size, 9)
 
     @points.setter
@@ -319,6 +351,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def v0(self) -> _f32_2d:
+        '''First vertex of each triangle, shape (N, 3).'''
         return self.vectors[:, 0]
 
     @v0.setter
@@ -327,6 +360,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def v1(self) -> _f32_2d:
+        '''Second vertex of each triangle, shape (N, 3).'''
         return self.vectors[:, 1]
 
     @v1.setter
@@ -335,6 +369,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def v2(self) -> _f32_2d:
+        '''Third vertex of each triangle, shape (N, 3).'''
         return self.vectors[:, 2]
 
     @v2.setter
@@ -343,6 +378,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def x(self) -> _f32_2d:
+        '''X coordinates by vertex, shape (N, 3).'''
         return self.points[:, Dimension.X :: 3]
 
     @x.setter
@@ -351,6 +387,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def y(self) -> _f32_2d:
+        '''Y coordinates by vertex, shape (N, 3).'''
         return self.points[:, Dimension.Y :: 3]
 
     @y.setter
@@ -359,6 +396,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def z(self) -> _f32_2d:
+        '''Z coordinates by vertex, shape (N, 3).'''
         return self.points[:, Dimension.Z :: 3]
 
     @z.setter
@@ -742,7 +780,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def min_(self) -> _f32_1d:
-        """Mesh minimum value"""
+        '''Bounding box minimum corner, shape (3,).
+
+        Lazily computed and cached. Call :meth:`update_min`
+        after modifying vertices to refresh.
+
+        Warning:
+            This value is cached on first access. If you
+            modify vertices, call :meth:`update_min` to
+            refresh.
+        '''
         try:
             return self._min
         except AttributeError:
@@ -755,7 +802,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def max_(self) -> _f32_1d:
-        """Mesh maximum value"""
+        '''Bounding box maximum corner, shape (3,).
+
+        Lazily computed and cached. Call :meth:`update_max`
+        after modifying vertices to refresh.
+
+        Warning:
+            This value is cached on first access. If you
+            modify vertices, call :meth:`update_max` to
+            refresh.
+        '''
         try:
             return self._max
         except AttributeError:
@@ -768,7 +824,27 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def areas(self) -> _f32_2d:
-        """Mesh areas"""
+        '''Per-triangle surface areas, shape (N, 1).
+
+        Lazily computed and cached. Call
+        :meth:`update_areas` after modifying vertices
+        to refresh.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(2, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [1, 0, 0], [0, 1, 0]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> float(m.areas[0][0])
+            0.5
+
+        Warning:
+            This value is cached on first access. If you
+            modify vertices, call :meth:`update_areas` to
+            get correct results.
+        '''
         try:
             return self._areas
         except AttributeError:
@@ -781,7 +857,21 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def centroids(self) -> _f32_2d:
-        """Mesh centroids"""
+        '''Per-triangle centroids, shape (N, 3).
+
+        Lazily computed and cached. Call
+        :meth:`update_centroids` after modifying vertices.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(1, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [3, 0, 0], [0, 3, 0]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> m.centroids[0].tolist()
+            [1.0, 1.0, 0.0]
+        '''
         try:
             return self._centroids
         except AttributeError:
@@ -794,7 +884,21 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     @property
     def units(self) -> _f32_2d:
-        """Mesh unit vectors"""
+        '''Per-triangle unit normal vectors, shape (N, 3).
+
+        Lazily computed and cached. Call
+        :meth:`update_units` after modifying vertices.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl.base import BaseMesh
+            >>> data = np.zeros(1, dtype=BaseMesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [1, 0, 0], [0, 1, 0]]
+            >>> m = BaseMesh(data, remove_empty_areas=False)
+            >>> m.units[0].tolist()
+            [0.0, 0.0, 1.0]
+        '''
         try:
             return self._units
         except AttributeError:
