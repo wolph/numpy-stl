@@ -1,19 +1,35 @@
-Welcome to numpy-stl's documentation!
-========================================
+numpy-stl
+=========
 
-Contents:
+A fast library for reading, writing, and modifying STL files, powered by NumPy.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
+   :caption: Getting Started
 
-   usage
-   tests
-   stl
+   getting-started/installation
+   getting-started/quickstart
 
-Indices and tables
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide
+
+   guide/reading-writing
+   guide/mesh-operations
+   guide/properties
+   guide/cli
+   guide/speedups
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   api/index
+   api/mesh
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
