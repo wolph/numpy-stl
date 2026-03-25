@@ -128,7 +128,7 @@ def logged(class_: type[_LoggedT]) -> type[_LoggedT]:
 
     logger_name = cast(
         'str',
-        logger.Logged._Logged__get_name(__name__, class_.__name__),  # type: ignore[attr-defined]
+        logger.Logged._Logged__get_name(__name__, class_.__name__),  # type: ignore[attr-defined, ty:unresolved-attribute]
     )
 
     class_.logger = logging.getLogger(logger_name)
@@ -287,7 +287,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     @property
     def attr(self) -> _u16_2d:
         # https://github.com/numpy/numpy/pull/30261
-        return self.data['attr']  # type: ignore[return-value]
+        return self.data['attr']  # type: ignore[return-value, ty:invalid-return-type]
 
     @attr.setter
     def attr(self, value: '_ArrayLikeInt_co', /) -> None:
@@ -296,7 +296,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     @property
     def normals(self) -> _f32_2d:
         # https://github.com/numpy/numpy/pull/30261
-        return self.data['normals']  # type: ignore[return-value]
+        return self.data['normals']  # type: ignore[return-value, ty:invalid-return-type]
 
     @normals.setter
     def normals(self, value: '_ArrayLikeFloat_co', /) -> None:
@@ -305,7 +305,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     @property
     def vectors(self) -> _f32_3d:
         # https://github.com/numpy/numpy/pull/30261
-        return self.data['vectors']  # type: ignore[return-value]
+        return self.data['vectors']  # type: ignore[return-value, ty:invalid-return-type]
 
     @vectors.setter
     def vectors(self, value: '_ArrayLikeFloat_co', /) -> None:
@@ -404,7 +404,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     @staticmethod
     def remove_empty_areas(data: _data_1d) -> _data_1d:
         # https://github.com/numpy/numpy/pull/30261
-        vectors: _f32_3d = data['vectors']  # type: ignore[assignment]
+        vectors: _f32_3d = data['vectors']  # type: ignore[assignment, ty:invalid-assignment]
         v0 = vectors[:, 0]
         v1 = vectors[:, 1]
         v2 = vectors[:, 2]
@@ -595,7 +595,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             )
 
         if non_zero_areas.any():
-            non_zero_areas.shape = non_zero_areas.shape[0]
+            non_zero_areas = non_zero_areas.reshape(non_zero_areas.shape[0])
             areas = np.hstack((2 * areas[non_zero_areas],) * DIMENSIONS)
             units[non_zero_areas] /= areas
 

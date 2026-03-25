@@ -101,3 +101,10 @@ reportUnusedVariable = false # dupe of F841
 
 [tool.pyrefly]
 project-includes = ["stl"]
+ignore-missing-imports = ["speedups"]
+
+[[tool.ty.overrides]]
+include = ["stl/_compat.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

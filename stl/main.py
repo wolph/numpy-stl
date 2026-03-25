@@ -43,10 +43,9 @@ def _get_name(args: argparse.Namespace) -> str:
         args.name,
         getattr(args.outfile, 'name', None),
         getattr(args.infile, 'name', None),
-        'numpy-stl-%06d' % random.randint(0, 1_000_000),  # noqa: UP031
     ]
 
-    for name in names:  # pragma: no branch
+    for name in names:
         if not isinstance(name, str):
             continue
         elif name.startswith('<'):  # pragma: no cover
@@ -56,7 +55,8 @@ def _get_name(args: argparse.Namespace) -> str:
             continue
         else:
             return name
-    return None  # type: ignore[return-value]  # pragma: no cover
+
+    return 'numpy-stl-%06d' % random.randint(0, 1_000_000)  # noqa: UP031
 
 
 def main() -> None:
