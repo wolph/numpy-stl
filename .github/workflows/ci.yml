@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        numpy-version: ['numpy1', 'numpy2']
+        exclude:
+          - python-version: '3.13'
+            numpy-version: 'numpy1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          uv pip install .[tests]
+          if [ "${{ matrix.numpy-version }}" = "numpy1" ]; then
+            uv pip install 'numpy>=1.24,<2'
+          else
+            uv pip install 'numpy>=2,<3'
+          fi
+      - name: Run tests
+        run: pytest --cov-fail-under=100
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install ruff
+        run: uv pip install ruff
+      - name: Check lint
+        run: ruff check stl tests
+      - name: Check format
+        run: ruff format --check stl tests
+
+  type-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install dependencies
+        run: uv pip install . ty pyrefly
+      - name: Run ty
+        run: ty check
+      - name: Run pyrefly
+        run: pyrefly check
