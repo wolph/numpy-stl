@@ -60,6 +60,12 @@ def _get_name(args: argparse.Namespace) -> str:
 
 
 def main() -> None:
+    '''CLI entry point for the ``stl`` command.
+
+    Converts between ASCII and binary STL formats.
+    Supports ``-a`` (force ASCII), ``-b`` (force binary),
+    and ``-n`` (recalculate normals).
+    '''
     parser = _get_parser('Convert STL files from ascii to binary and back')
     parser.add_argument(
         '-a',
@@ -97,6 +103,10 @@ def main() -> None:
 
 
 def to_ascii() -> None:
+    '''CLI entry point for the ``stl2ascii`` command.
+
+    Converts an STL file to ASCII format.
+    '''
     parser = _get_parser('Convert STL files to ASCII (text) format')
     args = parser.parse_args()
     name = _get_name(args)
@@ -116,6 +126,10 @@ def to_ascii() -> None:
 
 
 def to_binary() -> None:
+    '''CLI entry point for the ``stl2bin`` command.
+
+    Converts an STL file to binary format.
+    '''
     parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
     name = _get_name(args)

@@ -44,6 +44,13 @@ if TYPE_CHECKING:
 
 
 class Mode(enum.IntEnum):
+    '''STL file format mode for loading and saving.
+
+    Use :attr:`AUTOMATIC` for auto-detection (default),
+    :attr:`ASCII` to force ASCII format, or
+    :attr:`BINARY` to force binary format.
+    '''
+
     #: Automatically detect whether the output is a TTY, if so, write ASCII
     #: otherwise write BINARY
     AUTOMATIC = 0
@@ -78,13 +85,22 @@ class BaseStl(base.BaseMesh):
         mode: Mode = AUTOMATIC,
         speedups: bool = True,
     ) -> 'tuple[bytes, _data_1d] | Any':
-        """Load Mesh from STL file
+        '''Load mesh data from an open STL file handle.
 
-        Automatically detects binary versus ascii STL files.
+        Auto-detects binary vs ASCII format unless
+        ``mode`` is explicitly set.
 
-        :param file fh: The file handle to open
-        :param int mode: Automatically detect the filetype or force binary
-        """
+        Args:
+            fh: Open binary file handle.
+            mode: Force a specific format or use
+                :attr:`Mode.AUTOMATIC` (default).
+            speedups: Use Cython speedups for ASCII
+                parsing. Defaults to True.
+
+        Returns:
+            A (name, data) tuple, or None if the file
+            is empty.
+        '''
         header = fh.read(HEADER_SIZE)
         if not header:
             return None
@@ -292,16 +308,37 @@ class BaseStl(base.BaseMesh):
         mode: 'Mode | int' = AUTOMATIC,
         update_normals: bool = True,
     ) -> None:
-        """Save the STL to a (binary) file
+        '''Save the mesh to an STL file.
 
-        If mode is :py:data:`AUTOMATIC` an :py:data:`ASCII` file will be
-        written if the output is a TTY and a :py:data:`BINARY` file otherwise.
+        If mode is :attr:`Mode.AUTOMATIC`, writes binary
+        unless the output is a TTY.
 
-        :param str filename: The file to load
-        :param file fh: The file handle to open
-        :param int mode: The mode to write, default is :py:data:`AUTOMATIC`.
-        :param bool update_normals: Whether to update the normals
-        """
+        Args:
+            filename: Output file path. Required even when
+                ``fh`` is provided (used for STL header).
+            fh: Optional pre-opened binary file handle.
+            mode: Output format. Defaults to
+                :attr:`Mode.AUTOMATIC`.
+            update_normals: Whether to recalculate normals
+                before saving. Defaults to True.
+
+        Raises:
+            TypeError: If ``fh`` is a text-mode handle.
+
+        Example:
+            >>> import numpy as np
+            >>> from stl import mesh
+            >>> data = np.zeros(1, dtype=mesh.Mesh.dtype)
+            >>> data['vectors'][0] = [[0, 0, 0],
+            ...     [1, 0, 0], [0, 1, 0]]
+            >>> m = mesh.Mesh(data, remove_empty_areas=False)
+            >>> m.save('/tmp/_numpy_stl_test.stl')
+
+        Warning:
+            Even for ASCII output, the file handle must be
+            opened in binary mode (``'wb'``). A text-mode
+            handle raises ``TypeError``.
+        '''
         assert filename, 'Filename is required for the STL headers'
         if update_normals:
             self.update_normals()
@@ -395,6 +432,14 @@ class BaseStl(base.BaseMesh):
             p(b'endsolid ' + b(name), file=fh)
 
     def get_header(self, name: '_Name') -> str:
+        '''Build the 80-byte binary STL header string.
+
+        Args:
+            name: Solid name to embed in the header.
+
+        Returns:
+            Header string truncated to 80 bytes.
+        '''
         # Format the header
         header: str = HEADER_FORMAT.format(
             package_name=metadata.__package_name__,
@@ -446,14 +491,42 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> 'Self':
-        """Load a mesh from a STL file
+        '''Load a mesh from an STL file.
 
-        :param str filename: The file to load
-        :param bool calculate_normals: Whether to update the normals
-        :param file fh: The file handle to open
-        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
+        Reads binary or ASCII STL files. Format is
+        auto-detected unless ``mode`` is explicitly set.
 
-        """
+        Args:
+            filename: Path to the STL file.
+            calculate_normals: Whether to recalculate
+                normals after loading. Defaults to True.
+            fh: Optional pre-opened binary file handle.
+                If provided, ``filename`` is used only
+                for the mesh name.
+            mode: Force ASCII or BINARY loading, or
+                AUTOMATIC detection (default).
+            speedups: Use Cython speedups for ASCII
+                parsing when available. Defaults to True.
+            **kwargs: Additional arguments passed to
+                the Mesh constructor.
+
+        Returns:
+            A new Mesh instance containing the loaded data.
+
+        Example:
+            >>> from stl import mesh
+            >>> m = mesh.Mesh.from_file(
+            ...     'tests/stl_binary/HalfDonut.stl')
+            >>> len(m.data) > 0
+            True
+
+        Note:
+            When ``speedups`` is True and the speedups
+            package is installed, ASCII parsing uses a
+            fast C implementation. Speedups are
+            automatically disabled for non-seekable
+            streams (e.g., stdin).
+        '''
         if fh:
             name, data = cls.load(fh, mode=mode, speedups=speedups)
         else:
@@ -475,16 +548,37 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> Generator['Self', None, None]:
-        """Load multiple meshes from a STL file
+        '''Load multiple solids from a single STL file.
 
-        Note: mode is hardcoded to ascii since binary stl files do not support
-        the multi format
+        Yields one Mesh per ``solid`` block found.
 
-        :param str filename: The file to load
-        :param bool calculate_normals: Whether to update the normals
-        :param file fh: The file handle to open
-        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
-        """
+        Args:
+            filename: Path to the STL file.
+            calculate_normals: Whether to recalculate
+                normals. Defaults to True.
+            fh: Optional pre-opened binary file handle.
+            mode: Format mode. Defaults to
+                :attr:`Mode.AUTOMATIC`.
+            speedups: Use Cython speedups when available.
+            **kwargs: Additional arguments passed to
+                the Mesh constructor.
+
+        Yields:
+            Mesh instances, one per solid block.
+
+        Example:
+            >>> from stl import mesh
+            >>> # Single-solid file yields one mesh
+            >>> solids = list(mesh.Mesh.from_multi_file(
+            ...     'tests/stl_ascii/HalfDonut.stl'))
+            >>> len(solids) >= 1
+            True
+
+        Note:
+            Multi-solid loading only works with ASCII
+            STL files. Binary STL files always contain
+            a single solid.
+        '''
         if fh:
             close = False
         else:
@@ -518,16 +612,27 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> 'Self':
-        """Load multiple meshes from STL files into a single mesh
+        '''Load and merge multiple STL files into one mesh.
 
-        Note: mode is hardcoded to ascii since binary stl files do not support
-        the multi format
+        Args:
+            filenames: List of STL file paths.
+            calculate_normals: Whether to recalculate
+                normals. Defaults to True.
+            mode: Format mode for each file.
+            speedups: Use Cython speedups when available.
+            **kwargs: Additional arguments passed to
+                the Mesh constructor.
 
-        :param list(str) filenames: The files to load
-        :param bool calculate_normals: Whether to update the normals
-        :param file fh: The file handle to open
-        :param dict kwargs: The same as for :py:class:`stl.mesh.Mesh`
-        """
+        Returns:
+            A single Mesh with data from all files.
+
+        Example:
+            >>> from stl import mesh
+            >>> m = mesh.Mesh.from_files([
+            ...     'tests/stl_binary/HalfDonut.stl'])
+            >>> len(m.data) > 0
+            True
+        '''
         meshes = [
             cls.from_file(
                 filename,
@@ -550,6 +655,31 @@ class BaseStl(base.BaseMesh):
         calculate_normals: bool = True,
         **kwargs: object,
     ) -> Generator['Self', None, None]:
+        '''Load meshes from a 3MF file (read-only).
+
+        Parses the 3MF ZIP archive and yields one Mesh
+        per ``<mesh>`` element found.
+
+        Args:
+            filename: Path to the .3mf file.
+            calculate_normals: Whether to recalculate
+                normals. Defaults to True.
+            **kwargs: Additional arguments.
+
+        Yields:
+            Mesh instances, one per 3MF mesh element.
+
+        Example:
+            >>> from stl import mesh
+            >>> meshes = list(mesh.Mesh.from_3mf_file(
+            ...     'tests/3mf/Moon.3mf'))
+            >>> len(meshes) > 0
+            True
+
+        Note:
+            3MF support is experimental and read-only.
+            Not all 3MF features are supported.
+        '''
         with zipfile.ZipFile(filename) as zip:
             with zip.open('_rels/.rels') as rels_fh:
                 model = None
