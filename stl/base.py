@@ -10,6 +10,7 @@ from typing import (
     Final,
     Literal as L,  # noqa: N817
     SupportsIndex,
+    TypeAlias,
     TypeVar,
     cast,
     overload,
@@ -30,30 +31,30 @@ if TYPE_CHECKING:  # pragma: no cover
     class _Logged(logger.LoggerProtocol, Protocol):  # pragma: no cover
         logger: logging.Logger
 
-    _Dedupe: 'TypeAlias' = 'RemoveDuplicates | int'
-    _ToAxis: 'TypeAlias' = npt.NDArray[np.integer] | abc.Sequence[int]
-    _ToPoint: 'TypeAlias' = (
+    _Dedupe: TypeAlias = 'RemoveDuplicates | int'
+    _ToAxis: TypeAlias = npt.NDArray[np.integer] | abc.Sequence[int]
+    _ToPoint: TypeAlias = (
         float | abc.Sequence[float] | npt.NDArray[np.floating | np.integer]
     )
-    _ToTranslation: 'TypeAlias' = (
+    _ToTranslation: TypeAlias = (
         abc.Sequence[_ToPoint] | npt.NDArray[np.floating | np.integer]
     )
 
     # same as used by `np.ndarray.__getitem__`
-    _ToIndex: 'TypeAlias' = (
+    _ToIndex: TypeAlias = (
         SupportsIndex | slice | EllipsisType | _ArrayLikeInt_co | None
     )
-    _ToIndices: 'TypeAlias' = _ToIndex | tuple[_ToIndex, ...]
+    _ToIndices: TypeAlias = _ToIndex | tuple[_ToIndex, ...]
 
     # specific to 2-d arrays
-    _ToSlice2_0: 'TypeAlias' = tuple[SupportsIndex, SupportsIndex]
-    _ToSlice2_1: 'TypeAlias' = (
+    _ToSlice2_0: TypeAlias = tuple[SupportsIndex, SupportsIndex]
+    _ToSlice2_1: TypeAlias = (
         int
         | np.integer
         | tuple[slice | EllipsisType, int]
         | tuple[int, slice | EllipsisType]
     )
-    _ToSlice2_2: 'TypeAlias' = (
+    _ToSlice2_2: TypeAlias = (
         slice
         | tuple[()]
         | tuple[slice, slice]
@@ -62,17 +63,17 @@ if TYPE_CHECKING:  # pragma: no cover
         | EllipsisType
     )
 
-_bool_1d: 'TypeAlias' = np.ndarray[tuple[int], np.dtype[np.bool_]]
-_intp_1d: 'TypeAlias' = np.ndarray[tuple[int], np.dtype[np.intp]]
-_u16_1d: 'TypeAlias' = np.ndarray[tuple[int], np.dtype[np.uint16]]
-_u16_2d: 'TypeAlias' = np.ndarray[tuple[int, int], np.dtype[np.uint16]]
-_f32_1d: 'TypeAlias' = np.ndarray[tuple[int], np.dtype[np.float32]]
-_f32_2d: 'TypeAlias' = np.ndarray[tuple[int, int], np.dtype[np.float32]]
-_f32_3d: 'TypeAlias' = np.ndarray[tuple[int, int, int], np.dtype[np.float32]]
-_f64_2d: 'TypeAlias' = np.ndarray[tuple[int, int], np.dtype[np.float64]]
+_bool_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.bool_]]
+_intp_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.intp]]
+_u16_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.uint16]]
+_u16_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.uint16]]
+_f32_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.float32]]
+_f32_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float32]]
+_f32_3d: TypeAlias = np.ndarray[tuple[int, int, int], np.dtype[np.float32]]
+_f64_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float64]]
 
 # {"normals": _float32_1d, "vectors": _float32_2d, "attr": _uint16_1d}
-_data_1d: 'TypeAlias' = np.ndarray[tuple[int], np.dtype[np.void]]
+_data_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.void]]
 
 #: When removing empty areas, remove areas that are smaller than this
 AREA_SIZE_THRESHOLD: Final[L[0]] = 0
