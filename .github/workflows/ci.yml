@@ -42,7 +42,7 @@ jobs:
           COVERAGE_FILE: .coverage.no-speedups
       - name: Install speedups
         id: install-speedups
-        run: uv pip install '.[fast]'
+        run: uv pip install 'speedups @ git+https://github.com/wolph/speedups.git'
         continue-on-error: true
       - name: Run tests with speedups
         if: steps.install-speedups.outcome == 'success'
