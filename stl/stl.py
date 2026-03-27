@@ -21,12 +21,11 @@ from . import (
     __about__ as metadata,
     base,
 )
-from .utils import b
-
 from ._compat import (
     ascii_read as _ascii_read,
     ascii_write as _ascii_write,
 )
+from .utils import b
 
 if TYPE_CHECKING:
     from typing import Protocol, type_check_only
@@ -44,12 +43,12 @@ if TYPE_CHECKING:
 
 
 class Mode(enum.IntEnum):
-    '''STL file format mode for loading and saving.
+    """STL file format mode for loading and saving.
 
     Use :attr:`AUTOMATIC` for auto-detection (default),
     :attr:`ASCII` to force ASCII format, or
     :attr:`BINARY` to force binary format.
-    '''
+    """
 
     #: Automatically detect whether the output is a TTY, if so, write ASCII
     #: otherwise write BINARY
@@ -85,7 +84,7 @@ class BaseStl(base.BaseMesh):
         mode: Mode = AUTOMATIC,
         speedups: bool = True,
     ) -> 'tuple[bytes, _data_1d] | Any':
-        '''Load mesh data from an open STL file handle.
+        """Load mesh data from an open STL file handle.
 
         Auto-detects binary vs ASCII format unless
         ``mode`` is explicitly set.
@@ -100,7 +99,7 @@ class BaseStl(base.BaseMesh):
         Returns:
             A (name, data) tuple, or None if the file
             is empty.
-        '''
+        """
         header = fh.read(HEADER_SIZE)
         if not header:
             return None
@@ -292,9 +291,7 @@ class BaseStl(base.BaseMesh):
             fh.fileno()
         except io.UnsupportedOperation:
             speedups = False
-        # The speedups module is covered by CI but it can't be tested in
-        # all environments, this makes coverage checks easier
-        if _ascii_read is not None and speedups:  # pragma: no cover
+        if _ascii_read is not None and speedups:
             return _ascii_read(fh, header)
         else:
             iterator = cls._ascii_reader(fh, header)
@@ -308,7 +305,7 @@ class BaseStl(base.BaseMesh):
         mode: 'Mode | int' = AUTOMATIC,
         update_normals: bool = True,
     ) -> None:
-        '''Save the mesh to an STL file.
+        """Save the mesh to an STL file.
 
         If mode is :attr:`Mode.AUTOMATIC`, writes binary
         unless the output is a TTY.
@@ -329,8 +326,7 @@ class BaseStl(base.BaseMesh):
             >>> import numpy as np
             >>> from stl import mesh
             >>> data = np.zeros(1, dtype=mesh.Mesh.dtype)
-            >>> data['vectors'][0] = [[0, 0, 0],
-            ...     [1, 0, 0], [0, 1, 0]]
+            >>> data['vectors'][0] = [[0, 0, 0], [1, 0, 0], [0, 1, 0]]
             >>> m = mesh.Mesh(data, remove_empty_areas=False)
             >>> m.save('/tmp/_numpy_stl_test.stl')
 
@@ -338,7 +334,7 @@ class BaseStl(base.BaseMesh):
             Even for ASCII output, the file handle must be
             opened in binary mode (``'wb'``). A text-mode
             handle raises ``TypeError``.
-        '''
+        """
         assert filename, 'Filename is required for the STL headers'
         if update_normals:
             self.update_normals()
@@ -392,7 +388,7 @@ class BaseStl(base.BaseMesh):
         except io.UnsupportedOperation:
             speedups = False
 
-        if _ascii_write is not None and speedups:  # pragma: no cover
+        if _ascii_write is not None and speedups:
             _ascii_write(fh, b(name), self.data)
         else:
 
@@ -432,14 +428,14 @@ class BaseStl(base.BaseMesh):
             p(b'endsolid ' + b(name), file=fh)
 
     def get_header(self, name: '_Name') -> str:
-        '''Build the 80-byte binary STL header string.
+        """Build the 80-byte binary STL header string.
 
         Args:
             name: Solid name to embed in the header.
 
         Returns:
             Header string truncated to 80 bytes.
-        '''
+        """
         # Format the header
         header: str = HEADER_FORMAT.format(
             package_name=metadata.__package_name__,
@@ -491,7 +487,7 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> 'Self':
-        '''Load a mesh from an STL file.
+        """Load a mesh from an STL file.
 
         Reads binary or ASCII STL files. Format is
         auto-detected unless ``mode`` is explicitly set.
@@ -515,8 +511,7 @@ class BaseStl(base.BaseMesh):
 
         Example:
             >>> from stl import mesh
-            >>> m = mesh.Mesh.from_file(
-            ...     'tests/stl_binary/HalfDonut.stl')
+            >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
             >>> len(m.data) > 0
             True
 
@@ -526,7 +521,7 @@ class BaseStl(base.BaseMesh):
             fast C implementation. Speedups are
             automatically disabled for non-seekable
             streams (e.g., stdin).
-        '''
+        """
         if fh:
             name, data = cls.load(fh, mode=mode, speedups=speedups)
         else:
@@ -548,7 +543,7 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> Generator['Self', None, None]:
-        '''Load multiple solids from a single STL file.
+        """Load multiple solids from a single STL file.
 
         Yields one Mesh per ``solid`` block found.
 
@@ -569,8 +564,9 @@ class BaseStl(base.BaseMesh):
         Example:
             >>> from stl import mesh
             >>> # Single-solid file yields one mesh
-            >>> solids = list(mesh.Mesh.from_multi_file(
-            ...     'tests/stl_ascii/HalfDonut.stl'))
+            >>> solids = list(
+            ...     mesh.Mesh.from_multi_file('tests/stl_ascii/HalfDonut.stl')
+            ... )
             >>> len(solids) >= 1
             True
 
@@ -578,7 +574,7 @@ class BaseStl(base.BaseMesh):
             Multi-solid loading only works with ASCII
             STL files. Binary STL files always contain
             a single solid.
-        '''
+        """
         if fh:
             close = False
         else:
@@ -612,7 +608,7 @@ class BaseStl(base.BaseMesh):
         speedups: bool = True,
         **kwargs: Any,
     ) -> 'Self':
-        '''Load and merge multiple STL files into one mesh.
+        """Load and merge multiple STL files into one mesh.
 
         Args:
             filenames: List of STL file paths.
@@ -628,11 +624,10 @@ class BaseStl(base.BaseMesh):
 
         Example:
             >>> from stl import mesh
-            >>> m = mesh.Mesh.from_files([
-            ...     'tests/stl_binary/HalfDonut.stl'])
+            >>> m = mesh.Mesh.from_files(['tests/stl_binary/HalfDonut.stl'])
             >>> len(m.data) > 0
             True
-        '''
+        """
         meshes = [
             cls.from_file(
                 filename,
@@ -655,7 +650,7 @@ class BaseStl(base.BaseMesh):
         calculate_normals: bool = True,
         **kwargs: object,
     ) -> Generator['Self', None, None]:
-        '''Load meshes from a 3MF file (read-only).
+        """Load meshes from a 3MF file (read-only).
 
         Parses the 3MF ZIP archive and yields one Mesh
         per ``<mesh>`` element found.
@@ -671,15 +666,14 @@ class BaseStl(base.BaseMesh):
 
         Example:
             >>> from stl import mesh
-            >>> meshes = list(mesh.Mesh.from_3mf_file(
-            ...     'tests/3mf/Moon.3mf'))
+            >>> meshes = list(mesh.Mesh.from_3mf_file('tests/3mf/Moon.3mf'))
             >>> len(meshes) > 0
             True
 
         Note:
             3MF support is experimental and read-only.
             Not all 3MF features are supported.
-        '''
+        """
         with zipfile.ZipFile(filename) as zip:
             with zip.open('_rels/.rels') as rels_fh:
                 model = None

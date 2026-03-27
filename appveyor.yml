@@ -1,0 +1,20 @@
+image:
+  - Visual Studio 2022
+
+environment:
+  matrix:
+    - PYTHON: "3.10"
+    - PYTHON: "3.11"
+    - PYTHON: "3.12"
+    - PYTHON: "3.13"
+
+install:
+  - py -%PYTHON% --version
+  - py -%PYTHON% -c "import struct; print(struct.calcsize('P') * 8)"
+  - py -%PYTHON% -m pip install uv
+
+build: false
+
+test_script:
+  - py -%PYTHON% -m uv pip install --system .[tests]
+  - py -%PYTHON% -m pytest -x -q

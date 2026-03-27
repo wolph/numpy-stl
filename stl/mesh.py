@@ -2,7 +2,7 @@ from . import stl
 
 
 class Mesh(stl.BaseStl):
-    '''Primary user-facing class for STL mesh operations.
+    """Primary user-facing class for STL mesh operations.
 
     Inherits all functionality from
     :class:`~stl.stl.BaseStl` and
@@ -18,4 +18,4 @@ class Mesh(stl.BaseStl):
         >>> m = mesh.Mesh(data, remove_empty_areas=False)
         >>> len(m)
         1
-    '''
+    """

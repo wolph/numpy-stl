@@ -36,25 +36,23 @@ jobs:
           else
             uv pip install 'numpy>=2,<3'
           fi
-      - name: Run tests
-        run: pytest --cov-fail-under=100
-
-  test-speedups:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-        with:
-          activate-environment: true
-          python-version: '3.13'
-      - name: Install with speedups
-        run: uv pip install '.[tests,fast]'
+      - name: Run tests without speedups
+        run: pytest --cov-report=
+        env:
+          COVERAGE_FILE: .coverage.no-speedups
+      - name: Install speedups
+        id: install-speedups
+        run: uv pip install '.[fast]'
         continue-on-error: true
-      - name: Run tests
-        if: success()
-        run: pytest -x -q
-        continue-on-error: true
+      - name: Run tests with speedups
+        if: steps.install-speedups.outcome == 'success'
+        run: pytest --cov-report=
+        env:
+          COVERAGE_FILE: .coverage.speedups
+      - name: Combine coverage and check threshold
+        run: |
+          coverage combine .coverage.*
+          coverage report --fail-under=100
 
   lint:
     runs-on: ubuntu-latest
@@ -82,6 +80,6 @@ jobs:
       - name: Install dependencies
         run: uv pip install . ty pyrefly
       - name: Run ty
-        run: ty check
+        run: ty check stl
       - name: Run pyrefly
         run: pyrefly check
