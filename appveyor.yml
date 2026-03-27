@@ -18,3 +18,5 @@ build: false
 test_script:
   - py -%PYTHON% -m uv pip install --system .[tests]
   - py -%PYTHON% -m pytest -x -q
+  - py -%PYTHON% -m uv pip install --system "speedups @ git+https://github.com/wolph/speedups.git@c85472d"
+  - py -%PYTHON% -m pytest -x -q
