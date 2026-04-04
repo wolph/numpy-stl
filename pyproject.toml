@@ -56,7 +56,7 @@ dev = [
     "basedpyright>=1.0",
     "pyrefly>=0.1",
 ]
-fast = ["speedups"]
+fast = ["speedups>=2.0.0"]
 
 [tool.uv.build-backend]
 module-root = ""
