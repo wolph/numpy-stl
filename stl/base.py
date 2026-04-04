@@ -76,11 +76,11 @@ _f64_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float64]]
 _data_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.void]]
 
 #: When removing empty areas, remove areas that are smaller than this
-AREA_SIZE_THRESHOLD: Final[L[0]] = 0
+AREA_SIZE_THRESHOLD: int = 0
 #: Vectors in a point
-VECTORS: Final[L[3]] = 3
+VECTORS: int = 3
 #: Dimensions used in a vector
-DIMENSIONS: Final[L[3]] = 3
+DIMENSIONS: int = 3
 
 
 class Dimension(enum.IntEnum):
@@ -95,9 +95,9 @@ class Dimension(enum.IntEnum):
 
 
 # For backwards compatibility, leave the original references
-X: Final[L[Dimension.X]] = Dimension.X
-Y: Final[L[Dimension.Y]] = Dimension.Y
-Z: Final[L[Dimension.Z]] = Dimension.Z
+X: L[Dimension.X] = Dimension.X
+Y: L[Dimension.Y] = Dimension.Y
+Z: L[Dimension.Z] = Dimension.Z
 
 
 class RemoveDuplicates(enum.Enum):
@@ -258,8 +258,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     ).newbyteorder('<')  # Even on big endian arches, use little e.
 
     speedups: Final[bool]
-    name: Final['bytes | str']
-    data: Final[_data_1d]
+    name: 'bytes | str'
+    data: _data_1d
 
     _min: _f32_1d
     _max: _f32_1d
