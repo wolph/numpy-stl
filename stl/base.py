@@ -489,7 +489,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             update_centroids: Whether to also refresh cached
                 centroids. Defaults to True.
         """
-        normals: _f32_2d = np.cross(self.v1 - self.v0, self.v2 - self.v0)
+        normals: _f32_2d = np.cross(self.v1 - self.v0, self.v2 - self.v0)  # pyrefly: ignore
 
         if update_areas:
             self.update_areas(normals)
@@ -533,9 +533,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 recomputes from current vertices.
         """
         if normals is None:
-            normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)
+            normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)  # pyrefly: ignore
 
-        areas = 0.5 * np.sqrt((normals**2).sum(axis=1))
+        areas = 0.5 * np.sqrt((normals**2).sum(axis=1))  # pyrefly: ignore
         self._areas = areas.reshape((areas.size, 1))
 
     def update_centroids(self) -> None:
