@@ -12,3 +12,4 @@ cover
 /*.stl
 /.tox
 /stl/*.c
+uv.lock

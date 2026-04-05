@@ -215,15 +215,17 @@ def test_base_mesh():
     assert mesh.points.sum() == 0.0
 
 
-def test_mesh_equality():
+def test_mesh_identity_equality():
     data = np.zeros(2, dtype=Mesh.dtype)
     data['vectors'][0] = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
 
     mesh_a = Mesh(data.copy(), remove_empty_areas=False)
     mesh_b = Mesh(data.copy(), remove_empty_areas=False)
-    assert mesh_a == mesh_b
-
-    mesh_b.v0[0] += 1
     assert mesh_a != mesh_b
+    assert mesh_a == mesh_a
+
+    lookup = {mesh_a: 'a', mesh_b: 'b'}
+    assert lookup[mesh_a] == 'a'
+    assert lookup[mesh_b] == 'b'
 
     assert mesh_a != 'not a mesh'

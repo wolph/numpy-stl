@@ -1069,12 +1069,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         yield from self.points
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, BaseMesh):
-            return NotImplemented
-        return np.array_equal(self.data, other.data)
+        if self is other:
+            return True
+        return NotImplemented
 
-    def __hash__(self) -> int:  # pragma: no cover
-        return id(self)
+    __hash__ = object.__hash__
 
     def __repr__(self) -> str:
         return f'<Mesh: {self.name!r} {self.data.size} vertices>'

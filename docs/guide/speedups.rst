@@ -37,6 +37,10 @@ Speedups are automatically disabled for non-seekable streams
 (e.g., ``stdin``, ``StringIO``). The library falls back to
 pure Python in these cases.
 
+For the CLI tools, pass ``-s`` / ``--disable-speedups`` to force the
+pure-Python implementation even when the optional ``speedups`` package
+is installed.
+
 .. note::
    When speedups are enabled, STL solid names are automatically
    converted to lowercase. This is a known limitation of the

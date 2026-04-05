@@ -41,8 +41,16 @@ Convert an ASCII STL file to binary format:
 Options
 -------
 
-All commands support ``-n`` to recalculate normals on output:
+All commands support ``-n`` to keep the normals stored in the input file
+instead of recalculating them on output:
 
 .. code-block:: bash
 
    stl input.stl output.stl -n
+
+All commands also support ``-s`` to force the pure-Python reader/writer
+and disable optional speedups:
+
+.. code-block:: bash
+
+   stl input.stl output.stl -s

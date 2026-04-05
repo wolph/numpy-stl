@@ -35,6 +35,12 @@ def _get_parser(description: str) -> argparse.ArgumentParser:
         help='Remove areas with 0 surface areas to prevent errors during '
         'normal calculation',
     )
+    parser.add_argument(
+        '-s',
+        '--disable-speedups',
+        action='store_true',
+        help='Disable Cython speedups',
+    )
     return parser
 
 
@@ -64,7 +70,7 @@ def main() -> None:
 
     Converts between ASCII and binary STL formats.
     Supports ``-a`` (force ASCII), ``-b`` (force binary),
-    and ``-n`` (recalculate normals).
+    ``-n`` (keep file normals), and ``-s`` (disable speedups).
     """
     parser = _get_parser('Convert STL files from ascii to binary and back')
     parser.add_argument(
@@ -87,7 +93,7 @@ def main() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=True,
+        speedups=not args.disable_speedups,
     )
 
     if args.binary:
@@ -106,6 +112,7 @@ def to_ascii() -> None:
     """CLI entry point for the ``stl2ascii`` command.
 
     Converts an STL file to ASCII format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
     """
     parser = _get_parser('Convert STL files to ASCII (text) format')
     args = parser.parse_args()
@@ -115,7 +122,7 @@ def to_ascii() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=True,
+        speedups=not args.disable_speedups,
     )
     stl_file.save(
         name,
@@ -129,6 +136,7 @@ def to_binary() -> None:
     """CLI entry point for the ``stl2bin`` command.
 
     Converts an STL file to binary format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
     """
     parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
@@ -138,7 +146,7 @@ def to_binary() -> None:
         fh=args.infile,
         calculate_normals=False,
         remove_empty_areas=args.remove_empty_areas,
-        speedups=True,
+        speedups=not args.disable_speedups,
     )
     stl_file.save(
         name,
