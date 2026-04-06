@@ -39,10 +39,29 @@ jobs:
           path: .tox/.coverage.*
           include-hidden-files: true
 
+  speedups:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Run tests with speedups
+        run: tox -e speedups
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-speedups
+          path: .tox/.coverage.*
+          include-hidden-files: true
+
   coverage:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: test
+    needs: [test, speedups]
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
