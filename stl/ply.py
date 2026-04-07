@@ -65,6 +65,24 @@ class _Element:
         self.properties: list[_Property] = []
 
 
+def _parse_property(
+    parts: list[str],
+) -> _Property:
+    """Parse a PLY property line into a _Property."""
+    if parts[1] == 'list':
+        return _Property(
+            name=parts[4],
+            type_name='list',
+            is_list=True,
+            count_type=parts[2],
+            item_type=parts[3],
+        )
+    return _Property(
+        name=parts[2],
+        type_name=parts[1],
+    )
+
+
 def _parse_header(
     fh: IO[bytes],
 ) -> tuple[str, list[_Element], str]:
@@ -72,10 +90,8 @@ def _parse_header(
 
     Returns:
         A tuple of (format_string, elements, object_name).
-        format_string is one of 'ascii', 'binary_little_endian',
-        or 'binary_big_endian'.  object_name is taken from
-        the first ``obj_info`` or ``comment`` line, or
-        defaults to 'ply'.
+        format_string is one of 'ascii',
+        'binary_little_endian', or 'binary_big_endian'.
     """
     magic = fh.readline().strip()
     if magic != b'ply':
@@ -86,12 +102,8 @@ def _parse_header(
     obj_name = 'ply'
     current: _Element | None = None
 
-    while True:
-        raw = fh.readline()
-        if not raw:
-            raise ValueError('Unexpected end of file while parsing header')
+    for raw in iter(fh.readline, b''):
         line = raw.decode('ascii', errors='replace').strip()
-
         if line == 'end_header':
             break
 
@@ -100,32 +112,17 @@ def _parse_header(
             continue
 
         keyword = parts[0]
-
         if keyword == 'format':
             format_str = parts[1]
         elif keyword == 'element':
             current = _Element(parts[1], int(parts[2]))
             elements.append(current)
-        elif keyword == 'property':
-            if current is None:
-                raise ValueError('Property before any element')
-            if parts[1] == 'list':
-                prop = _Property(
-                    name=parts[4],
-                    type_name='list',
-                    is_list=True,
-                    count_type=parts[2],
-                    item_type=parts[3],
-                )
-            else:
-                prop = _Property(
-                    name=parts[2],
-                    type_name=parts[1],
-                )
-            current.properties.append(prop)
+        elif keyword == 'property' and current is not None:
+            current.properties.append(_parse_property(parts))
         elif keyword == 'obj_info':
             obj_name = ' '.join(parts[1:])
-        # comment and other lines are ignored
+    else:
+        raise ValueError('Unexpected end of file while parsing header')
 
     if not format_str:
         raise ValueError('No format line found in PLY header')
@@ -230,25 +227,15 @@ def _read_ascii(
     return vertices, faces
 
 
-def _read_binary(
-    fh: IO[bytes],
-    elements: list[_Element],
-    format_str: str,
-) -> tuple[np.ndarray, list[list[int]]]:
-    """Read binary PLY data after the header.
-
-    Supports both little-endian and big-endian formats.
-
-    Returns:
-        (vertices, faces) where vertices is (N, 3) float32
-        and faces is a list of index lists (variable length).
-    """
-    endian = '<' if format_str == 'binary_little_endian' else '>'
-
-    vertex_elem, face_elem = _find_elements(elements)
-    xi, yi, zi = _find_xyz_indices(vertex_elem)
-
-    # Build per-vertex struct format from properties.
+def _read_binary_vertices(
+    raw: bytes,
+    vertex_elem: _Element,
+    endian: str,
+    xi: int,
+    yi: int,
+    zi: int,
+) -> np.ndarray:
+    """Unpack binary vertex data into (N, 3) float32."""
     vertex_fmt = endian
     vertex_size = 0
     for prop in vertex_elem.properties:
@@ -256,41 +243,20 @@ def _read_binary(
         vertex_fmt += fmt_char
         vertex_size += size
 
-    # Read all vertices at once.
     n_verts = vertex_elem.count
-    raw = fh.read(n_verts * vertex_size)
-    if len(raw) != n_verts * vertex_size:
-        raise ValueError('Unexpected EOF reading vertex data')
-
     vertices = np.empty((n_verts, 3), dtype=np.float32)
     for i in range(n_verts):
         vals = struct.unpack_from(vertex_fmt, raw, i * vertex_size)
         vertices[i] = [vals[xi], vals[yi], vals[zi]]
+    return vertices
 
-    # Skip elements between vertex and face.
-    found_vertex = False
-    for elem in elements:
-        if elem is vertex_elem:
-            found_vertex = True
-            continue
-        if elem is face_elem:
-            break
-        if not found_vertex:
-            continue
-        # Compute size of each row for this element and
-        # skip it.
-        row_size = 0
-        for prop in elem.properties:
-            if prop.is_list:
-                raise ValueError(
-                    f'Cannot skip element with list properties: {elem.name}'
-                )
-            _, _, size = _PLY_TYPES[prop.type_name]
-            row_size += size
-        skip_bytes = elem.count * row_size
-        fh.read(skip_bytes)
 
-    # Find the list property on the face element.
+def _read_binary_faces(
+    fh: IO[bytes],
+    face_elem: _Element,
+    endian: str,
+) -> list[list[int]]:
+    """Read binary face data."""
     list_prop = None
     for prop in face_elem.properties:
         if prop.is_list:
@@ -302,9 +268,7 @@ def _read_binary(
     count_fmt_char, _, count_size = _PLY_TYPES[list_prop.count_type]
     idx_fmt_char, _, idx_size = _PLY_TYPES[list_prop.item_type]
     count_fmt = endian + count_fmt_char
-    idx_fmt = endian + idx_fmt_char
 
-    # Read faces one at a time.
     faces: list[list[int]] = []
     for _ in range(face_elem.count):
         count_raw = fh.read(count_size)
@@ -316,7 +280,63 @@ def _read_binary(
             raise ValueError('Unexpected EOF reading face indices')
         indices = list(struct.unpack(endian + idx_fmt_char * n, idx_raw))
         faces.append(indices)
+    return faces
 
+
+def _skip_binary_elements(
+    fh: IO[bytes],
+    elements: list[_Element],
+    vertex_elem: _Element,
+    face_elem: _Element,
+) -> None:
+    """Skip binary elements between vertex and face."""
+    found_vertex = False
+    for elem in elements:
+        if elem is vertex_elem:
+            found_vertex = True
+            continue
+        if elem is face_elem:
+            break
+        if not found_vertex:
+            continue
+        row_size = 0
+        for prop in elem.properties:
+            if prop.is_list:
+                raise ValueError(
+                    f'Cannot skip element with list properties: {elem.name}'
+                )
+            _, _, size = _PLY_TYPES[prop.type_name]
+            row_size += size
+        fh.read(elem.count * row_size)
+
+
+def _read_binary(
+    fh: IO[bytes],
+    elements: list[_Element],
+    format_str: str,
+) -> tuple[np.ndarray, list[list[int]]]:
+    """Read binary PLY data after the header.
+
+    Returns:
+        (vertices, faces) where vertices is (N, 3)
+        float32 and faces is a list of index lists.
+    """
+    endian = '<' if format_str == 'binary_little_endian' else '>'
+    vertex_elem, face_elem = _find_elements(elements)
+    xi, yi, zi = _find_xyz_indices(vertex_elem)
+
+    # Compute vertex row size for bulk read.
+    vertex_size = sum(
+        _PLY_TYPES[p.type_name][2] for p in vertex_elem.properties
+    )
+    n_verts = vertex_elem.count
+    raw = fh.read(n_verts * vertex_size)
+    if len(raw) != n_verts * vertex_size:
+        raise ValueError('Unexpected EOF reading vertex data')
+
+    vertices = _read_binary_vertices(raw, vertex_elem, endian, xi, yi, zi)
+    _skip_binary_elements(fh, elements, vertex_elem, face_elem)
+    faces = _read_binary_faces(fh, face_elem, endian)
     return vertices, faces
 
 
@@ -336,8 +356,9 @@ def _triangulate(
         if len(face) < 3:
             continue
         v0 = face[0]
-        for i in range(1, len(face) - 1):
-            triangles.append((v0, face[i], face[i + 1]))
+        triangles.extend(
+            (v0, face[i], face[i + 1]) for i in range(1, len(face) - 1)
+        )
     return triangles
 
 

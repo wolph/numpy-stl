@@ -39,7 +39,7 @@ CUBE_FACES = [
 
 
 def _expected_vectors() -> np.ndarray:
-    """Build the expected (12, 3, 3) vectors array from CUBE_VERTICES and CUBE_FACES."""
+    """Build the expected (12, 3, 3) vectors array."""
     vectors = np.zeros((len(CUBE_FACES), 3, 3), dtype=np.float32)
     for i, (a, b, c) in enumerate(CUBE_FACES):
         vectors[i][0] = CUBE_VERTICES[a]
@@ -205,5 +205,5 @@ class TestPlyErrors:
             b'0 0 0\n'
             # Missing 2 vertices and face data
         )
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             mesh.Mesh.from_ply_file(str(bad))
