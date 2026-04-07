@@ -50,11 +50,42 @@ install the optional Cython speedups:
 pip install numpy-stl[fast]
 ```
 
-This installs the `speedups` package, a compiled C extension for
-ASCII parsing. The library works identically without it -- pure Python
-is the default. See the
-[speedups docs](https://numpy-stl.readthedocs.io/en/latest/guide/speedups.html)
-for details.
+This installs the [`speedups`](https://github.com/wolph/speedups/)
+package, a compiled C extension for ASCII parsing. The library works
+identically without it -- pure Python is the default.
+
+### Benchmark
+
+Measured on the
+[Stanford Dragon](http://graphics.stanford.edu/data/3Dscanrep/)
+model (ASCII STL read, median of 5 runs):
+
+| Model           | Triangles |  Pure Python |   Speedups | Factor |
+|:----------------|----------:|-------------:|-----------:|-------:|
+| Stanford Dragon |   871,414 |        3.18s |      0.63s |   5.0x |
+
+> **Note:** Results will vary by hardware. Run the benchmark yourself:
+> `python benchmarks/benchmark_ascii_read.py`
+
+![Stanford Dragon rendered with matplotlib](docs/images/dragon_render.png)
+
+```python
+from stl import mesh
+from mpl_toolkits import mplot3d
+from matplotlib import pyplot
+
+figure = pyplot.figure(figsize=(10, 8))
+axes = figure.add_subplot(projection='3d')
+
+dragon = mesh.Mesh.from_ply_file('dragon_vrip.ply')
+axes.add_collection3d(
+    mplot3d.art3d.Poly3DCollection(dragon.vectors)
+)
+
+scale = dragon.points.flatten()
+axes.auto_scale_xyz(scale, scale, scale)
+pyplot.show()
+```
 
 ## Usage Examples
 

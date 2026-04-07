@@ -18,6 +18,7 @@ import pathlib
 import statistics
 import sys
 import time
+import urllib.error
 import urllib.request
 
 # Ensure the package is importable from repo root.
@@ -26,10 +27,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from stl import Mode, mesh  # noqa: E402
 
 CACHE_DIR = pathlib.Path(__file__).parent / '.cache'
-DRAGON_URL = (
+DRAGON_URLS = [
+    # GitHub mirror (reliable)
+    'https://raw.githubusercontent.com/'
+    'hughsk/stanford-dragon/master/models/'
+    'dragon_vrip.ply.gz',
+    # Stanford original (may be offline)
     'http://graphics.stanford.edu/pub/3Dscanrep/'
-    'dragon/dragon_recon/dragon_vrip.ply.gz'
-)
+    'dragon/dragon_recon/dragon_vrip.ply.gz',
+]
 DRAGON_PLY = CACHE_DIR / 'dragon_vrip.ply'
 DRAGON_ASCII_STL = CACHE_DIR / 'dragon_ascii.stl'
 
@@ -42,8 +48,15 @@ def download_dragon() -> pathlib.Path:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     gz_path = CACHE_DIR / 'dragon_vrip.ply.gz'
 
-    print(f'Downloading Stanford Dragon from {DRAGON_URL}...')
-    urllib.request.urlretrieve(DRAGON_URL, gz_path)
+    for url in DRAGON_URLS:
+        print(f'Downloading Stanford Dragon from {url}...')
+        try:
+            urllib.request.urlretrieve(url, gz_path)
+            break
+        except urllib.error.URLError:
+            print('  Failed, trying next URL...')
+    else:
+        raise RuntimeError('Could not download Dragon from any URL')
 
     print('Decompressing...')
     with gzip.open(gz_path, 'rb') as f_in, open(DRAGON_PLY, 'wb') as f_out:
