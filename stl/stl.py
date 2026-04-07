@@ -769,6 +769,46 @@ class BaseStl(base.BaseMesh):
             **kwargs,
         )
 
+    def save_ply(
+        self,
+        filename: str,
+        fh: 'IO[bytes] | None' = None,
+        mode: str = 'binary_little_endian',
+        update_normals: bool = True,
+    ) -> None:
+        """Save the mesh to a PLY file.
+
+        Args:
+            filename: Output file path.
+            fh: Optional pre-opened binary file handle.
+            mode: PLY format. One of ``'ascii'``,
+                ``'binary_little_endian'`` (default),
+                ``'binary_big_endian'``.
+            update_normals: Whether to recalculate normals
+                before saving. Defaults to True.
+
+        Example:
+            >>> from stl import mesh
+            >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
+            >>> m.save_ply('/tmp/_numpy_stl_test.ply')
+        """
+        from .ply import write_ply
+
+        if update_normals:
+            self.update_normals()
+
+        name = ''
+        if isinstance(self.name, bytes):
+            name = self.name.decode('ascii', errors='replace')
+        elif isinstance(self.name, str):
+            name = self.name
+
+        if fh:
+            write_ply(fh, self.data, name=name, mode=mode)
+        else:
+            with open(filename, 'wb') as fh:
+                write_ply(fh, self.data, name=name, mode=mode)
+
 
 if TYPE_CHECKING:
 

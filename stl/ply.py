@@ -365,6 +365,108 @@ def _build_mesh_data(
     return data
 
 
+def _deduplicate_vertices(
+    data: np.ndarray,
+) -> tuple[np.ndarray, list[tuple[int, int, int]]]:
+    """Extract unique vertices and face indices.
+
+    Args:
+        data: Mesh.dtype structured array.
+
+    Returns:
+        (vertices, faces) where vertices is (N, 3)
+        float32 and faces is a list of (i, j, k) tuples.
+    """
+    all_verts = data['vectors'].reshape(-1, 3)
+    unique_verts, inverse = np.unique(all_verts, axis=0, return_inverse=True)
+    faces: list[tuple[int, int, int]] = []
+    for i in range(len(data)):
+        base = i * 3
+        faces.append(
+            (
+                int(inverse[base]),
+                int(inverse[base + 1]),
+                int(inverse[base + 2]),
+            )
+        )
+    return unique_verts, faces
+
+
+def write_ply(
+    fh: IO[bytes],
+    data: np.ndarray,
+    name: str = '',
+    mode: str = 'binary_little_endian',
+) -> None:
+    """Write mesh data to PLY format.
+
+    Args:
+        fh: Binary file handle.
+        data: Mesh.dtype structured array.
+        name: Optional object name.
+        mode: 'ascii', 'binary_little_endian', or
+              'binary_big_endian'.
+    """
+    valid_modes = (
+        'ascii',
+        'binary_little_endian',
+        'binary_big_endian',
+    )
+    if mode not in valid_modes:
+        raise ValueError(
+            f'Unknown PLY mode {mode!r}, expected one of {valid_modes}'
+        )
+
+    vertices, faces = _deduplicate_vertices(data)
+
+    lines = [
+        'ply',
+        f'format {mode} 1.0',
+    ]
+    if name:
+        lines.append(f'obj_info {name}')
+    lines.extend(
+        [
+            f'element vertex {len(vertices)}',
+            'property float x',
+            'property float y',
+            'property float z',
+            f'element face {len(faces)}',
+            'property list uchar int vertex_indices',
+            'end_header',
+        ]
+    )
+    header = '\n'.join(lines) + '\n'
+    fh.write(header.encode('ascii'))
+
+    if mode == 'ascii':
+        for v in vertices:
+            fh.write(f'{v[0]} {v[1]} {v[2]}\n'.encode('ascii'))
+        for face in faces:
+            fh.write(f'3 {face[0]} {face[1]} {face[2]}\n'.encode('ascii'))
+    else:
+        endian = '<' if mode == 'binary_little_endian' else '>'
+        for v in vertices:
+            fh.write(
+                struct.pack(
+                    f'{endian}fff',
+                    float(v[0]),
+                    float(v[1]),
+                    float(v[2]),
+                )
+            )
+        for face in faces:
+            fh.write(struct.pack('B', 3))
+            fh.write(
+                struct.pack(
+                    f'{endian}iii',
+                    face[0],
+                    face[1],
+                    face[2],
+                )
+            )
+
+
 def read_ply(
     fh: IO[bytes],
     mesh_dtype: np.dtype,  # type: ignore[type-arg]

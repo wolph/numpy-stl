@@ -98,6 +98,61 @@ class TestTriangulation:
         assert len(unique_verts) == 8
 
 
+class TestWritePly:
+    def test_write_binary_round_trip(self, tmp_path):
+        original = mesh.Mesh.from_ply_file(str(PLY_ASCII_PATH / 'Cube.ply'))
+        out_path = tmp_path / 'cube_out.ply'
+        original.save_ply(str(out_path))
+
+        reloaded = mesh.Mesh.from_ply_file(str(out_path))
+        np.testing.assert_array_almost_equal(
+            original.vectors, reloaded.vectors
+        )
+
+    def test_write_ascii_round_trip(self, tmp_path):
+        original = mesh.Mesh.from_ply_file(str(PLY_ASCII_PATH / 'Cube.ply'))
+        out_path = tmp_path / 'cube_out.ply'
+        original.save_ply(str(out_path), mode='ascii')
+
+        reloaded = mesh.Mesh.from_ply_file(str(out_path))
+        np.testing.assert_array_almost_equal(
+            original.vectors, reloaded.vectors
+        )
+
+    def test_write_big_endian_round_trip(self, tmp_path):
+        original = mesh.Mesh.from_ply_file(str(PLY_ASCII_PATH / 'Cube.ply'))
+        out_path = tmp_path / 'cube_be.ply'
+        original.save_ply(str(out_path), mode='binary_big_endian')
+
+        reloaded = mesh.Mesh.from_ply_file(str(out_path))
+        np.testing.assert_array_almost_equal(
+            original.vectors, reloaded.vectors
+        )
+
+    def test_write_with_filehandle(self, tmp_path):
+        original = mesh.Mesh.from_ply_file(str(PLY_ASCII_PATH / 'Cube.ply'))
+        out_path = tmp_path / 'cube_fh.ply'
+        with open(out_path, 'wb') as fh:
+            original.save_ply(str(out_path), fh=fh)
+
+        reloaded = mesh.Mesh.from_ply_file(str(out_path))
+        assert len(reloaded.data) == 12
+
+    def test_stl_to_ply_round_trip(self, tmp_path):
+        """Load an STL, save as PLY, reload, compare."""
+        stl_path = (
+            pathlib.Path(__file__).parent / 'stl_binary' / 'HalfDonut.stl'
+        )
+        original = mesh.Mesh.from_file(str(stl_path))
+        ply_path = tmp_path / 'donut.ply'
+        original.save_ply(str(ply_path))
+
+        reloaded = mesh.Mesh.from_ply_file(str(ply_path))
+        np.testing.assert_array_almost_equal(
+            original.vectors, reloaded.vectors
+        )
+
+
 class TestPlyErrors:
     def test_invalid_magic(self, tmp_path):
         bad = tmp_path / 'bad.ply'
