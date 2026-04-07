@@ -145,6 +145,14 @@ def render_dragon(output_path: pathlib.Path) -> None:
     axes.set_axis_off()
     axes.view_init(elev=15, azim=-120)
 
+    tri_count = len(dragon.data)
+    figure.suptitle(
+        f'Stanford Dragon \u2014 {tri_count:,} triangles'
+        f' rendered with matplotlib',
+        fontsize=13,
+        y=0.92,
+    )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         output_path,
