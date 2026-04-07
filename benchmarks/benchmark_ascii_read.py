@@ -144,13 +144,15 @@ def render_dragon(output_path: pathlib.Path) -> None:
 
     axes.view_init(elev=15, azim=-120)
 
+    figure.subplots_adjust(top=1.0, bottom=0.0, left=0.0, right=1.0)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         output_path,
         dpi=150,
         bbox_inches='tight',
         facecolor='white',
-        pad_inches=0.1,
+        pad_inches=0.0,
     )
     plt.close()
     print(f'Render saved to {output_path}')
