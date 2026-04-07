@@ -142,15 +142,12 @@ def render_dragon(output_path: pathlib.Path) -> None:
     axes.set_ylim(center[1] - half_range, center[1] + half_range)
     axes.set_zlim(center[2] - half_range, center[2] + half_range)
 
-    axes.set_axis_off()
     axes.view_init(elev=15, azim=-120)
 
     tri_count = len(dragon.data)
     figure.suptitle(
-        f'Stanford Dragon \u2014 {tri_count:,} triangles'
-        f' rendered with matplotlib',
+        f'Stanford Dragon \u2014 {tri_count:,} triangles',
         fontsize=13,
-        y=0.92,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -159,7 +156,7 @@ def render_dragon(output_path: pathlib.Path) -> None:
         dpi=150,
         bbox_inches='tight',
         facecolor='white',
-        pad_inches=0.02,
+        pad_inches=0.1,
     )
     plt.close()
     print(f'Render saved to {output_path}')
