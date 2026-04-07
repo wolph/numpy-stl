@@ -10,6 +10,8 @@ A fast library for reading, writing, and modifying STL files, powered
 by NumPy. All mesh operations use vectorized array operations for
 speed.
 
+*[Stanford Dragon](http://graphics.stanford.edu/data/3Dscanrep/) — 871,414 triangles loaded in 0.63s, rendered with [matplotlib](https://matplotlib.org/)*
+
 [![Stanford Dragon rendered with matplotlib](docs/images/dragon_render.png)](#plotting-with-matplotlib)
 
 ## Quick Start
