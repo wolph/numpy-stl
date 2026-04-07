@@ -60,13 +60,18 @@ identically without it -- pure Python is the default.
 
 ### Benchmark
 
-Measured on the
-[Stanford Dragon](http://graphics.stanford.edu/data/3Dscanrep/)
-model (ASCII STL read, median of 5 runs):
+ASCII STL read performance — ~5x faster with the
+[speedups](https://github.com/wolph/speedups/) C extension,
+consistent across data sizes (median of 5 runs):
 
-| Model           | Triangles |  Pure Python |   Speedups | Factor |
-|:----------------|----------:|-------------:|-----------:|-------:|
-| Stanford Dragon |   871,414 |        3.18s |      0.63s |   5.0x |
+![ASCII STL Read Performance](docs/images/benchmark_chart.png)
+
+| Facets    |  Pure Python |   Speedups | Factor |
+|----------:|-------------:|-----------:|-------:|
+|    10,000 |        36 ms |       7 ms |   5.1x |
+|   100,000 |       0.36 s |     73 ms  |   4.9x |
+|   871,414 |       3.10 s |     0.59 s |   5.2x |
+| 1,000,000 |       3.60 s |     0.73 s |   4.9x |
 
 > **Note:** Results will vary by hardware. Run the benchmark yourself:
 > `python benchmarks/benchmark_ascii_read.py`
