@@ -13,3 +13,4 @@ cover
 /.tox
 /stl/*.c
 uv.lock
+benchmarks/.cache/

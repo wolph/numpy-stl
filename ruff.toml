@@ -74,6 +74,7 @@ select = [
 
 [lint.per-file-ignores]
 'tests/*' = ['SIM115', 'SIM117', 'T201', 'B007']
+'benchmarks/*' = ['INP001', 'T201']
 'docs/*' = ['INP001', 'RUF012']
 
 [lint.pydocstyle]
