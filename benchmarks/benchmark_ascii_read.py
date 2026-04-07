@@ -109,10 +109,11 @@ def render_dragon(output_path: pathlib.Path) -> None:
         import matplotlib as mpl
 
         mpl.use('Agg')
+        from PIL import Image, ImageChops
         from matplotlib import pyplot as plt
         from mpl_toolkits import mplot3d  # noqa: F401
     except ImportError:
-        print('matplotlib not installed, skipping render')
+        print('matplotlib/Pillow not installed, skipping render')
         return
 
     ply_path = download_dragon()
@@ -122,7 +123,7 @@ def render_dragon(output_path: pathlib.Path) -> None:
     # matplotlib uses Z-up)
     dragon.rotate([1, 0, 0], math.radians(-90))
 
-    figure = plt.figure(figsize=(8, 6))
+    figure = plt.figure(figsize=(10, 7))
     axes = figure.add_subplot(projection='3d')
     axes.add_collection3d(
         mplot3d.art3d.Poly3DCollection(
@@ -133,28 +134,58 @@ def render_dragon(output_path: pathlib.Path) -> None:
         )
     )
 
-    # Tight framing around the model
+    # Tight limits matching the actual model extents
     mins = dragon.min_
     maxs = dragon.max_
-    center = (mins + maxs) / 2
-    half_range = (maxs - mins).max() / 2 * 1.05
-    axes.set_xlim(center[0] - half_range, center[0] + half_range)
-    axes.set_ylim(center[1] - half_range, center[1] + half_range)
-    axes.set_zlim(center[2] - half_range, center[2] + half_range)
-
+    rng = maxs - mins
+    pad = 0.02
+    axes.set_xlim(
+        mins[0] - rng[0] * pad,
+        maxs[0] + rng[0] * pad,
+    )
+    axes.set_ylim(
+        mins[1] - rng[1] * pad,
+        maxs[1] + rng[1] * pad,
+    )
+    axes.set_zlim(
+        mins[2] - rng[2] * pad,
+        maxs[2] + rng[2] * pad,
+    )
+    axes.set_box_aspect(rng / rng.max())
     axes.view_init(elev=15, azim=-120)
 
     figure.subplots_adjust(top=1.0, bottom=0.0, left=0.0, right=1.0)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    import tempfile
+
+    tmp = pathlib.Path(tempfile.mktemp(suffix='.png'))
     plt.savefig(
-        output_path,
+        tmp,
         dpi=150,
         bbox_inches='tight',
         facecolor='white',
         pad_inches=0.0,
     )
     plt.close()
+
+    # Auto-crop remaining whitespace
+    img = Image.open(tmp)
+    bg = Image.new(img.mode, img.size, (255, 255, 255))
+    diff = ImageChops.difference(img, bg)
+    bbox = diff.getbbox()
+    if bbox:
+        p = 6
+        bbox = (
+            max(0, bbox[0] - p),
+            max(0, bbox[1] - p),
+            min(img.width, bbox[2] + p),
+            min(img.height, bbox[3] + p),
+        )
+        img = img.crop(bbox)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(output_path)
+    tmp.unlink(missing_ok=True)
     print(f'Render saved to {output_path}')
 
 
