@@ -109,7 +109,7 @@ def render_dragon(output_path: pathlib.Path) -> None:
         import matplotlib as mpl
 
         mpl.use('Agg')
-        from PIL import Image, ImageChops
+        from PIL import Image
         from matplotlib import pyplot as plt
         from mpl_toolkits import mplot3d  # noqa: F401
     except ImportError:
@@ -168,20 +168,27 @@ def render_dragon(output_path: pathlib.Path) -> None:
     )
     plt.close()
 
-    # Auto-crop remaining whitespace
-    img = Image.open(tmp)
-    bg = Image.new(img.mode, img.size, (255, 255, 255))
-    diff = ImageChops.difference(img, bg)
-    bbox = diff.getbbox()
-    if bbox:
-        p = 6
-        bbox = (
-            max(0, bbox[0] - p),
-            max(0, bbox[1] - p),
-            min(img.width, bbox[2] + p),
-            min(img.height, bbox[3] + p),
+    # Auto-crop whitespace (threshold catches light-gray
+    # grid lines that are near-white)
+    img = Image.open(tmp).convert('RGB')
+    import numpy as np  # noqa: ICN001
+
+    arr = np.array(img)
+    not_white = np.any(arr < 245, axis=2)
+    rows = np.any(not_white, axis=1)
+    cols = np.any(not_white, axis=0)
+    rr = np.where(rows)[0]
+    cc = np.where(cols)[0]
+    if len(rr) and len(cc):
+        p = 4
+        img = img.crop(
+            (
+                max(0, int(cc[0]) - p),
+                max(0, int(rr[0]) - p),
+                min(img.width, int(cc[-1]) + p),
+                min(img.height, int(rr[-1]) + p),
+            )
         )
-        img = img.crop(bbox)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path)
