@@ -724,6 +724,51 @@ class BaseStl(base.BaseMesh):
                     # pyrefly: ignore[invalid-yield]
                     yield mesh
 
+    @classmethod
+    def from_ply_file(
+        cls,
+        filename: str,
+        calculate_normals: bool = True,
+        fh: 'IO[bytes] | None' = None,
+        **kwargs: Any,
+    ) -> 'Self':
+        """Load a mesh from a PLY file.
+
+        Supports ASCII and binary PLY formats
+        (little-endian and big-endian).
+
+        Args:
+            filename: Path to the .ply file.
+            calculate_normals: Whether to recalculate
+                normals. Defaults to True.
+            fh: Optional pre-opened binary file handle.
+            **kwargs: Additional arguments passed to
+                the Mesh constructor.
+
+        Returns:
+            A Mesh instance.
+
+        Example:
+            >>> from stl import mesh
+            >>> m = mesh.Mesh.from_ply_file('tests/ply_ascii/Cube.ply')
+            >>> len(m.data) == 12
+            True
+        """
+        from .ply import read_ply
+
+        if fh:
+            data, name = read_ply(fh, cls.dtype)
+        else:
+            with open(filename, 'rb') as fh:
+                data, name = read_ply(fh, cls.dtype)
+
+        return cls(
+            data,
+            calculate_normals,
+            name=name,
+            **kwargs,
+        )
+
 
 if TYPE_CHECKING:
 
