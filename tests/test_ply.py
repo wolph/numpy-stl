@@ -62,3 +62,23 @@ class TestReadAsciiPly:
         with open(path, 'rb') as fh:
             m = mesh.Mesh.from_ply_file(str(path), fh=fh)
         assert len(m.data) == 12
+
+
+class TestReadBinaryPly:
+    def test_read_binary_le_face_count(self):
+        m = mesh.Mesh.from_ply_file(str(PLY_BINARY_PATH / 'Cube.ply'))
+        assert len(m.data) == 12
+
+    def test_read_binary_le_vectors(self):
+        m = mesh.Mesh.from_ply_file(str(PLY_BINARY_PATH / 'Cube.ply'))
+        expected = _expected_vectors()
+        np.testing.assert_array_almost_equal(m.vectors, expected)
+
+    def test_read_binary_be_face_count(self):
+        m = mesh.Mesh.from_ply_file(str(PLY_BINARY_PATH / 'CubeBigEndian.ply'))
+        assert len(m.data) == 12
+
+    def test_read_binary_be_vectors(self):
+        m = mesh.Mesh.from_ply_file(str(PLY_BINARY_PATH / 'CubeBigEndian.ply'))
+        expected = _expected_vectors()
+        np.testing.assert_array_almost_equal(m.vectors, expected)

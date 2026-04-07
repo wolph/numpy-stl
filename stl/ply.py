@@ -7,6 +7,7 @@ binary reader is implemented (Task 3).
 
 from __future__ import annotations
 
+import struct
 from typing import IO, Any
 
 import numpy as np
@@ -229,6 +230,96 @@ def _read_ascii(
     return vertices, faces
 
 
+def _read_binary(
+    fh: IO[bytes],
+    elements: list[_Element],
+    format_str: str,
+) -> tuple[np.ndarray, list[list[int]]]:
+    """Read binary PLY data after the header.
+
+    Supports both little-endian and big-endian formats.
+
+    Returns:
+        (vertices, faces) where vertices is (N, 3) float32
+        and faces is a list of index lists (variable length).
+    """
+    endian = '<' if format_str == 'binary_little_endian' else '>'
+
+    vertex_elem, face_elem = _find_elements(elements)
+    xi, yi, zi = _find_xyz_indices(vertex_elem)
+
+    # Build per-vertex struct format from properties.
+    vertex_fmt = endian
+    vertex_size = 0
+    for prop in vertex_elem.properties:
+        fmt_char, _, size = _PLY_TYPES[prop.type_name]
+        vertex_fmt += fmt_char
+        vertex_size += size
+
+    # Read all vertices at once.
+    n_verts = vertex_elem.count
+    raw = fh.read(n_verts * vertex_size)
+    if len(raw) != n_verts * vertex_size:
+        raise ValueError('Unexpected EOF reading vertex data')
+
+    vertices = np.empty((n_verts, 3), dtype=np.float32)
+    for i in range(n_verts):
+        vals = struct.unpack_from(vertex_fmt, raw, i * vertex_size)
+        vertices[i] = [vals[xi], vals[yi], vals[zi]]
+
+    # Skip elements between vertex and face.
+    found_vertex = False
+    for elem in elements:
+        if elem is vertex_elem:
+            found_vertex = True
+            continue
+        if elem is face_elem:
+            break
+        if not found_vertex:
+            continue
+        # Compute size of each row for this element and
+        # skip it.
+        row_size = 0
+        for prop in elem.properties:
+            if prop.is_list:
+                raise ValueError(
+                    f'Cannot skip element with list properties: {elem.name}'
+                )
+            _, _, size = _PLY_TYPES[prop.type_name]
+            row_size += size
+        skip_bytes = elem.count * row_size
+        fh.read(skip_bytes)
+
+    # Find the list property on the face element.
+    list_prop = None
+    for prop in face_elem.properties:
+        if prop.is_list:
+            list_prop = prop
+            break
+    if list_prop is None:
+        raise ValueError('Face element has no list property')
+
+    count_fmt_char, _, count_size = _PLY_TYPES[list_prop.count_type]
+    idx_fmt_char, _, idx_size = _PLY_TYPES[list_prop.item_type]
+    count_fmt = endian + count_fmt_char
+    idx_fmt = endian + idx_fmt_char
+
+    # Read faces one at a time.
+    faces: list[list[int]] = []
+    for _ in range(face_elem.count):
+        count_raw = fh.read(count_size)
+        if len(count_raw) != count_size:
+            raise ValueError('Unexpected EOF reading face')
+        n = struct.unpack(count_fmt, count_raw)[0]
+        idx_raw = fh.read(n * idx_size)
+        if len(idx_raw) != n * idx_size:
+            raise ValueError('Unexpected EOF reading face indices')
+        indices = list(struct.unpack(endian + idx_fmt_char * n, idx_raw))
+        faces.append(indices)
+
+    return vertices, faces
+
+
 def _triangulate(
     faces: list[list[int]],
 ) -> list[tuple[int, int, int]]:
@@ -302,9 +393,7 @@ def read_ply(
         'binary_little_endian',
         'binary_big_endian',
     ):
-        raise ValueError(
-            f'Binary PLY format ({format_str}) is not yet supported'
-        )
+        vertices, faces = _read_binary(fh, elements, format_str)
     else:
         raise ValueError(f'Unknown PLY format: {format_str!r}')
 
