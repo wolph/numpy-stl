@@ -104,6 +104,8 @@ def benchmark_read(
 def render_dragon(output_path: pathlib.Path) -> None:
     """Render the Dragon mesh to a PNG image."""
     try:
+        import math
+
         import matplotlib as mpl
 
         mpl.use('Agg')
@@ -116,24 +118,32 @@ def render_dragon(output_path: pathlib.Path) -> None:
     ply_path = download_dragon()
     dragon = mesh.Mesh.from_ply_file(str(ply_path))
 
-    figure = plt.figure(figsize=(10, 8))
+    # Rotate so the dragon stands upright (PLY has Y-up,
+    # matplotlib uses Z-up)
+    dragon.rotate([1, 0, 0], math.radians(-90))
+
+    figure = plt.figure(figsize=(8, 6))
     axes = figure.add_subplot(projection='3d')
     axes.add_collection3d(
         mplot3d.art3d.Poly3DCollection(
             dragon.vectors,
             edgecolor='none',
             facecolor='#4a90d9',
-            alpha=0.7,
+            alpha=0.8,
         )
     )
 
-    scale = dragon.points.flatten()
-    axes.auto_scale_xyz(scale, scale, scale)
-    axes.set_xlabel('X')
-    axes.set_ylabel('Y')
-    axes.set_zlabel('Z')
-    axes.set_title('Stanford Dragon')
-    axes.view_init(elev=20, azim=45)
+    # Tight framing around the model
+    mins = dragon.min_
+    maxs = dragon.max_
+    center = (mins + maxs) / 2
+    half_range = (maxs - mins).max() / 2 * 1.05
+    axes.set_xlim(center[0] - half_range, center[0] + half_range)
+    axes.set_ylim(center[1] - half_range, center[1] + half_range)
+    axes.set_zlim(center[2] - half_range, center[2] + half_range)
+
+    axes.set_axis_off()
+    axes.view_init(elev=15, azim=-120)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(
@@ -141,6 +151,7 @@ def render_dragon(output_path: pathlib.Path) -> None:
         dpi=150,
         bbox_inches='tight',
         facecolor='white',
+        pad_inches=0.02,
     )
     plt.close()
     print(f'Render saved to {output_path}')

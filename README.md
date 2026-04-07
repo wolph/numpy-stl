@@ -10,6 +10,8 @@ A fast library for reading, writing, and modifying STL files, powered
 by NumPy. All mesh operations use vectorized array operations for
 speed.
 
+[![Stanford Dragon rendered with matplotlib](docs/images/dragon_render.png)](#plotting-with-matplotlib)
+
 ## Quick Start
 
 ```bash
@@ -66,26 +68,6 @@ model (ASCII STL read, median of 5 runs):
 
 > **Note:** Results will vary by hardware. Run the benchmark yourself:
 > `python benchmarks/benchmark_ascii_read.py`
-
-![Stanford Dragon rendered with matplotlib](docs/images/dragon_render.png)
-
-```python
-from stl import mesh
-from mpl_toolkits import mplot3d
-from matplotlib import pyplot
-
-figure = pyplot.figure(figsize=(10, 8))
-axes = figure.add_subplot(projection='3d')
-
-dragon = mesh.Mesh.from_ply_file('dragon_vrip.ply')
-axes.add_collection3d(
-    mplot3d.art3d.Poly3DCollection(dragon.vectors)
-)
-
-scale = dragon.points.flatten()
-axes.auto_scale_xyz(scale, scale, scale)
-pyplot.show()
-```
 
 ## Usage Examples
 
@@ -152,19 +134,22 @@ combined.save('combined.stl')
 ### Plotting with Matplotlib
 
 ```python
+import math
 from stl import mesh
 from mpl_toolkits import mplot3d
 from matplotlib import pyplot
 
-figure = pyplot.figure()
+figure = pyplot.figure(figsize=(8, 6))
 axes = figure.add_subplot(projection='3d')
 
-your_mesh = mesh.Mesh.from_file('model.stl')
+dragon = mesh.Mesh.from_ply_file('dragon_vrip.ply')
+dragon.rotate([1, 0, 0], math.radians(-90))
+
 axes.add_collection3d(
-    mplot3d.art3d.Poly3DCollection(your_mesh.vectors)
+    mplot3d.art3d.Poly3DCollection(dragon.vectors)
 )
 
-scale = your_mesh.points.flatten()
+scale = dragon.points.flatten()
 axes.auto_scale_xyz(scale, scale, scale)
 pyplot.show()
 ```
