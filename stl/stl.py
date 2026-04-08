@@ -762,6 +762,7 @@ class BaseStl(base.BaseMesh):
             with open(filename, 'rb') as fh:
                 data, name = read_ply(fh, cls.dtype)
 
+        # pyrefly: ignore[bad-return]
         return cls(
             data,
             calculate_normals,

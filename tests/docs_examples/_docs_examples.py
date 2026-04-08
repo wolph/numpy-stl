@@ -28,6 +28,7 @@ SANDBOX_FIXTURES: Final = {
         PROJECT_ROOT / 'tests' / 'stl_binary' / 'HalfDonut.stl'
     ),
     'closed_model.stl': PROJECT_ROOT / 'tests' / 'stl_binary' / 'Cube.stl',
+    'dragon_vrip.ply': PROJECT_ROOT / 'tests' / 'ply_ascii' / 'Cube.ply',
     'input.stl': PROJECT_ROOT / 'tests' / 'stl_ascii' / 'HalfDonut.stl',
     'model.3mf': PROJECT_ROOT / 'tests' / '3mf' / 'Moon.3mf',
     'model.stl': PROJECT_ROOT / 'tests' / 'stl_ascii' / 'HalfDonut.stl',
