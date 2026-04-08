@@ -105,7 +105,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -115,3 +115,5 @@ jobs:
         run: uv pip install '.[tox]'
       - name: Build docs
         run: tox -e docs
+      - name: Run docs examples
+        run: tox -e docs-examples

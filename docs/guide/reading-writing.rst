@@ -9,6 +9,7 @@ Loading a Single File
 
 .. code-block:: python
 
+   import stl
    from stl import mesh
 
    # Auto-detect format
@@ -16,7 +17,7 @@ Loading a Single File
 
    # Force a specific format
    m = mesh.Mesh.from_file('model.stl', mode=stl.Mode.ASCII)
-   m = mesh.Mesh.from_file('model.stl', mode=stl.Mode.BINARY)
+   m = mesh.Mesh.from_file('binary_model.stl', mode=stl.Mode.BINARY)
 
 Loading from a File Handle
 --------------------------

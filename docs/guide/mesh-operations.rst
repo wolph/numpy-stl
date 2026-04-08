@@ -50,9 +50,14 @@ Apply a full 4x4 transformation matrix:
 
    m = mesh.Mesh.from_file('model.stl')
 
-   # Scale by 2x
+   # Rotate 90 degrees around Z and translate by [10, 0, 5]
    matrix = np.eye(4)
-   matrix[:3, :3] *= 2.0
+   matrix[:3, :3] = [
+       [0.0, -1.0, 0.0],
+       [1.0, 0.0, 0.0],
+       [0.0, 0.0, 1.0],
+   ]
+   matrix[:3, 3] = [10.0, 0.0, 5.0]
    m.transform(matrix)
 
 Combining Meshes
@@ -83,9 +88,11 @@ Remove duplicate or degenerate triangles:
    m = mesh.Mesh.from_file('model.stl')
 
    # Remove duplicate triangles (keep one copy)
-   m.remove_duplicate_polygons(
+   data = mesh.Mesh.remove_duplicate_polygons(
+       m.data,
        base.RemoveDuplicates.SINGLE,
    )
 
    # Remove zero-area triangles
-   m.remove_empty_areas()
+   data = mesh.Mesh.remove_empty_areas(data)
+   cleaned = mesh.Mesh(data)
