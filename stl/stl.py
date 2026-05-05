@@ -9,7 +9,6 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
-    Final,
     Literal as L,  # noqa: N817
     cast,
 )
@@ -58,20 +57,20 @@ class Mode(enum.IntEnum):
 
 
 # For backwards compatibility, leave the original references
-AUTOMATIC: Final[L[Mode.AUTOMATIC]] = Mode.AUTOMATIC
-ASCII: Final[L[Mode.ASCII]] = Mode.ASCII
-BINARY: Final[L[Mode.BINARY]] = Mode.BINARY
+AUTOMATIC: L[Mode.AUTOMATIC] = Mode.AUTOMATIC
+ASCII: L[Mode.ASCII] = Mode.ASCII
+BINARY: L[Mode.BINARY] = Mode.BINARY
 
 #: Amount of bytes to read while using buffered reading
-BUFFER_SIZE: Final[L[4096]] = 4096
+BUFFER_SIZE: L[4096] = 4096
 #: The amount of bytes in the header field
-HEADER_SIZE: Final[L[80]] = 80
+HEADER_SIZE: L[80] = 80
 #: The amount of bytes in the count field
-COUNT_SIZE: Final[L[4]] = 4
+COUNT_SIZE: L[4] = 4
 #: The maximum amount of triangles we can read from binary files
-MAX_COUNT: Final[float] = 1e8
+MAX_COUNT: float = 1e8
 #: The header format, can be safely monkeypatched. Limited to 80 characters
-HEADER_FORMAT: Final[str] = '{package_name} ({version}) {now} {name}'
+HEADER_FORMAT: str = '{package_name} ({version}) {now} {name}'
 
 
 class BaseStl(base.BaseMesh):

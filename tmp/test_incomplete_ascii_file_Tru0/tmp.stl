@@ -1,0 +1,5 @@
+solid test.stl
+facet normal -0.014565 0.073223 -0.002897
+  outer loop
+    vertex 0.399344 0.461940 1.044090
+    vertex 0.
