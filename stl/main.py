@@ -49,10 +49,9 @@ def _get_name(args: argparse.Namespace) -> str:
         args.name,
         getattr(args.outfile, 'name', None),
         getattr(args.infile, 'name', None),
-        'numpy-stl-%06d' % random.randint(0, 1_000_000),  # noqa: UP031
     ]
 
-    for name in names:  # pragma: no branch
+    for name in names:
         if not isinstance(name, str):
             continue
         elif name.startswith('<'):  # pragma: no cover
@@ -62,10 +61,17 @@ def _get_name(args: argparse.Namespace) -> str:
             continue
         else:
             return name
-    return None  # type: ignore[return-value]  # pragma: no cover
+
+    return 'numpy-stl-%06d' % random.randint(0, 1_000_000)  # noqa: UP031
 
 
 def main() -> None:
+    """CLI entry point for the ``stl`` command.
+
+    Converts between ASCII and binary STL formats.
+    Supports ``-a`` (force ASCII), ``-b`` (force binary),
+    ``-n`` (keep file normals), and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files from ascii to binary and back')
     parser.add_argument(
         '-a',
@@ -103,6 +109,11 @@ def main() -> None:
 
 
 def to_ascii() -> None:
+    """CLI entry point for the ``stl2ascii`` command.
+
+    Converts an STL file to ASCII format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files to ASCII (text) format')
     args = parser.parse_args()
     name = _get_name(args)
@@ -122,6 +133,11 @@ def to_ascii() -> None:
 
 
 def to_binary() -> None:
+    """CLI entry point for the ``stl2bin`` command.
+
+    Converts an STL file to binary format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
     name = _get_name(args)

@@ -109,15 +109,16 @@ def test_mass_properties_for_half_donut_with_density(
     )
 
 
-@pytest.mark.parametrize('filename, expected_result', [
-    ('Cube.stl', True),
-    ('HalfDonut.stl', False),
-    ('Moon.stl', False),
-    ('Star.stl', False),
-])
-def test_is_convex(
-    binary_ascii_path, speedups, filename, expected_result
-):
+@pytest.mark.parametrize(
+    'filename, expected_result',
+    [
+        ('Cube.stl', True),
+        ('HalfDonut.stl', False),
+        ('Moon.stl', False),
+        ('Star.stl', False),
+    ],
+)
+def test_is_convex(binary_ascii_path, speedups, filename, expected_result):
     """Check the is_convex() method on various STL files."""
     filepath = binary_ascii_path / filename
     mesh = stl.StlMesh(str(filepath), speedups=speedups)

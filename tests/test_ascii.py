@@ -9,9 +9,9 @@ import warnings
 
 import numpy as np
 import pytest
+from stl.utils import b
 
 from stl import Mode, mesh
-from stl.utils import b
 
 FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
 
@@ -130,10 +130,6 @@ def test_locale_restore(speedups):
 def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
-
-    venv = os.environ.get('VIRTUAL_ENV', '')
-    if sys.version_info[:2] == (3, 6) and venv.startswith('/home/travis/'):
-        pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
 
     try:
         from PySide2 import QtWidgets

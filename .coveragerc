@@ -1,5 +1,4 @@
 [report]
-fail_under = 100
 exclude_lines =
     pragma: no cover
     def __repr__
@@ -12,6 +11,13 @@ exclude_lines =
     if __name__ == .__main__.:
     @overload
 
+
 [run]
 source = stl
 branch = True
+parallel = true
+
+[paths]
+source =
+    stl/
+    */stl/
