@@ -31,6 +31,9 @@ dependencies = [
     # the oldest version in the test matrix.
     "numpy>=1.24",
     "python-utils>=3.4.5",
+    # Already transitive via python-utils; declared because stl.stl
+    # imports assert_never at runtime.
+    "typing_extensions>=4.1",
 ]
 
 [project.urls]

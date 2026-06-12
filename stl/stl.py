@@ -16,6 +16,10 @@ from xml.etree import ElementTree as ET
 
 import numpy as np
 
+# typing.assert_never requires Python 3.11; typing_extensions is a
+# guaranteed runtime dependency via python-utils.
+from typing_extensions import assert_never
+
 from . import (
     __about__ as metadata,
     base,
@@ -184,8 +188,10 @@ class BaseStl(base.BaseMesh):
                 name, data = cls._load_binary(fh, header)
         elif mode is ASCII:
             name, data = cls._load_ascii(fh, header, speedups=speedups)
-        else:
+        elif mode is BINARY:
             name, data = cls._load_binary(fh, header)
+        else:  # pragma: no cover - exhaustiveness guard for new modes
+            assert_never(mode)
 
         return name, data
 
@@ -417,8 +423,10 @@ class BaseStl(base.BaseMesh):
                 write = self._write_binary
         elif mode is BINARY:
             write = self._write_binary
-        else:  # Mode.ASCII
+        elif mode is ASCII:
             write = self._write_ascii
+        else:  # pragma: no cover - exhaustiveness guard for new modes
+            assert_never(mode)
 
         if isinstance(fh, io.TextIOBase):
             # Provide a more helpful error if the user mistakenly
