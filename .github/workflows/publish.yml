@@ -6,6 +6,11 @@ on:
       - 'v*'
 
 jobs:
+  # Tag pushes do not trigger ci.yml on their own; run the full test
+  # suite here so nothing reaches PyPI without passing tests.
+  test:
+    uses: ./.github/workflows/ci.yml
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -22,7 +27,7 @@ jobs:
           path: dist/
 
   publish:
-    needs: build
+    needs: [test, build]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

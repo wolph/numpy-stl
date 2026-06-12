@@ -5,6 +5,8 @@ on:
     branches: [master, develop]
   pull_request:
   workflow_dispatch:
+  # Allows publish.yml to run the full test suite as a release gate.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -61,7 +63,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [test, speedups]
+    needs: [test, speedups, docs]
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -117,3 +119,9 @@ jobs:
         run: tox -e docs
       - name: Run docs examples
         run: tox -e docs-examples
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-docs-examples
+          path: .tox/.coverage.*
+          include-hidden-files: true

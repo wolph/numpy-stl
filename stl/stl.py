@@ -16,6 +16,10 @@ from xml.etree import ElementTree as ET
 
 import numpy as np
 
+# typing.assert_never requires Python 3.11; typing_extensions is a
+# guaranteed runtime dependency via python-utils.
+from typing_extensions import assert_never
+
 from . import (
     __about__ as metadata,
     base,
@@ -39,6 +43,7 @@ if TYPE_CHECKING:
     @type_check_only
     class _StatefulWriter(Writer[Buffer], Protocol):
         def tell(self) -> int: ...
+        def seekable(self) -> bool: ...
 
 
 class Mode(enum.IntEnum):
@@ -75,12 +80,53 @@ MAX_COUNT: float = 1e8
 HEADER_FORMAT: str = '{package_name} ({version}) {now} {name}'
 
 
+def _ensure_seekable(fh: IO[Any], mode: Mode = AUTOMATIC) -> IO[Any]:
+    """Return a seekable handle, buffering pipe-like streams fully.
+
+    Format auto-detection needs to rewind and the binary loader needs
+    seek/tell, which streams such as stdin do not support. Explicit
+    ASCII parsing streams in bounded chunks and is left untouched to
+    avoid buffering large piped files in memory.
+    """
+    if mode is ASCII:
+        return fh
+
+    # Duck-typed file-likes may not implement seekable() at all;
+    # treat those like pipes and buffer them.
+    seekable = getattr(fh, 'seekable', None)
+    if seekable is not None and seekable():
+        return fh
+    return io.BytesIO(b(fh.read()))
+
+
+def _3mf_index(
+    attributes: dict[str, int],
+    key: str,
+    vertices: 'list[list[float]]',
+) -> int:
+    """Validate and return a triangle vertex index from a 3MF file."""
+    try:
+        index: int = attributes[key]
+    except KeyError as exception:
+        raise ValueError(
+            f'Triangle is missing attribute {key!r}'
+        ) from exception
+
+    if not 0 <= index < len(vertices):
+        raise ValueError(
+            f'Triangle vertex index {key}={index} is out of range '
+            f'(0..{len(vertices) - 1})'
+        )
+
+    return index
+
+
 class BaseStl(base.BaseMesh):
     @classmethod
     def load(
         cls,
         fh: IO[Any],
-        mode: Mode = AUTOMATIC,
+        mode: 'Mode | int' = AUTOMATIC,
         speedups: bool = True,
     ) -> 'tuple[bytes, _data_1d] | Any':
         """Load mesh data from an open STL file handle.
@@ -91,14 +137,21 @@ class BaseStl(base.BaseMesh):
         Args:
             fh: Open binary file handle.
             mode: Force a specific format or use
-                :attr:`Mode.AUTOMATIC` (default).
+                :attr:`Mode.AUTOMATIC` (default). Plain
+                ints are accepted and converted to
+                :class:`Mode`.
             speedups: Use Cython speedups for ASCII
                 parsing. Defaults to True.
 
         Returns:
             A (name, data) tuple, or None if the file
             is empty.
+
+        Raises:
+            ValueError: If ``mode`` is not a valid
+                :class:`Mode` value.
         """
+        mode = Mode(mode)
         header = fh.read(HEADER_SIZE)
         if not header:
             return None
@@ -135,8 +188,10 @@ class BaseStl(base.BaseMesh):
                 name, data = cls._load_binary(fh, header)
         elif mode is ASCII:
             name, data = cls._load_ascii(fh, header, speedups=speedups)
-        else:
+        elif mode is BINARY:
             name, data = cls._load_binary(fh, header)
+        else:  # pragma: no cover - exhaustiveness guard for new modes
+            assert_never(mode)
 
         return name, data
 
@@ -152,8 +207,10 @@ class BaseStl(base.BaseMesh):
         if len(count_data) != COUNT_SIZE:
             count = 0
         else:
-            (count,) = struct.unpack('<i', b(count_data))
-        # raise RuntimeError()
+            # The triangle count is an unsigned 32-bit integer per the
+            # STL specification; '<i' would turn large counts negative
+            # and slip past the size check below.
+            (count,) = struct.unpack('<I', b(count_data))
         assert count < MAX_COUNT, (
             f'File too large, got {count} triangles which '
             f'exceeds the maximum of {MAX_COUNT}'
@@ -202,22 +259,27 @@ class BaseStl(base.BaseMesh):
         def get(prefix: '_Name' = '') -> 'bytes | list[float]':
             prefix = b(prefix).lower()
 
-            if lines:
-                raw_line = lines.pop(0)
-            else:
-                raise RuntimeError(recoverable[0], 'Unable to find more lines')
+            # Skip blank lines with a loop; recursing per line would
+            # exhaust the stack on files with long blank-line runs.
+            line = b('')
+            raw_line = b('')
+            while not line:
+                if lines:
+                    raw_line = lines.pop(0)
+                else:
+                    raise RuntimeError(
+                        recoverable[0], 'Unable to find more lines'
+                    )
 
-            if not lines:
-                recoverable[0] = False
+                if not lines:
+                    recoverable[0] = False
 
-                # Read more lines and make sure we prepend any old data
-                lines[:] = b(fh.read(BUFFER_SIZE)).split(b'\n')
-                raw_line += lines.pop(0)
+                    # Read more lines and make sure we prepend any old data
+                    lines[:] = b(fh.read(BUFFER_SIZE)).split(b'\n')
+                    raw_line += lines.pop(0)
 
-            raw_line = raw_line.strip()
-            line = raw_line.lower()
-            if line == b(''):
-                return get(prefix)
+                raw_line = raw_line.strip()
+                line = raw_line.lower()
 
             if prefix:
                 if line.startswith(prefix):
@@ -285,10 +347,14 @@ class BaseStl(base.BaseMesh):
         header: bytes,
         speedups: bool = True,
     ) -> tuple[bytes, '_data_1d']:
-        # Speedups does not support non file-based streams
+        # Speedups does not support non file-based streams. Pipes such
+        # as stdin have a file descriptor but cannot seek, which the C
+        # reader requires as well. Duck-typed file-likes may implement
+        # neither method, hence the AttributeError.
         try:
             fh.fileno()
-        except io.UnsupportedOperation:
+            speedups = speedups and fh.seekable()
+        except (AttributeError, io.UnsupportedOperation):
             speedups = False
         if _ascii_read is not None and speedups:
             return _ascii_read(fh, header)
@@ -320,6 +386,8 @@ class BaseStl(base.BaseMesh):
 
         Raises:
             TypeError: If ``fh`` is a text-mode handle.
+            ValueError: If ``mode`` is not a valid
+                :class:`Mode` value.
 
         Example:
             >>> import numpy as np
@@ -335,6 +403,7 @@ class BaseStl(base.BaseMesh):
             handle raises ``TypeError``.
         """
         assert filename, 'Filename is required for the STL headers'
+        mode = Mode(mode)
         if update_normals:
             self.update_normals()
 
@@ -356,8 +425,8 @@ class BaseStl(base.BaseMesh):
             write = self._write_binary
         elif mode is ASCII:
             write = self._write_ascii
-        else:
-            raise ValueError(f'Mode {mode!r} is invalid')
+        else:  # pragma: no cover - exhaustiveness guard for new modes
+            assert_never(mode)
 
         if isinstance(fh, io.TextIOBase):
             # Provide a more helpful error if the user mistakenly
@@ -371,20 +440,21 @@ class BaseStl(base.BaseMesh):
         if not name:
             name = os.path.split(filename)[-1]
 
-        try:
-            if fh:
+        if fh:
+            write(fh, name)
+        else:
+            with open(filename, 'wb') as fh:
                 write(fh, name)
-            else:
-                with open(filename, 'wb') as fh:
-                    write(fh, name)
-        except OSError:  # pragma: no cover
-            pass
 
     def _write_ascii(self, fh: IO[bytes], name: '_Name') -> None:
         try:
             fh.fileno()
-            speedups = self.speedups
-        except io.UnsupportedOperation:
+            # The C writer needs a real, seekable file; pipes such as
+            # stdout have a file descriptor but cannot seek. Duck-typed
+            # file-likes may implement neither method, hence the
+            # AttributeError.
+            speedups = self.speedups and fh.seekable()
+        except (AttributeError, io.UnsupportedOperation):
             speedups = False
 
         if _ascii_write is not None and speedups:
@@ -396,27 +466,32 @@ class BaseStl(base.BaseMesh):
 
             p(b'solid ' + b(name), file=fh)
 
+            # 9 significant digits round-trip any float32 exactly; '{:f}'
+            # (fixed 6 decimals) would silently write tiny values as 0.
             for row in self.data:
                 # Explicitly convert each component to standard float for
                 # normals and vertices to be compatible with numpy 2.x
                 normals = tuple(float(n) for n in row['normals'])
                 vectors = row['vectors']
-                p('facet normal {:f} {:f} {:f}'.format(*normals), file=fh)
+                p(
+                    'facet normal {:.9g} {:.9g} {:.9g}'.format(*normals),
+                    file=fh,
+                )
                 p('  outer loop', file=fh)
                 p(
-                    '    vertex {:f} {:f} {:f}'.format(
+                    '    vertex {:.9g} {:.9g} {:.9g}'.format(
                         *tuple(float(v) for v in vectors[0])
                     ),
                     file=fh,
                 )
                 p(
-                    '    vertex {:f} {:f} {:f}'.format(
+                    '    vertex {:.9g} {:.9g} {:.9g}'.format(
                         *tuple(float(v) for v in vectors[1])
                     ),
                     file=fh,
                 )
                 p(
-                    '    vertex {:f} {:f} {:f}'.format(
+                    '    vertex {:.9g} {:.9g} {:.9g}'.format(
                         *tuple(float(v) for v in vectors[2])
                     ),
                     file=fh,
@@ -452,7 +527,7 @@ class BaseStl(base.BaseMesh):
         name: '_Name',
     ) -> None:
         header = self.get_header(name)
-        packed = struct.pack('<i', self.data.size)
+        packed = struct.pack('<I', self.data.size)
 
         if isinstance(fh, io.TextIOWrapper):  # pragma: no cover
             fh.write(header)
@@ -461,16 +536,18 @@ class BaseStl(base.BaseMesh):
             fh.write(b(header))
             fh.write(b(packed))
 
-        if isinstance(fh, io.BufferedWriter):
-            # Write to a true file.
+        if isinstance(fh, io.BufferedWriter) and fh.seekable():
+            # Write to a true file. numpy's tofile() needs to query the
+            # file position, which fails on pipes such as stdout.
             self.data.tofile(fh)
         else:
-            # Write to a pseudo buffer.
+            # Write to a pseudo buffer (e.g. BytesIO or a pipe).
             cast('_StatefulWriter', fh).write(self.data.data)
 
         # In theory this should no longer be possible but I'll leave it here
-        # anyway...
-        if self.data.size:  # pragma: no cover
+        # anyway... Note that tell() is unavailable on pipes such as
+        # stdout, hence the seekable() guard.
+        if self.data.size and fh.seekable():  # pragma: no cover
             assert fh.tell() > 84, (
                 'numpy silently refused to write our file. Note that writing '
                 'to `StringIO` objects is not supported by `numpy`'
@@ -508,6 +585,9 @@ class BaseStl(base.BaseMesh):
         Returns:
             A new Mesh instance containing the loaded data.
 
+        Raises:
+            ValueError: If the file is empty.
+
         Example:
             >>> from stl import mesh
             >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
@@ -521,11 +601,18 @@ class BaseStl(base.BaseMesh):
             automatically disabled for non-seekable
             streams (e.g., stdin).
         """
+        mode = Mode(mode)
         if fh:
-            name, data = cls.load(fh, mode=mode, speedups=speedups)
+            result = cls.load(
+                _ensure_seekable(fh, mode), mode=mode, speedups=speedups
+            )
         else:
             with open(filename, 'rb') as fh:
-                name, data = cls.load(fh, mode=mode, speedups=speedups)
+                result = cls.load(fh, mode=mode, speedups=speedups)
+
+        if result is None:
+            raise ValueError(f'STL file is empty: {filename}')
+        name, data = result
 
         # pyrefly: ignore[bad-return]
         return cls(
@@ -575,6 +662,7 @@ class BaseStl(base.BaseMesh):
             a single solid.
         """
         if fh:
+            fh = _ensure_seekable(fh)
             close = False
         else:
             fh = open(filename, 'rb')  # noqa: SIM115
@@ -701,7 +789,13 @@ class BaseStl(base.BaseMesh):
                                     k: float(v)
                                     for k, v in vertice.attrib.items()
                                 }
-                                vertices.append([a['x'], a['y'], a['z']])
+                                try:
+                                    vertices.append([a['x'], a['y'], a['z']])
+                                except KeyError as exception:
+                                    raise ValueError(
+                                        f'Vertex in {filename} is missing '
+                                        f'attribute {exception}'
+                                    ) from exception
 
                         elif tag.endswith('triangles'):  # pragma: no branch
                             # Map the triangles to the vertices and collect
@@ -712,9 +806,15 @@ class BaseStl(base.BaseMesh):
                                 }
                                 triangles.append(
                                     [
-                                        vertices[a['v1']],
-                                        vertices[a['v2']],
-                                        vertices[a['v3']],
+                                        vertices[
+                                            _3mf_index(a, 'v1', vertices)
+                                        ],
+                                        vertices[
+                                            _3mf_index(a, 'v2', vertices)
+                                        ],
+                                        vertices[
+                                            _3mf_index(a, 'v3', vertices)
+                                        ],
                                     ]
                                 )
 

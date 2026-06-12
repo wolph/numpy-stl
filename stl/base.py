@@ -421,9 +421,17 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
         Returns:
             Filtered mesh data array.
+
+        Note:
+            ``ALL`` has a safety fallback: when removing every
+            duplicated polygon would drop half the mesh or more, a
+            single copy of each duplicate is kept instead (the
+            ``SINGLE`` behavior).
         """
         value = RemoveDuplicates.map(value)
-        polygons: _f32_2d = data['vectors'].sum(axis=1)
+        # Compare the full triangles; a lossy key such as the per-axis
+        # vertex sum would treat distinct triangles as duplicates.
+        polygons: _f32_2d = data['vectors'].reshape(len(data), 9)
         # Get a sorted list of indices
         idx: _intp_1d = np.lexsort(polygons.T)
         # Get the indices of all different indices
@@ -437,17 +445,17 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             # least the originals
             return data[np.sort(idx[np.concatenate(([True], diff))])]
         elif value is RemoveDuplicates.ALL:
-            # We need to return both items of the shifted diff
+            # A polygon is fully unique when it differs from both its
+            # predecessor (diff_a) and its successor (diff_b) in the
+            # sorted order.
             diff_a: _bool_1d = np.concatenate(([True], diff))
             diff_b: _bool_1d = np.concatenate((diff, [True]))
-            diff = np.concatenate((diff, [False]))
 
-            # Combine both unique lists
             filtered_data: _data_1d = data[np.sort(idx[diff_a & diff_b])]
             if len(filtered_data) <= len(data) / 2:
                 return data[np.sort(idx[diff_a])]
             else:
-                return data[np.sort(idx[diff])]
+                return filtered_data
         else:
             return data
 
@@ -525,6 +533,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """Refresh the cached bounding box maximum."""
         self._max = self.vectors.max(axis=(0, 1))
 
+    def _invalidate_bounds(self) -> None:
+        """Drop cached bounding box values after vertex mutations.
+
+        The :attr:`min_` / :attr:`max_` properties lazily recompute on
+        the next access.
+        """
+        for attribute in ('_min', '_max'):
+            if hasattr(self, attribute):
+                delattr(self, attribute)
+
     def update_areas(self, normals: '_f32_2d | None' = None) -> None:
         """Refresh the cached per-triangle areas.
 
@@ -562,7 +580,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """
         return self.is_closed(exact=exact)
 
-    def is_closed(self, exact: bool = False) -> bool:  # pragma: no cover
+    def is_closed(self, exact: bool = False) -> bool:
         """Check whether the mesh is watertight.
 
         A closed mesh has every edge shared by exactly two
@@ -645,9 +663,6 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             - **inertia** -- Inertia tensor as (3, 3) array
               expressed at the COG.
 
-        Raises:
-            RuntimeError: If the mesh is not closed.
-
         Example:
             >>> from stl import mesh
             >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
@@ -656,9 +671,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             True
 
         Warning:
-            This method calls ``check(exact=True)``
-            internally. If the mesh is not watertight,
-            a ``RuntimeError`` is raised. Use
+            These values are only meaningful for closed
+            (watertight) meshes. This method checks via
+            ``check(exact=True)`` and logs a warning for
+            open meshes, but still computes and returns
+            the (then unreliable) values. Use
             :meth:`is_closed` to verify beforehand.
         """
         self.check(True)
@@ -870,6 +887,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
 
+        self._invalidate_bounds()
+
     def translate(self, translation: '_ToTranslation') -> None:
         """Translate (move) the mesh.
 
@@ -893,6 +912,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self.x += translation[0]
         self.y += translation[1]
         self.z += translation[2]
+        self._invalidate_bounds()
 
     def transform(self, matrix: '_f32_2d | _f64_2d') -> None:
         """Apply a 4x4 transformation matrix.
@@ -915,9 +935,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         assert unit_det_rotation, 'Rotation matrix has not a unit determinant'
         for i in range(3):
             self.vectors[:, i] = np.dot(rotation, self.vectors[:, i].T).T
+        # Rotate the stored normals along with the geometry; for a
+        # rotation matrix the inverse transpose equals the matrix itself.
+        self.normals[:] = np.dot(rotation, self.normals.T).T
         self.x += matrix[0, 3]
         self.y += matrix[1, 3]
         self.z += matrix[2, 3]
+        self._invalidate_bounds()
 
     @property
     def min_(self) -> _f32_1d:
@@ -1100,8 +1124,12 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             - **inertia** -- Inertia tensor as (3, 3)
               array.
 
-        Raises:
-            RuntimeError: If the mesh is not closed.
+        Warning:
+            These values are only meaningful for closed
+            (watertight) meshes. This method checks via
+            ``check(exact=True)`` and logs a warning for
+            open meshes, but still computes and returns
+            the (then unreliable) values.
         """
         self.check(True)
 

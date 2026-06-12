@@ -7,18 +7,20 @@ from . import stl
 
 def _get_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
+    # The std stream defaults use the underlying binary buffers: STL
+    # data is binary and the text wrappers would corrupt it (or raise).
     parser.add_argument(
         'infile',
         nargs='?',
         type=argparse.FileType('rb'),
-        default=sys.stdin,
+        default=sys.stdin.buffer,
         help='STL file to read',
     )
     parser.add_argument(
         'outfile',
         nargs='?',
         type=argparse.FileType('wb'),
-        default=sys.stdout,
+        default=sys.stdout.buffer,
         help='STL file to write',
     )
     parser.add_argument('--name', nargs='?', help='Name of the mesh')
