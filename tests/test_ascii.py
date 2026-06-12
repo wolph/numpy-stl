@@ -226,6 +226,46 @@ def test_ascii_write_is_lossless_for_tiny_values(speedups):
     assert (round_tripped.vectors == original.vectors).all()
 
 
+class _ChunkOnlyStream(io.RawIOBase):
+    """Non-seekable stream that forbids unbounded (slurp) reads."""
+
+    def __init__(self, data: bytes) -> None:
+        self._buffer = io.BytesIO(data)
+
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> bytes:
+        assert size is not None and size >= 0, 'full slurp not allowed'
+        return self._buffer.read(size)
+
+    def seekable(self) -> bool:
+        return False
+
+
+def test_explicit_ascii_mode_streams_from_pipe(speedups):
+    # With mode=ASCII the pure-Python reader consumes the stream in
+    # bounded chunks; the file must not be buffered into memory whole.
+    content = (
+        b'solid streaming\n'
+        b'facet normal 0 0 1\n'
+        b'  outer loop\n'
+        b'    vertex 0 0 0\n'
+        b'    vertex 1 0 0\n'
+        b'    vertex 0 1 0\n'
+        b'  endloop\n'
+        b'endfacet\n'
+        b'endsolid streaming\n'
+    )
+    loaded = mesh.Mesh.from_file(
+        'stream.stl',
+        fh=_ChunkOnlyStream(content),
+        mode=Mode.ASCII,
+        speedups=False,
+    )
+    assert len(loaded.data) == 1
+
+
 def test_ascii_reader_handles_many_blank_lines(speedups):
     # The blank-line skip used to recurse once per line and hit
     # RecursionError around 1000 consecutive blank lines.

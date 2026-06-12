@@ -317,6 +317,24 @@ def test_remove_duplicate_polygons_all_removes_duplicated_minority():
     assert np.allclose(result['vectors'], data['vectors'][:4])
 
 
+def test_remove_duplicate_polygons_all_with_duplicates_sorting_first():
+    # The duplicated polygon sorts BEFORE the unique ones; a
+    # successor-based mask used to keep one duplicate copy and drop
+    # the last unique polygon.
+    data = np.zeros(5, dtype=Mesh.dtype)
+    duplicated = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    data['vectors'][0] = duplicated
+    data['vectors'][1] = duplicated
+    for i in range(3):
+        data['vectors'][i + 2] = np.array(
+            [[i + 5, 0, 0], [i + 6, 0, 0], [i + 5, 1, 0]]
+        )
+
+    result = Mesh.remove_duplicate_polygons(data, RemoveDuplicates.ALL)
+    assert len(result) == 3
+    assert np.allclose(result['vectors'], data['vectors'][2:])
+
+
 def test_remove_duplicate_polygons_all_majority_duplicates_fallback():
     # Documented fallback: when removing every duplicated polygon would
     # drop half the mesh or more, ALL keeps a single copy instead.

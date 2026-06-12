@@ -445,17 +445,17 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             # least the originals
             return data[np.sort(idx[np.concatenate(([True], diff))])]
         elif value is RemoveDuplicates.ALL:
-            # We need to return both items of the shifted diff
+            # A polygon is fully unique when it differs from both its
+            # predecessor (diff_a) and its successor (diff_b) in the
+            # sorted order.
             diff_a: _bool_1d = np.concatenate(([True], diff))
             diff_b: _bool_1d = np.concatenate((diff, [True]))
-            diff = np.concatenate((diff, [False]))
 
-            # Combine both unique lists
             filtered_data: _data_1d = data[np.sort(idx[diff_a & diff_b])]
             if len(filtered_data) <= len(data) / 2:
                 return data[np.sort(idx[diff_a])]
             else:
-                return data[np.sort(idx[diff])]
+                return filtered_data
         else:
             return data
 

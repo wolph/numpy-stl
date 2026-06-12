@@ -105,6 +105,26 @@ def test_automatic_load_from_non_seekable_stream(binary_file, speedups):
     assert len(loaded.data) > 0
 
 
+class _DuckReader:
+    """File-like object with only a read() method, no io.IOBase API."""
+
+    def __init__(self, data: bytes) -> None:
+        self._buffer = io.BytesIO(data)
+
+    def read(self, size: int = -1) -> bytes:
+        return self._buffer.read(size)
+
+
+def test_load_from_duck_typed_reader(binary_file, speedups):
+    # Custom file-likes without seekable()/fileno() must not crash
+    # with AttributeError; they get buffered like pipes.
+    raw = pathlib.Path(binary_file).read_bytes()
+    loaded = mesh.Mesh.from_file(
+        'duck.stl', fh=_DuckReader(raw), speedups=speedups
+    )
+    assert len(loaded.data) > 0
+
+
 class _FailingHandle(io.RawIOBase):
     """File handle that fails every write with ENOSPC."""
 

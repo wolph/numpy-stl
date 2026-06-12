@@ -201,6 +201,18 @@ def _element_row_size(element: _Element) -> int:
     return row_size
 
 
+def _skip_element_rows(fh: IO[bytes], element: _Element) -> None:
+    """Skip all binary rows of a fixed-size element, validating EOF.
+
+    Raises:
+        ValueError: If the element has list properties or the file
+            ends before all rows are consumed.
+    """
+    size = element.count * _element_row_size(element)
+    if len(fh.read(size)) != size:
+        raise ValueError(f'Unexpected EOF skipping element {element.name!r}')
+
+
 def _find_face_list_index(face_elem: _Element) -> int:
     """Return the position of the first list property of a face.
 
@@ -315,7 +327,11 @@ def _read_binary_faces(
                     )
             else:
                 # Skip scalar properties around the index list.
-                fh.read(_PLY_TYPES[prop.type_name][2])
+                scalar_size = _PLY_TYPES[prop.type_name][2]
+                if len(fh.read(scalar_size)) != scalar_size:
+                    raise ValueError(
+                        'Unexpected EOF reading face scalar property'
+                    )
         faces.append(indices)
     return faces
 
@@ -336,7 +352,7 @@ def _skip_binary_elements(
             break
         if not found_vertex:
             continue
-        fh.read(elem.count * _element_row_size(elem))
+        _skip_element_rows(fh, elem)
 
 
 def _read_binary(
@@ -357,7 +373,7 @@ def _read_binary(
     # Skip elements declared before the vertex element; their data
     # precedes the vertex data in the binary stream.
     for elem in elements[: elements.index(vertex_elem)]:
-        fh.read(elem.count * _element_row_size(elem))
+        _skip_element_rows(fh, elem)
 
     # Compute vertex row size for bulk read.
     vertex_size = _element_row_size(vertex_elem)

@@ -76,13 +76,21 @@ MAX_COUNT: float = 1e8
 HEADER_FORMAT: str = '{package_name} ({version}) {now} {name}'
 
 
-def _ensure_seekable(fh: IO[Any]) -> IO[Any]:
+def _ensure_seekable(fh: IO[Any], mode: Mode = AUTOMATIC) -> IO[Any]:
     """Return a seekable handle, buffering pipe-like streams fully.
 
-    Format auto-detection and multi-solid parsing need to seek, which
-    streams such as stdin do not support.
+    Format auto-detection needs to rewind and the binary loader needs
+    seek/tell, which streams such as stdin do not support. Explicit
+    ASCII parsing streams in bounded chunks and is left untouched to
+    avoid buffering large piped files in memory.
     """
-    if fh.seekable():
+    if mode is ASCII:
+        return fh
+
+    # Duck-typed file-likes may not implement seekable() at all;
+    # treat those like pipes and buffer them.
+    seekable = getattr(fh, 'seekable', None)
+    if seekable is not None and seekable():
         return fh
     return io.BytesIO(b(fh.read()))
 
@@ -335,11 +343,12 @@ class BaseStl(base.BaseMesh):
     ) -> tuple[bytes, '_data_1d']:
         # Speedups does not support non file-based streams. Pipes such
         # as stdin have a file descriptor but cannot seek, which the C
-        # reader requires as well.
+        # reader requires as well. Duck-typed file-likes may implement
+        # neither method, hence the AttributeError.
         try:
             fh.fileno()
             speedups = speedups and fh.seekable()
-        except io.UnsupportedOperation:
+        except (AttributeError, io.UnsupportedOperation):
             speedups = False
         if _ascii_read is not None and speedups:
             return _ascii_read(fh, header)
@@ -433,9 +442,11 @@ class BaseStl(base.BaseMesh):
         try:
             fh.fileno()
             # The C writer needs a real, seekable file; pipes such as
-            # stdout have a file descriptor but cannot seek.
+            # stdout have a file descriptor but cannot seek. Duck-typed
+            # file-likes may implement neither method, hence the
+            # AttributeError.
             speedups = self.speedups and fh.seekable()
-        except io.UnsupportedOperation:
+        except (AttributeError, io.UnsupportedOperation):
             speedups = False
 
         if _ascii_write is not None and speedups:
@@ -582,9 +593,10 @@ class BaseStl(base.BaseMesh):
             automatically disabled for non-seekable
             streams (e.g., stdin).
         """
+        mode = Mode(mode)
         if fh:
             result = cls.load(
-                _ensure_seekable(fh), mode=mode, speedups=speedups
+                _ensure_seekable(fh, mode), mode=mode, speedups=speedups
             )
         else:
             with open(filename, 'rb') as fh:

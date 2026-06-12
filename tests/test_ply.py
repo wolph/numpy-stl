@@ -702,6 +702,51 @@ def test_binary_element_before_vertex_with_list_property_raises():
         ply.read_ply(io.BytesIO(header), mesh.Mesh.dtype)
 
 
+def test_truncated_pre_vertex_element_raises():
+    # 8 bytes of camera data declared, only 4 present.
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        'element camera 1',
+        'property float focal',
+        'property float aperture',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    body = struct.pack('<f', 35.0)
+    with pytest.raises(ValueError, match='skipping element'):
+        ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+
+def test_truncated_element_between_vertex_and_face_raises():
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element extra 1',
+        'property double weight',
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    body = struct.pack('<9f', 0, 0, 0, 1, 0, 0, 0, 1, 0) + b'\x00' * 4
+    with pytest.raises(ValueError, match='skipping element'):
+        ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+
+def test_truncated_face_scalar_property_raises():
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property uchar material_id',
+        'property list uchar int vertex_indices',
+    )
+    # Vertex data is complete; the face row is missing entirely, so
+    # reading the material_id scalar hits EOF.
+    body = struct.pack('<9f', 0, 0, 0, 1, 0, 0, 0, 1, 0)
+    with pytest.raises(ValueError, match='scalar'):
+        ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+
 def test_face_index_out_of_range_raises_value_error():
     with pytest.raises(ValueError, match='index'):
         ply.read_ply(_ascii_triangle_with_face(b'3 0 1 99\n'), mesh.Mesh.dtype)
