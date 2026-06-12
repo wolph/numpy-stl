@@ -183,6 +183,36 @@ def _find_xyz_indices(
     return xi, yi, zi
 
 
+def _element_row_size(element: _Element) -> int:
+    """Return the fixed byte size of one binary row of an element.
+
+    Raises:
+        ValueError: If the element has list properties; their rows
+            have no fixed binary size.
+    """
+    row_size = 0
+    for prop in element.properties:
+        if prop.is_list:
+            raise ValueError(
+                f'Element {element.name!r} has list properties; '
+                'its rows have no fixed binary size'
+            )
+        row_size += _PLY_TYPES[prop.type_name][2]
+    return row_size
+
+
+def _find_face_list_index(face_elem: _Element) -> int:
+    """Return the position of the first list property of a face.
+
+    Raises:
+        ValueError: If the face element has no list property.
+    """
+    for i, prop in enumerate(face_elem.properties):
+        if prop.is_list:
+            return i
+    raise ValueError('Face element has no list property')
+
+
 def _read_ascii(
     fh: IO[bytes],
     elements: list[_Element],
@@ -195,6 +225,9 @@ def _read_ascii(
     """
     vertex_elem, face_elem = _find_elements(elements)
     xi, yi, zi = _find_xyz_indices(vertex_elem)
+    # The vertex index list may be preceded by scalar face properties;
+    # its count value sits at this field offset.
+    list_index = _find_face_list_index(face_elem)
 
     # Read all elements in order
     vertices = np.empty((vertex_elem.count, 3), dtype=np.float32)
@@ -217,10 +250,8 @@ def _read_ascii(
                     float(parts[zi]),
                 ]
             elif elem is face_elem:
-                # First value is the vertex count,
-                # followed by vertex indices
-                n = int(parts[0])
-                indices = [int(parts[j + 1]) for j in range(n)]
+                n = int(parts[list_index])
+                indices = [int(parts[list_index + 1 + j]) for j in range(n)]
                 faces.append(indices)
             # Other elements: skip (already consumed)
 
@@ -256,29 +287,35 @@ def _read_binary_faces(
     face_elem: _Element,
     endian: str,
 ) -> list[list[int]]:
-    """Read binary face data."""
-    list_prop = None
-    for prop in face_elem.properties:
-        if prop.is_list:
-            list_prop = prop
-            break
-    if list_prop is None:
-        raise ValueError('Face element has no list property')
+    """Read binary face data.
 
-    count_fmt_char, _, count_size = _PLY_TYPES[list_prop.count_type]
-    idx_fmt_char, _, idx_size = _PLY_TYPES[list_prop.item_type]
-    count_fmt = endian + count_fmt_char
+    Every property of each face row is consumed in declared order;
+    scalar properties and extra list properties around the vertex
+    index list are read and discarded.
+    """
+    list_prop = face_elem.properties[_find_face_list_index(face_elem)]
 
     faces: list[list[int]] = []
     for _ in range(face_elem.count):
-        count_raw = fh.read(count_size)
-        if len(count_raw) != count_size:
-            raise ValueError('Unexpected EOF reading face')
-        n = struct.unpack(count_fmt, count_raw)[0]
-        idx_raw = fh.read(n * idx_size)
-        if len(idx_raw) != n * idx_size:
-            raise ValueError('Unexpected EOF reading face indices')
-        indices = list(struct.unpack(endian + idx_fmt_char * n, idx_raw))
+        indices: list[int] = []
+        for prop in face_elem.properties:
+            if prop.is_list:
+                count_fmt_char, _, count_size = _PLY_TYPES[prop.count_type]
+                item_fmt_char, _, item_size = _PLY_TYPES[prop.item_type]
+                count_raw = fh.read(count_size)
+                if len(count_raw) != count_size:
+                    raise ValueError('Unexpected EOF reading face')
+                n = struct.unpack(endian + count_fmt_char, count_raw)[0]
+                item_raw = fh.read(n * item_size)
+                if len(item_raw) != n * item_size:
+                    raise ValueError('Unexpected EOF reading face indices')
+                if prop is list_prop:
+                    indices = list(
+                        struct.unpack(endian + item_fmt_char * n, item_raw)
+                    )
+            else:
+                # Skip scalar properties around the index list.
+                fh.read(_PLY_TYPES[prop.type_name][2])
         faces.append(indices)
     return faces
 
@@ -299,15 +336,7 @@ def _skip_binary_elements(
             break
         if not found_vertex:
             continue
-        row_size = 0
-        for prop in elem.properties:
-            if prop.is_list:
-                raise ValueError(
-                    f'Cannot skip element with list properties: {elem.name}'
-                )
-            _, _, size = _PLY_TYPES[prop.type_name]
-            row_size += size
-        fh.read(elem.count * row_size)
+        fh.read(elem.count * _element_row_size(elem))
 
 
 def _read_binary(
@@ -325,10 +354,13 @@ def _read_binary(
     vertex_elem, face_elem = _find_elements(elements)
     xi, yi, zi = _find_xyz_indices(vertex_elem)
 
+    # Skip elements declared before the vertex element; their data
+    # precedes the vertex data in the binary stream.
+    for elem in elements[: elements.index(vertex_elem)]:
+        fh.read(elem.count * _element_row_size(elem))
+
     # Compute vertex row size for bulk read.
-    vertex_size = sum(
-        _PLY_TYPES[p.type_name][2] for p in vertex_elem.properties
-    )
+    vertex_size = _element_row_size(vertex_elem)
     n_verts = vertex_elem.count
     raw = fh.read(n_verts * vertex_size)
     if len(raw) != n_verts * vertex_size:
@@ -378,8 +410,16 @@ def _build_mesh_data(
         Structured 1-D numpy array with the mesh dtype.
     """
     count = len(triangles)
+    n_vertices = len(vertices)
     data = np.zeros(count, dtype=mesh_dtype)
     for i, (a, b, c) in enumerate(triangles):
+        for index in (a, b, c):
+            # Negative indices must not wrap around silently.
+            if not 0 <= index < n_vertices:
+                raise ValueError(
+                    f'Face {i} references vertex index {index}, which is '
+                    f'out of range (0..{n_vertices - 1})'
+                )
         data['vectors'][i][0] = vertices[a]
         data['vectors'][i][1] = vertices[b]
         data['vectors'][i][2] = vertices[c]

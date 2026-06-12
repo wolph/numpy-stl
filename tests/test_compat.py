@@ -36,6 +36,22 @@ def test_has_speedups_consistent_with_exports(speedups):
         assert ascii_write is None
 
 
+def test_missing_speedups_package(monkeypatch):
+    """Verify _compat when no speedups package is installed at all."""
+    saved_compat = sys.modules.pop('stl._compat', None)
+    try:
+        monkeypatch.setattr(importlib.util, 'find_spec', lambda name: None)
+        compat = importlib.import_module('stl._compat')
+        assert compat.ascii_read is None
+        assert compat.ascii_write is None
+        assert compat.has_speedups() is False
+    finally:
+        if saved_compat is not None:
+            sys.modules['stl._compat'] = saved_compat
+        else:
+            sys.modules.pop('stl._compat', None)
+
+
 def test_import_error_fallback():
     """Verify _compat gracefully handles a broken speedups package."""
     fake = types.ModuleType('speedups')

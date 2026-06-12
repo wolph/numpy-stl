@@ -2,7 +2,7 @@ def b(
     s: 'str | bytes',
     encoding: str = 'ascii',
     errors: str = 'replace',
-) -> bytes:  # pragma: no cover
+) -> bytes:
     """Encode a string to bytes, passing bytes through.
 
     Args:

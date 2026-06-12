@@ -1,5 +1,4 @@
 import struct
-import sys
 
 import numpy as np
 import pytest
@@ -101,9 +100,8 @@ def test_corrupt_ascii_file(tmpdir, speedups):
         fh.seek(40)
         print('####\n' * 100, file=fh)
         fh.seek(0)
-        if speedups and sys.version_info.major != 2:
-            with pytest.raises(AssertionError):
-                mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
+        with pytest.raises(AssertionError):
+            mesh.Mesh.from_file(str(tmp_file), fh=fh, speedups=speedups)
 
     with tmp_file.open('w+') as fh:
         fh.write(_STL_FILE)
@@ -142,8 +140,8 @@ def test_corrupt_binary_file(tmpdir, speedups):
 def test_duplicate_polygons():
     data = np.zeros(3, dtype=mesh.Mesh.dtype)
     data['vectors'][0] = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 1.0]])
-    data['vectors'][0] = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
-    data['vectors'][0] = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
+    data['vectors'][1] = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 1.0]])
+    data['vectors'][2] = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 1.0]])
 
     assert not mesh.Mesh(data, remove_empty_areas=False).check()
     # type: ignore[reportAttributeAccessIssue]

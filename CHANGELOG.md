@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Binary STL triangle count is now read and written as the unsigned 32-bit
+  integer the spec requires; counts with the high bit set no longer slip past
+  the size check and silently read the whole file
+- The `stl`, `stl2ascii` and `stl2bin` commands work with piped stdin/stdout
+  again: the std stream defaults now use the underlying binary buffers, and
+  non-seekable streams are buffered so format auto-detection can rewind
+- ASCII STL output uses `{:.9g}` formatting: float32 values round-trip
+  exactly instead of values below 5e-7 being flattened to `0.000000`
+- `save()` no longer swallows `OSError`s; write failures (disk full, broken
+  pipe) propagate instead of silently producing truncated output
+- `transform()` now rotates the stored normals along with the vertices
+- `translate()`, `transform()` and `rotate_using_matrix()` invalidate the
+  cached `min_`/`max_` bounding box
+- `remove_duplicate_polygons` compares full triangles instead of per-axis
+  vertex sums; distinct triangles with equal sums are no longer dropped
+- PLY reader: elements declared before `vertex` are skipped instead of being
+  consumed as vertex data; scalar and extra list face properties around the
+  vertex index list are consumed correctly; out-of-range and negative face
+  indices raise `ValueError` instead of crashing or wrapping around silently
+- PLY reader: vertex elements with list properties raise a descriptive
+  `ValueError` instead of `KeyError: 'list'`
+- 3MF loader raises descriptive `ValueError`s for missing vertex/triangle
+  attributes and out-of-range vertex indices
+- The pure-Python ASCII reader no longer hits `RecursionError` on files with
+  long runs of blank lines
+- `Mesh.from_file()` on an empty file raises a descriptive `ValueError`
+  instead of `TypeError`
+- `save()`/`load()` accept plain ints for `mode` and validate them as
+  `Mode` values
+- Speedups are disabled automatically on non-seekable streams for both
+  reading and writing (the C extension requires seekable files)
+
+### Changed
+- `get_mass_properties()` docs no longer claim a `RuntimeError` is raised
+  for open meshes; the actual behavior (warning + unreliable values) is
+  documented
+- Publishing to PyPI is gated on the full CI test suite
+- numpy dependency declares the tested lower bound (`numpy>=1.24`)
+
 ## [3.2.0] - 2024-11-25
 
 ### Fixed

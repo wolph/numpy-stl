@@ -1,5 +1,8 @@
+import logging
+
 import numpy as np
 import pytest
+from stl.mesh import Mesh
 
 from stl import stl
 
@@ -54,19 +57,8 @@ def test_mass_properties_for_moon(binary_ascii_path, speedups):
     )
 
 
-@pytest.mark.parametrize('filename', ('Star.stl', 'StarWithEmptyHeader.stl'))
-def test_mass_properties_for_star(binary_ascii_path, filename, speedups):
-    """
-    Checks the results of method get_mass_properties() on
-    STL ASCII and binary files Star.stl and
-    STL binary file StarWithEmptyHeader.stl (with no header)
-    One checks the results obtained with stl
-    with the ones obtained with meshlab
-    """
-    filename = binary_ascii_path / filename
-    if not filename.exists():
-        pytest.skip('STL file does not exist')
-    mesh = stl.StlMesh(str(filename), speedups=speedups)
+def _check_star_mass_properties(filename: str, speedups: bool) -> None:
+    mesh = stl.StlMesh(filename, speedups=speedups)
     volume, cog, inertia = mesh.get_mass_properties()
     assert close([volume], [1.416599])
     assert close(cog, [1.299040, 0.170197, 1.499999])
@@ -77,6 +69,26 @@ def test_mass_properties_for_star(binary_ascii_path, filename, speedups):
             [+0.000000, +0.991236, +0.000000],
             [-0.000000, +0.000000, +0.509550],
         ],
+    )
+
+
+def test_mass_properties_for_star(binary_ascii_path, speedups):
+    """
+    Checks the results of method get_mass_properties() on
+    STL ASCII and binary files Star.stl
+    One checks the results obtained with stl
+    with the ones obtained with meshlab
+    """
+    _check_star_mass_properties(str(binary_ascii_path / 'Star.stl'), speedups)
+
+
+def test_mass_properties_for_star_with_empty_header(binary_path, speedups):
+    """
+    Checks get_mass_properties() on the binary-only
+    StarWithEmptyHeader.stl (with no header).
+    """
+    _check_star_mass_properties(
+        str(binary_path / 'StarWithEmptyHeader.stl'), speedups
     )
 
 
@@ -123,3 +135,18 @@ def test_is_convex(binary_ascii_path, speedups, filename, expected_result):
     filepath = binary_ascii_path / filename
     mesh = stl.StlMesh(str(filepath), speedups=speedups)
     assert mesh.is_convex() == expected_result
+
+
+def test_mass_properties_open_mesh_warns_and_returns(caplog):
+    """An open mesh warns instead of raising and still returns values."""
+    data = np.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    open_mesh = Mesh(data, remove_empty_areas=False)
+
+    with caplog.at_level(logging.WARNING):
+        volume, cog, inertia = open_mesh.get_mass_properties()
+
+    assert 'mesh is not closed' in caplog.text
+    assert np.isclose(volume, 0)
+    assert cog.shape == (3,)
+    assert inertia.shape == (3, 3)

@@ -390,11 +390,14 @@ class TestPlyHelpers:
         ):
             ply._read_binary_faces(fh, face, '<')
 
-    def test_read_binary_faces_scans_until_it_finds_the_list_property(self):
+    def test_read_binary_faces_consumes_scalar_prefix(self):
+        # The stream contains the material_index byte (9) followed by
+        # the list count (3); the scalar must be consumed, not misread
+        # as the count.
         face = _make_face_element(scalar_prefix=True)
 
         faces = ply._read_binary_faces(
-            io.BytesIO(struct.pack('<Biii', 3, 0, 1, 2)),
+            io.BytesIO(struct.pack('<BBiii', 9, 3, 0, 1, 2)),
             face,
             '<',
         )
@@ -457,9 +460,7 @@ class TestPlyHelpers:
         )
         face = _make_face_element()
 
-        with pytest.raises(
-            ValueError, match='Cannot skip element with list properties'
-        ):
+        with pytest.raises(ValueError, match='list properties'):
             ply._skip_binary_elements(
                 io.BytesIO(), [vertex, edge, face], vertex, face
             )
@@ -556,3 +557,157 @@ class TestPlyHelpers:
         )
 
         assert captured['name'] == ''
+
+
+def _ply_header(*lines: str) -> bytes:
+    return ('\n'.join(('ply', *lines, 'end_header')) + '\n').encode('ascii')
+
+
+_TRIANGLE_VERTEX_LINES = (
+    'element vertex 3',
+    'property float x',
+    'property float y',
+    'property float z',
+)
+_TRIANGLE_VECTORS = np.array(
+    [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+    dtype=np.float32,
+)
+
+
+def test_read_binary_skips_elements_declared_before_vertex():
+    # Spec-legal PLY files may declare elements (camera, material, ...)
+    # before the vertex element; their data used to be consumed as
+    # vertex data, silently corrupting the mesh.
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        'element camera 1',
+        'property float focal',
+        'property float aperture',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    body = (
+        struct.pack('<2f', 35.0, 1.8)
+        + struct.pack('<9f', 0, 0, 0, 1, 0, 0, 0, 1, 0)
+        + struct.pack('<B3i', 3, 0, 1, 2)
+    )
+    data, _name = ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+    assert len(data) == 1
+    assert np.allclose(data['vectors'][0], _TRIANGLE_VECTORS)
+
+
+def test_vertex_element_with_list_property_raises_value_error():
+    # Used to crash with a raw KeyError: 'list'.
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'property list uchar uchar rgba',
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    with pytest.raises(ValueError, match='list'):
+        ply.read_ply(io.BytesIO(header), mesh.Mesh.dtype)
+
+
+def test_binary_face_scalar_properties_around_list_are_consumed():
+    # Scalar face properties before/after the list property used to be
+    # misread as the list count / next face's data.
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property uchar material_id',
+        'property list uchar int vertex_indices',
+        'property float quality',
+    )
+    body = struct.pack('<9f', 0, 0, 0, 1, 0, 0, 0, 1, 0) + struct.pack(
+        '<BB3if', 7, 3, 0, 1, 2, 0.5
+    )
+    data, _name = ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+    assert len(data) == 1
+    assert np.allclose(data['vectors'][0], _TRIANGLE_VECTORS)
+
+
+def test_ascii_face_scalar_property_before_list_is_consumed():
+    header = _ply_header(
+        'format ascii 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property int material_id',
+        'property list uchar int vertex_indices',
+    )
+    body = b'0 0 0\n1 0 0\n0 1 0\n7 3 0 1 2\n'
+    data, _name = ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+    assert len(data) == 1
+    assert np.allclose(data['vectors'][0], _TRIANGLE_VECTORS)
+
+
+def _ascii_triangle_with_face(face_line: bytes) -> io.BytesIO:
+    header = _ply_header(
+        'format ascii 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    return io.BytesIO(header + b'0 0 0\n1 0 0\n0 1 0\n' + face_line)
+
+
+def test_binary_second_list_property_on_face_is_skipped():
+    # A second list property (e.g. texture coordinates) after the
+    # vertex index list must be consumed per its own count field.
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 2',
+        'property list uchar int vertex_indices',
+        'property list uchar float texcoords',
+    )
+    face = struct.pack('<B3i', 3, 0, 1, 2) + struct.pack(
+        '<B6f', 6, 0, 0, 1, 0, 0, 1
+    )
+    body = struct.pack('<9f', 0, 0, 0, 1, 0, 0, 0, 1, 0) + face * 2
+    data, _name = ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+    assert len(data) == 2
+    assert np.allclose(data['vectors'][0], _TRIANGLE_VECTORS)
+
+
+def test_ascii_face_element_without_list_property_raises():
+    header = _ply_header(
+        'format ascii 1.0',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property int material_id',
+    )
+    body = b'0 0 0\n1 0 0\n0 1 0\n7\n'
+    with pytest.raises(ValueError, match='no list property'):
+        ply.read_ply(io.BytesIO(header + body), mesh.Mesh.dtype)
+
+
+def test_binary_element_before_vertex_with_list_property_raises():
+    header = _ply_header(
+        'format binary_little_endian 1.0',
+        'element strips 1',
+        'property list uchar int strip_indices',
+        *_TRIANGLE_VERTEX_LINES,
+        'element face 1',
+        'property list uchar int vertex_indices',
+    )
+    with pytest.raises(ValueError, match='list propert'):
+        ply.read_ply(io.BytesIO(header), mesh.Mesh.dtype)
+
+
+def test_face_index_out_of_range_raises_value_error():
+    with pytest.raises(ValueError, match='index'):
+        ply.read_ply(_ascii_triangle_with_face(b'3 0 1 99\n'), mesh.Mesh.dtype)
+
+
+def test_negative_face_index_raises_value_error():
+    # Negative indices used to wrap around silently via numpy indexing.
+    with pytest.raises(ValueError, match='index'):
+        ply.read_ply(_ascii_triangle_with_face(b'3 0 1 -1\n'), mesh.Mesh.dtype)
