@@ -46,6 +46,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented
 - Publishing to PyPI is gated on the full CI test suite
 - numpy dependency declares the tested lower bound (`numpy>=1.24`)
+- The ASCII speedups are no longer bundled as a compiled Cython extension.
+  Install the optional `numpy-stl[fast]` extra (the external
+  `speedups>=2.0.0` package) to enable them. Without it, `speedups=True`
+  transparently falls back to the pure-Python reader/writer, so existing
+  code keeps working — only the C-accelerated path now needs the extra.
+
+### Removed
+- Support for Python 3.9 and earlier. The minimum supported version is now
+  Python 3.10 (`requires-python = ">=3.10"`); installing on older
+  interpreters resolves to the previous release.
+- The bundled `stl._speedups` Cython extension and its `_speedups.pyx`
+  source. `import stl._speedups` no longer works; the accelerated
+  `ascii_read`/`ascii_write` now come from the external `speedups` package
+  (see the `numpy-stl[fast]` extra under Changed above).
 
 ## [3.2.0] - 2024-11-25
 
