@@ -1,6 +1,6 @@
-<p align="center">
+<h1 align="center">
   <img src="https://raw.githubusercontent.com/WoLpH/numpy-stl/develop/docs/images/logo.png" alt="numpy-stl" width="280">
-</p>
+</h1>
 
 [![CI](https://github.com/WoLpH/numpy-stl/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/WoLpH/numpy-stl/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/numpy-stl)](https://pypi.org/project/numpy-stl/)
@@ -53,7 +53,7 @@ your_mesh.save('output.stl')
 |--------------|:----:|:-----:|------------------------------------|
 | STL (binary) |  ✅  |  ✅   | Auto-detected on load              |
 | STL (ASCII)  |  ✅  |  ✅   | ~5x faster with optional speedups  |
-| PLY          |  ✅  |  —    | Binary and ASCII; `from_ply_file`  |
+| PLY          |  ✅  |  ✅   | Binary and ASCII; `from_ply_file` / `save_ply` |
 | 3MF          |  ✅  |  —    | Experimental; `from_3mf_file`      |
 
 ## Requirements & Compatibility
@@ -181,13 +181,17 @@ pyplot.show()
 
 ## API Cheatsheet
 
+Assumes `import math`, `import numpy as np`, `from stl import mesh`, and
+`from stl import Mode` (for the ASCII save).
+
 | Task                     | Call                                                    |
 |--------------------------|---------------------------------------------------------|
 | Load (auto-detect)       | `mesh.Mesh.from_file('m.stl')`                           |
 | Load PLY                 | `mesh.Mesh.from_ply_file('m.ply')`                      |
-| Load 3MF (experimental)  | `mesh.Mesh.from_3mf_file('m.3mf')`                      |
+| Load 3MF (experimental)  | `list(mesh.Mesh.from_3mf_file('m.3mf'))`               |
 | Save (auto/format)       | `m.save('out.stl')`                                     |
-| Save as ASCII            | `m.save('out.stl', mode=stl.Mode.ASCII)`               |
+| Save as ASCII            | `m.save('out.stl', mode=Mode.ASCII)`                   |
+| Save PLY                 | `m.save_ply('out.ply')`                                |
 | Rotate (axis, radians)   | `m.rotate([0, 0, 1], math.radians(90))`                |
 | Translate                | `m.translate([x, y, z])`                                |
 | Transform (4x4 matrix)   | `m.transform(matrix)`                                   |
