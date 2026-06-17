@@ -5,20 +5,22 @@ import sys
 from . import stl
 
 
-def _get_parser(description):
+def _get_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
+    # The std stream defaults use the underlying binary buffers: STL
+    # data is binary and the text wrappers would corrupt it (or raise).
     parser.add_argument(
         'infile',
         nargs='?',
         type=argparse.FileType('rb'),
-        default=sys.stdin,
+        default=sys.stdin.buffer,
         help='STL file to read',
     )
     parser.add_argument(
         'outfile',
         nargs='?',
         type=argparse.FileType('wb'),
-        default=sys.stdout,
+        default=sys.stdout.buffer,
         help='STL file to write',
     )
     parser.add_argument('--name', nargs='?', help='Name of the mesh')
@@ -44,15 +46,14 @@ def _get_parser(description):
     return parser
 
 
-def _get_name(args):
+def _get_name(args: argparse.Namespace) -> str:
     names = [
         args.name,
         getattr(args.outfile, 'name', None),
         getattr(args.infile, 'name', None),
-        'numpy-stl-%06d' % random.randint(0, 1_000_000),
     ]
 
-    for name in names:  # pragma: no branch
+    for name in names:
         if not isinstance(name, str):
             continue
         elif name.startswith('<'):  # pragma: no cover
@@ -62,10 +63,17 @@ def _get_name(args):
             continue
         else:
             return name
-    return None  # pragma: no cover
+
+    return 'numpy-stl-%06d' % random.randint(0, 1_000_000)  # noqa: UP031
 
 
-def main():
+def main() -> None:
+    """CLI entry point for the ``stl`` command.
+
+    Converts between ASCII and binary STL formats.
+    Supports ``-a`` (force ASCII), ``-b`` (force binary),
+    ``-n`` (keep file normals), and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files from ascii to binary and back')
     parser.add_argument(
         '-a',
@@ -102,7 +110,12 @@ def main():
     )
 
 
-def to_ascii():
+def to_ascii() -> None:
+    """CLI entry point for the ``stl2ascii`` command.
+
+    Converts an STL file to ASCII format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files to ASCII (text) format')
     args = parser.parse_args()
     name = _get_name(args)
@@ -121,7 +134,12 @@ def to_ascii():
     )
 
 
-def to_binary():
+def to_binary() -> None:
+    """CLI entry point for the ``stl2bin`` command.
+
+    Converts an STL file to binary format.
+    Supports ``-n`` (keep file normals) and ``-s`` (disable speedups).
+    """
     parser = _get_parser('Convert STL files to binary format')
     args = parser.parse_args()
     name = _get_name(args)

@@ -1,7 +1,8 @@
-import contextlib
+import io
+import subprocess
 import sys
 
-from stl import main
+from stl import main, mesh
 
 
 def test_main(ascii_file, binary_file, tmpdir, speedups):
@@ -39,29 +40,67 @@ def test_args(ascii_file, tmpdir):
 
 def test_ascii(binary_file, tmpdir, speedups):
     original_argv = sys.argv[:]
+    output = tmpdir.join('ascii.stl')
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not speedups else '',
+            *(['-s'] if not speedups else []),
             binary_file,
-            str(tmpdir.join('ascii.stl')),
+            str(output),
         ]
-        with contextlib.suppress(SystemExit):
-            main.to_ascii()
+        main.to_ascii()
     finally:
         sys.argv[:] = original_argv
+
+    assert output.read_binary().startswith(b'solid')
+    assert len(mesh.Mesh.from_file(str(output)).data) > 0
 
 
 def test_binary(ascii_file, tmpdir, speedups):
     original_argv = sys.argv[:]
+    output = tmpdir.join('binary.stl')
     try:
         sys.argv[:] = [
             'stl',
-            '-s' if not speedups else '',
+            *(['-s'] if not speedups else []),
             ascii_file,
-            str(tmpdir.join('binary.stl')),
+            str(output),
         ]
-        with contextlib.suppress(SystemExit):
-            main.to_binary()
+        main.to_binary()
     finally:
         sys.argv[:] = original_argv
+
+    assert not output.read_binary().startswith(b'solid')
+    assert len(mesh.Mesh.from_file(str(output)).data) > 0
+
+
+def _run_pipe(
+    entry_point: str, stdin_file: str
+) -> 'subprocess.CompletedProcess[bytes]':
+    # Piped stdin/stdout (not TTYs): the CLI must read/write binary
+    # data through the std streams' underlying buffers.
+    with open(stdin_file, 'rb') as stdin:
+        return subprocess.run(
+            [
+                sys.executable,
+                '-c',
+                f'from stl.main import {entry_point}; {entry_point}()',
+            ],
+            stdin=stdin,
+            capture_output=True,
+            check=False,
+        )
+
+
+def test_main_stdin_stdout_pipes(binary_file):
+    result = _run_pipe('main', binary_file)
+    assert result.returncode == 0, result.stderr.decode()
+
+    loaded = mesh.Mesh.from_file('out.stl', fh=io.BytesIO(result.stdout))
+    assert len(loaded.data) > 0
+
+
+def test_to_ascii_stdin_stdout_pipes(binary_file):
+    result = _run_pipe('to_ascii', binary_file)
+    assert result.returncode == 0, result.stderr.decode()
+    assert result.stdout.startswith(b'solid')

@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+  # Allows publish.yml to run the full test suite as a release gate.
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        numpy-version: ['numpy1', 'numpy2']
+        exclude:
+          - python-version: '3.13'
+            numpy-version: 'numpy1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Run tests
+        run: tox -e py$(echo "${{ matrix.python-version }}" | tr -d .)-${{ matrix.numpy-version }}
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}-${{ matrix.numpy-version }}
+          path: .tox/.coverage.*
+          include-hidden-files: true
+
+  speedups:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Run tests with speedups
+        run: tox -e speedups
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-speedups
+          path: .tox/.coverage.*
+          include-hidden-files: true
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, speedups, docs]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: .tox
+          merge-multiple: true
+      - name: Combine coverage and check threshold
+        run: tox -e coverage
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Lint
+        run: tox -e lint
+
+  type-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Type-check
+        run: tox -e pyrefly
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+      - name: Install tox
+        run: uv pip install '.[tox]'
+      - name: Build docs
+        run: tox -e docs
+      - name: Run docs examples
+        run: tox -e docs-examples
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-docs-examples
+          path: .tox/.coverage.*
+          include-hidden-files: true

@@ -3,7 +3,6 @@ import math
 
 import numpy as np
 import pytest
-
 from stl.mesh import Mesh
 
 from . import utils

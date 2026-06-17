@@ -1,16 +1,23 @@
 [report]
-fail_under = 100
 exclude_lines =
     pragma: no cover
     def __repr__
     if self.debug:
     if settings.DEBUG
+    if TYPE_CHECKING:
     raise AssertionError
     raise NotImplementedError
     if 0:
     if __name__ == .__main__.:
+    @overload
+
 
 [run]
-source = stl 
+source = stl
 branch = True
+parallel = true
 
+[paths]
+source =
+    stl/
+    */stl/

@@ -9,9 +9,9 @@ import warnings
 
 import numpy as np
 import pytest
+from stl.utils import b
 
 from stl import Mode, mesh
-from stl.utils import b
 
 FILES_PATH = pathlib.Path(__file__).parent / 'stl_tests'
 
@@ -131,10 +131,6 @@ def test_use_with_qt_with_custom_locale_decimal_delimeter(speedups):
     if not speedups:
         pytest.skip('Only makes sense with speedups')
 
-    venv = os.environ.get('VIRTUAL_ENV', '')
-    if sys.version_info[:2] == (3, 6) and venv.startswith('/home/travis/'):
-        pytest.skip('PySide2/PyQt5 tests are broken on Travis Python 3.6')
-
     try:
         from PySide2 import QtWidgets
     except ImportError:
@@ -207,3 +203,86 @@ def test_ascii_io():
     read = mesh.Mesh.from_file('anonymous.stl', fh=io.BytesIO(fh.getvalue()))
     # Check what comes out is the same as what went in.
     assert np.allclose(mesh_.vectors, read.vectors)
+
+
+def test_ascii_write_is_lossless_for_tiny_values(speedups):
+    # '{:f}' formatting used to flatten |value| < 5e-7 to '0.000000'.
+    # speedups=False throughout: the pure-Python writer is under test
+    # (the external speedups C writer has its own formatting).
+    data = np.zeros(1, dtype=mesh.Mesh.dtype)
+    data['vectors'][0] = np.array(
+        [[1e-10, 5e-8, -2.5e-9], [0, 1, 0], [0, 0, 1]],
+        dtype=np.float32,
+    )
+    original = mesh.Mesh(data, remove_empty_areas=False, speedups=False)
+
+    fh = io.BytesIO()
+    original.save('tiny.stl', fh=fh, mode=Mode.ASCII, update_normals=False)
+    fh.seek(0)
+
+    round_tripped = mesh.Mesh.from_file(
+        'tiny.stl', fh=fh, mode=Mode.ASCII, speedups=False
+    )
+    assert (round_tripped.vectors == original.vectors).all()
+
+
+class _ChunkOnlyStream(io.RawIOBase):
+    """Non-seekable stream that forbids unbounded (slurp) reads."""
+
+    def __init__(self, data: bytes) -> None:
+        self._buffer = io.BytesIO(data)
+
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> bytes:
+        assert size is not None and size >= 0, 'full slurp not allowed'
+        return self._buffer.read(size)
+
+    def seekable(self) -> bool:
+        return False
+
+
+def test_explicit_ascii_mode_streams_from_pipe(speedups):
+    # With mode=ASCII the pure-Python reader consumes the stream in
+    # bounded chunks; the file must not be buffered into memory whole.
+    content = (
+        b'solid streaming\n'
+        b'facet normal 0 0 1\n'
+        b'  outer loop\n'
+        b'    vertex 0 0 0\n'
+        b'    vertex 1 0 0\n'
+        b'    vertex 0 1 0\n'
+        b'  endloop\n'
+        b'endfacet\n'
+        b'endsolid streaming\n'
+    )
+    loaded = mesh.Mesh.from_file(
+        'stream.stl',
+        fh=_ChunkOnlyStream(content),
+        mode=Mode.ASCII,
+        speedups=False,
+    )
+    assert len(loaded.data) == 1
+
+
+def test_ascii_reader_handles_many_blank_lines(speedups):
+    # The blank-line skip used to recurse once per line and hit
+    # RecursionError around 1000 consecutive blank lines.
+    content = (
+        b'solid test\n' + b'\n' * 5000 + b'facet normal 0 0 1\n'
+        b'  outer loop\n'
+        b'    vertex 0 0 0\n'
+        b'    vertex 1 0 0\n'
+        b'    vertex 0 1 0\n'
+        b'  endloop\n'
+        b'endfacet\n'
+        b'endsolid test\n'
+    )
+    loaded = mesh.Mesh.from_file(
+        'blank.stl',
+        fh=io.BytesIO(content),
+        mode=Mode.ASCII,
+        speedups=False,
+    )
+    assert len(loaded.data) == 1

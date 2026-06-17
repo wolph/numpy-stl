@@ -1,0 +1,122 @@
+[build-system]
+requires = ["uv_build>=0.11.0,<0.12"]
+build-backend = "uv_build"
+
+[project]
+name = "numpy-stl"
+version = "4.0.0"
+description = "Library to make reading, writing and modifying both binary and ascii STL files easy."
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Rick van Hattem", email = "Wolph@Wol.ph" }]
+classifiers = [
+    "Development Status :: 6 - Mature",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    # np.fromiter with a structured dtype needs numpy>=1.23; 1.24 is
+    # the oldest version in the test matrix.
+    "numpy>=1.24",
+    "python-utils>=3.4.5",
+    # Already transitive via python-utils; declared because stl.stl
+    # imports assert_never at runtime.
+    "typing_extensions>=4.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/WoLpH/numpy-stl/"
+
+[project.scripts]
+stl = "stl.main:main"
+stl2ascii = "stl.main:to_ascii"
+stl2bin = "stl.main:to_binary"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=8.0; python_version < '3.11'",
+    "sphinx>=9.0; python_version >= '3.11'",
+    "furo>=2025.1",
+]
+tests = [
+    "pytest>=9.0",
+    "pytest-cov>=7.0",
+    "coverage>=7.0",
+]
+dev = [
+    "numpy-stl[tests]",
+    "ruff>=0.15.0",
+    "mypy>=1.0",
+    "basedpyright>=1.0",
+    "pyrefly>=0.1",
+]
+fast = ["speedups>=2.0.0"]
+tox = [
+    "tox>=4.0",
+    "tox-uv>=1.0",
+    "tox-gh-actions>=3.0",
+]
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "stl"
+
+[tool.pytest.ini_options]
+doctest_optionflags = "NORMALIZE_WHITESPACE"
+python_files = ["stl/*.py", "tests/*.py"]
+addopts = [
+    "--doctest-modules",
+    "--cov=stl",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--no-cov-on-fail",
+    "--ignore=build",
+    "--basetemp=tmp",
+]
+
+[tool.mypy]
+packages = ["stl"]
+local_partial_types = true
+allow_redefinition_new = true
+strict = true
+enable_error_code = [
+  "exhaustive-match",
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+]
+warn_return_any = false
+
+
+[tool.pyright]
+pythonPlatform = "All"
+include = ["stl"]
+ignore = [".venv"]
+stubPath = "."
+typeCheckingMode = "strict"
+reportPrivateUsage = false # dupe of PLC2701
+reportUnusedParameter = false # dupe of F841
+reportUnusedVariable = false # dupe of F841
+
+
+[tool.pyrefly]
+project-includes = ["stl"]
+ignore-missing-imports = ["speedups"]
+
+[[tool.ty.overrides]]
+include = ["stl/_compat.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
