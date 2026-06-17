@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "numpy-stl"
-version = "3.2.0"
+version = "4.0.0"
 description = "Library to make reading, writing and modifying both binary and ascii STL files easy."
 readme = "README.md"
 license = "BSD-3-Clause"

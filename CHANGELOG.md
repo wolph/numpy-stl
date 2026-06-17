@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-06-17
+
 ### Fixed
 - Binary STL triangle count is now read and written as the unsigned 32-bit
   integer the spec requires; counts with the high bit set no longer slip past
@@ -116,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/WoLpH/numpy-stl/compare/v3.2.0...v4.0.0
 [3.2.0]: https://github.com/WoLpH/numpy-stl/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/WoLpH/numpy-stl/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/WoLpH/numpy-stl/compare/v2.17.0...v3.0.0
