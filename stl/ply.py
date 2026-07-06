@@ -413,7 +413,7 @@ def _triangulate(
 def _build_mesh_data(
     vertices: np.ndarray,
     triangles: list[tuple[int, int, int]],
-    mesh_dtype: np.dtype,  # type: ignore[type-arg]
+    mesh_dtype: np.dtype[np.void],
 ) -> np.ndarray:
     """Build the structured numpy array for the mesh.
 
@@ -546,7 +546,7 @@ def write_ply(
 
 def read_ply(
     fh: IO[bytes],
-    mesh_dtype: np.dtype,  # type: ignore[type-arg]
+    mesh_dtype: np.dtype[np.void],
 ) -> tuple[np.ndarray, str]:
     """Read a PLY file and return mesh data.
 
