@@ -2,6 +2,8 @@ import io
 import subprocess
 import sys
 
+import pytest
+
 from stl import main, mesh
 
 
@@ -104,3 +106,45 @@ def test_to_ascii_stdin_stdout_pipes(binary_file):
     result = _run_pipe('to_ascii', binary_file)
     assert result.returncode == 0, result.stderr.decode()
     assert result.stdout.startswith(b'solid')
+
+
+def test_open_helpers_std_streams():
+    assert main._open_infile('-') is sys.stdin.buffer
+    assert main._open_outfile('-') is sys.stdout.buffer
+
+
+def test_main_std_streams_in_process(binary_file, monkeypatch):
+    with open(binary_file, 'rb') as fh:
+        data = fh.read()
+
+    stdin_buffer = io.BytesIO(data)
+    stdout_buffer = io.BytesIO()
+    monkeypatch.setattr(sys, 'stdin', io.TextIOWrapper(stdin_buffer))
+    monkeypatch.setattr(sys, 'stdout', io.TextIOWrapper(stdout_buffer))
+    monkeypatch.setattr(sys, 'argv', ['stl', '-b'])
+
+    main.main()
+
+    loaded = mesh.Mesh.from_file(
+        'out.stl', fh=io.BytesIO(stdout_buffer.getvalue())
+    )
+    assert len(loaded.data) > 0
+
+
+def test_main_missing_infile(tmpdir, monkeypatch, capsys):
+    missing = str(tmpdir.join('does-not-exist.stl'))
+    out = str(tmpdir.join('out.stl'))
+    monkeypatch.setattr(sys, 'argv', ['stl', missing, out])
+
+    with pytest.raises(SystemExit):
+        main.main()
+    assert "can't open" in capsys.readouterr().err
+
+
+def test_main_unopenable_outfile(binary_file, tmpdir, monkeypatch, capsys):
+    bad_out = str(tmpdir.join('missing-dir', 'out.stl'))
+    monkeypatch.setattr(sys, 'argv', ['stl', binary_file, bad_out])
+
+    with pytest.raises(SystemExit):
+        main.main()
+    assert "can't open" in capsys.readouterr().err
