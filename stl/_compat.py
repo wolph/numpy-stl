@@ -16,8 +16,8 @@ ascii_write: Any = None
 if _speedups_available:
     try:
         from speedups import (  # noqa: F401
-            ascii_read,
-            ascii_write,
+            ascii_read as ascii_read,
+            ascii_write as ascii_write,
         )
     except ImportError:
         _speedups_available = False
