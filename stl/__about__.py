@@ -5,9 +5,11 @@ from importlib.metadata import (
 )
 
 try:
-    __version__: typing.Final[str] = _version('numpy-stl')
+    _found_version: str = _version('numpy-stl')
 except PackageNotFoundError:
-    __version__: typing.Final[str] = '0.0.0'  # type: ignore[misc]
+    _found_version = '0.0.0'
+
+__version__: typing.Final[str] = _found_version
 
 __package_name__: typing.Final[str] = 'numpy-stl'
 __import_name__: typing.Final[str] = 'stl'
