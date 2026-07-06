@@ -1096,7 +1096,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             return True
         return NotImplemented
 
-    __hash__ = object.__hash__
+    def __hash__(self) -> int:
+        # Identity hash, consistent with the identity-based __eq__ above.
+        return object.__hash__(self)
 
     def __repr__(self) -> str:
         return f'<Mesh: {self.name!r} {self.data.size} vertices>'

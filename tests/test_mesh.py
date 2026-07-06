@@ -431,3 +431,13 @@ def test_logged_decorator_logger_name():
         pass
 
     assert _Sample.logger.name == 'stl.base._Sample'
+
+
+def test_mesh_hash_is_identity_based():
+    data = np.zeros(1, dtype=BaseMesh.dtype)
+    a = Mesh(data.copy(), remove_empty_areas=False)
+    b = Mesh(data.copy(), remove_empty_areas=False)
+
+    assert hash(a) == object.__hash__(a)
+    assert a == a  # identity equality
+    assert (a == b) is False  # equal content, different identity
