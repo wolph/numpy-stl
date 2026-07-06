@@ -1,4 +1,5 @@
-# Local stub for the optional speedups package so type checkers resolve it without it installed.
+# Local stub for the optional speedups package so type
+# checkers resolve it without it installed.
 from typing import IO
 
 import numpy as np
