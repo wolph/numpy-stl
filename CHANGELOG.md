@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Resolved all mypy and basedpyright findings; malformed `# type: ignore[ty:...]`
-  suppressions replaced by `typing.cast` or restructured code.
+- Resolved all mypy and basedpyright findings; malformed
+  `# type: ignore[ty:...]` suppressions replaced by `typing.cast` or
+  restructured code.
 - Replaced `argparse.FileType` (deprecated since Python 3.14) in the CLI with
   path arguments opened after parsing; stdin/stdout `-` semantics unchanged.
   This also fixes a latent bug where the output file was truncated at
@@ -19,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI now enforces all four type checkers (pyrefly, mypy, basedpyright, ty).
 
 ### Removed
-- Legacy `build.cmd` MSVC build script for the speedups extension removed in 4.0.0.
+- Legacy `build.cmd` MSVC build script (the speedups extension it built was
+  removed in 4.0.0).
 
 ## [4.0.0] - 2026-06-17
 
