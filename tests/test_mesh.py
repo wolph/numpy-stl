@@ -5,7 +5,8 @@ import math
 
 import numpy as np
 import pytest
-from stl.base import BaseMesh, RemoveDuplicates
+from python_utils.logger import Logged
+from stl.base import BaseMesh, RemoveDuplicates, logged
 from stl.mesh import Mesh
 
 from . import utils
@@ -423,7 +424,10 @@ def test_is_closed_heuristic(caplog):
 
 
 def test_logged_decorator_logger_name():
-    # logged() must produce the same dotted name python-utils generates
-    # Note: after other tests create Mesh instances, Logged.__new__ overwrites
-    # the logger with the instantiated class's module and name
-    assert Mesh.logger.name == 'stl.mesh.Mesh'
+    # logged() must produce the same dotted name python-utils generates:
+    # '.'.join of the defining module and class name.
+    @logged
+    class _Sample(Logged):
+        pass
+
+    assert _Sample.logger.name == 'stl.base._Sample'
