@@ -15,12 +15,15 @@ ascii_write: Any = None
 
 if _speedups_available:
     try:
-        from speedups import (  # noqa: F401
-            ascii_read as ascii_read,
-            ascii_write as ascii_write,
+        from speedups import (
+            ascii_read as _speedups_ascii_read,
+            ascii_write as _speedups_ascii_write,
         )
     except ImportError:
         _speedups_available = False
+    else:
+        ascii_read = _speedups_ascii_read
+        ascii_write = _speedups_ascii_write
 
 
 def has_speedups() -> bool:

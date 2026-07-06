@@ -553,7 +553,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             normals = np.cross(self.v1 - self.v0, self.v2 - self.v0)  # pyrefly: ignore
 
         areas = 0.5 * np.sqrt((normals**2).sum(axis=1))  # pyrefly: ignore
-        self._areas = areas.reshape((areas.size, 1))
+        # https://github.com/numpy/numpy/pull/30261
+        self._areas = cast('_f32_2d', areas.reshape((areas.size, 1)))
 
     def update_centroids(self) -> None:
         """Refresh the cached per-triangle centroids."""

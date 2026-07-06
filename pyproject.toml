@@ -61,6 +61,7 @@ dev = [
     "mypy>=1.0",
     "basedpyright>=1.0",
     "pyrefly>=0.1",
+    "ty>=0.0.1",
 ]
 fast = ["speedups>=2.0.0"]
 tox = [
@@ -98,6 +99,10 @@ enable_error_code = [
   "truthy-bool",
 ]
 warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "speedups"
+ignore_missing_imports = true
 
 
 [tool.pyright]

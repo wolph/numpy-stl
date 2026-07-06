@@ -539,7 +539,7 @@ class BaseStl(base.BaseMesh):
         if isinstance(fh, io.BufferedWriter) and fh.seekable():
             # Write to a true file. numpy's tofile() needs to query the
             # file position, which fails on pipes such as stdout.
-            self.data.tofile(fh)
+            self.data.tofile(fh)  # pyright: ignore[reportUnknownArgumentType]
         else:
             # Write to a pseudo buffer (e.g. BytesIO or a pipe).
             cast('_StatefulWriter', fh).write(self.data.data)
