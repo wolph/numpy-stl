@@ -143,9 +143,8 @@ def logged(class_: type[_LoggedT]) -> type[_LoggedT]:
     Returns:
         The class with logger initialized.
     """
-    logger_name = cast(
-        'str',
-        logger.Logged._Logged__get_name(__name__, class_.__name__),  # type: ignore[attr-defined, ty:unresolved-attribute]
+    logger_name: str = '.'.join(
+        part.strip() for part in (__name__, class_.__name__) if part.strip()
     )
 
     class_.logger = logging.getLogger(logger_name)

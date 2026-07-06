@@ -420,3 +420,10 @@ def test_is_closed_heuristic(caplog):
     assert 'not exact' in caplog.text
 
     assert not _single_triangle_mesh().check(exact=False)
+
+
+def test_logged_decorator_logger_name():
+    # logged() must produce the same dotted name python-utils generates
+    # Note: after other tests create Mesh instances, Logged.__new__ overwrites
+    # the logger with the instantiated class's module and name
+    assert Mesh.logger.name == 'stl.mesh.Mesh'
