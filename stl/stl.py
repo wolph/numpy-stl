@@ -901,7 +901,7 @@ class BaseStl(base.BaseMesh):
         name = ''
         if isinstance(self.name, bytes):
             name = self.name.decode('ascii', errors='replace')
-        elif isinstance(self.name, str):
+        elif isinstance(self.name, str):  # pyright: ignore[reportUnnecessaryIsInstance]
             name = self.name
 
         if fh:
