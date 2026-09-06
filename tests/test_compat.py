@@ -62,7 +62,12 @@ def test_import_error_fallback():
         is_package=True,
     )
 
-    saved_module = sys.modules.get('speedups')
+    # Evict a cached real ``speedups.stl`` as well, otherwise the
+    # submodule import succeeds straight from sys.modules.
+    saved_modules = {
+        name: sys.modules.pop(name, None)
+        for name in ('speedups', 'speedups.stl')
+    }
     saved_compat = sys.modules.pop('stl._compat', None)
     try:
         sys.modules['speedups'] = fake
@@ -71,10 +76,54 @@ def test_import_error_fallback():
         assert compat.ascii_write is None
         assert compat.has_speedups() is False
     finally:
-        if saved_module is not None:
-            sys.modules['speedups'] = saved_module
+        for name, module in saved_modules.items():
+            if module is not None:
+                sys.modules[name] = module
+            else:
+                sys.modules.pop(name, None)
+        if saved_compat is not None:
+            sys.modules['stl._compat'] = saved_compat
         else:
-            sys.modules.pop('speedups', None)
+            sys.modules.pop('stl._compat', None)
+
+
+def test_speedups_stl_submodule_exports():
+    """Verify _compat binds the functions from ``speedups.stl``."""
+
+    def fake_ascii_read(*args: object) -> tuple[bytes, None]:
+        return b'', None
+
+    def fake_ascii_write(*args: object) -> None:
+        return None
+
+    fake_pkg = types.ModuleType('speedups')
+    fake_pkg.__path__ = []
+    fake_pkg.__spec__ = importlib.machinery.ModuleSpec(
+        'speedups',
+        None,
+        is_package=True,
+    )
+    fake_stl = types.ModuleType('speedups.stl')
+    fake_stl.ascii_read = fake_ascii_read
+    fake_stl.ascii_write = fake_ascii_write
+
+    saved_modules = {
+        name: sys.modules.get(name) for name in ('speedups', 'speedups.stl')
+    }
+    saved_compat = sys.modules.pop('stl._compat', None)
+    try:
+        sys.modules['speedups'] = fake_pkg
+        sys.modules['speedups.stl'] = fake_stl
+        compat = importlib.import_module('stl._compat')
+        assert compat.has_speedups() is True
+        assert compat.ascii_read is fake_ascii_read
+        assert compat.ascii_write is fake_ascii_write
+    finally:
+        for name, module in saved_modules.items():
+            if module is not None:
+                sys.modules[name] = module
+            else:
+                sys.modules.pop(name, None)
         if saved_compat is not None:
             sys.modules['stl._compat'] = saved_compat
         else:

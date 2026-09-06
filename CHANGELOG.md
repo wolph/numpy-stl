@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path arguments opened after parsing; stdin/stdout `-` semantics unchanged.
   This also fixes a latent bug where the output file was truncated at
   argument-parsing time, before the input was validated.
+- The optional speedups were silently disabled with `speedups>=2.1.0`,
+  which moved `ascii_read`/`ascii_write` to the `speedups.stl`
+  submodule. The import now targets that submodule and the `fast`
+  extra requires `speedups>=2.1.0`.
 
 ### Changed
 - CI now enforces all four type checkers (pyrefly, mypy, basedpyright, ty).
