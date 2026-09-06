@@ -127,3 +127,6 @@ include = ["stl/_compat.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
+
+[tool.uv]
+exclude-newer = "14 days"
