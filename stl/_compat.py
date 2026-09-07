@@ -15,12 +15,18 @@ ascii_write: Any = None
 
 if _speedups_available:
     try:
-        from speedups import (  # noqa: F401
-            ascii_read,  # type: ignore[assignment]
-            ascii_write,  # type: ignore[assignment]
+        # speedups>=2.1.0 ships the STL functions in the
+        # ``speedups.stl`` submodule. The 2.0.x top-level
+        # re-exports no longer exist.
+        from speedups.stl import (
+            ascii_read as _speedups_ascii_read,
+            ascii_write as _speedups_ascii_write,
         )
     except ImportError:
         _speedups_available = False
+    else:
+        ascii_read = _speedups_ascii_read
+        ascii_write = _speedups_ascii_write
 
 
 def has_speedups() -> bool:

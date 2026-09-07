@@ -5,7 +5,8 @@ import math
 
 import numpy as np
 import pytest
-from stl.base import BaseMesh, RemoveDuplicates
+from python_utils.logger import Logged
+from stl.base import BaseMesh, RemoveDuplicates, logged
 from stl.mesh import Mesh
 
 from . import utils
@@ -420,3 +421,23 @@ def test_is_closed_heuristic(caplog):
     assert 'not exact' in caplog.text
 
     assert not _single_triangle_mesh().check(exact=False)
+
+
+def test_logged_decorator_logger_name():
+    # logged() must produce the same dotted name python-utils generates:
+    # '.'.join of the defining module and class name.
+    @logged
+    class _Sample(Logged):
+        pass
+
+    assert _Sample.logger.name == 'stl.base._Sample'
+
+
+def test_mesh_hash_is_identity_based():
+    data = np.zeros(1, dtype=BaseMesh.dtype)
+    a = Mesh(data.copy(), remove_empty_areas=False)
+    b = Mesh(data.copy(), remove_empty_areas=False)
+
+    assert hash(a) == object.__hash__(a)
+    assert a == a  # identity equality
+    assert (a == b) is False  # equal content, different identity

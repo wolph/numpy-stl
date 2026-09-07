@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "numpy-stl"
-version = "4.0.0"
+version = "4.0.1"
 description = "Library to make reading, writing and modifying both binary and ascii STL files easy."
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -61,8 +61,10 @@ dev = [
     "mypy>=1.0",
     "basedpyright>=1.0",
     "pyrefly>=0.1",
+    "ty>=0.0.1",
 ]
-fast = ["speedups>=2.0.0"]
+# stl._compat imports from speedups.stl, which exists since 2.1.0.
+fast = ["speedups>=2.1.0"]
 tox = [
     "tox>=4.0",
     "tox-uv>=1.0",
@@ -88,6 +90,7 @@ addopts = [
 
 [tool.mypy]
 packages = ["stl"]
+mypy_path = "typings"
 local_partial_types = true
 allow_redefinition_new = true
 strict = true
@@ -99,12 +102,16 @@ enable_error_code = [
 ]
 warn_return_any = false
 
+[[tool.mypy.overrides]]
+module = ["speedups", "speedups.*"]
+ignore_missing_imports = true
+
 
 [tool.pyright]
 pythonPlatform = "All"
 include = ["stl"]
 ignore = [".venv"]
-stubPath = "."
+stubPath = "typings"
 typeCheckingMode = "strict"
 reportPrivateUsage = false # dupe of PLC2701
 reportUnusedParameter = false # dupe of F841
@@ -113,10 +120,13 @@ reportUnusedVariable = false # dupe of F841
 
 [tool.pyrefly]
 project-includes = ["stl"]
-ignore-missing-imports = ["speedups"]
+ignore-missing-imports = ["speedups", "speedups.*"]
 
 [[tool.ty.overrides]]
 include = ["stl/_compat.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
+
+[tool.uv]
+exclude-newer = "14 days"

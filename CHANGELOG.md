@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-09-07
+
+### Fixed
+- Resolved all mypy and basedpyright findings; malformed
+  `# type: ignore[ty:...]` suppressions replaced by `typing.cast` or
+  restructured code.
+- Replaced `argparse.FileType` (deprecated since Python 3.14) in the CLI with
+  path arguments opened after parsing; stdin/stdout `-` semantics unchanged.
+  This also fixes a latent bug where the output file was truncated at
+  argument-parsing time, before the input was validated.
+- The optional speedups were silently disabled with `speedups>=2.1.0`,
+  which moved `ascii_read`/`ascii_write` to the `speedups.stl`
+  submodule. The import now targets that submodule and the `fast`
+  extra requires `speedups>=2.1.0`.
+
+### Changed
+- CI now enforces all four type checkers (pyrefly, mypy, basedpyright, ty).
+
+### Removed
+- Legacy `build.cmd` MSVC build script (the speedups extension it built was
+  removed in 4.0.0).
+
 ## [4.0.0] - 2026-06-17
 
 ### Fixed
@@ -118,7 +140,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.0.1...HEAD
+[4.0.1]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/WoLpH/numpy-stl/compare/v3.2.0...v4.0.0
 [3.2.0]: https://github.com/WoLpH/numpy-stl/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/WoLpH/numpy-stl/compare/v3.0.0...v3.1.0
