@@ -38,6 +38,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/WoLpH/numpy-stl/"
+Funding = "https://github.com/sponsors/wolph"
 
 [project.scripts]
 stl = "stl.main:main"

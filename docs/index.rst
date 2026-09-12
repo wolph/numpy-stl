@@ -27,6 +27,12 @@ A fast library for reading, writing, and modifying STL files, powered by NumPy.
    api/index
    api/mesh
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Project
+
+   sponsor
+
 Indices and Tables
 ==================
 

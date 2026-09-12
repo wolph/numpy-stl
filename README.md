@@ -232,6 +232,15 @@ for the development setup guide.
 - [Documentation](https://numpy-stl.readthedocs.io/)
 - [Changelog](https://github.com/WoLpH/numpy-stl/blob/develop/CHANGELOG.md)
 
+## Support
+
+numpy-stl is maintained by [Rick van Hattem](https://github.com/wolph) in his own time. Most of that time goes on the malformed STL files that real scanners and slicers produce.
+
+If it saved you an afternoon, a tip covers an hour of issue triage:
+[Ko-fi](https://ko-fi.com/wolph_gh) or [GitHub Sponsors](https://github.com/sponsors/wolph).
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/wolph_gh)
+
 ## License
 
 BSD-3-Clause
