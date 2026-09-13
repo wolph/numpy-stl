@@ -7,10 +7,10 @@ pre-commit:
   commands:
     ruff-check:
       glob: '*.py'
-      run: ruff check {staged_files}
+      run: uv run ruff check {staged_files}
     ruff-format:
       glob: '*.py'
-      run: ruff format {staged_files}
+      run: uv run ruff format {staged_files}
       stage_fixed: true
     ty-check:
-      run: ty check
+      run: uv run ty check stl
