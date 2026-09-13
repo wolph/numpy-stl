@@ -239,6 +239,9 @@ numpy-stl is maintained by [Rick van Hattem](https://github.com/wolph) in his ow
 If it saved you an afternoon, a tip covers an hour of issue triage:
 [Ko-fi](https://ko-fi.com/wolph_gh) or [GitHub Sponsors](https://github.com/sponsors/wolph).
 
+If your company funds its dependencies, this package is on
+[thanks.dev](https://thanks.dev/u/gh/wolph).
+
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/wolph_gh)
 
 ## License
