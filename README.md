@@ -2,13 +2,13 @@
   <img src="https://raw.githubusercontent.com/WoLpH/numpy-stl/develop/docs/images/logo.png" alt="numpy-stl" width="280">
 </h1>
 
-[![CI on master](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml?query=branch%3Amaster)
-[![Coverage on master](https://coveralls.io/repos/github/wolph/numpy-stl/badge.svg?branch=master)](https://coveralls.io/github/wolph/numpy-stl?branch=master)
-[![PyPI](https://img.shields.io/pypi/v/numpy-stl?style=plastic)](https://pypi.org/project/numpy-stl/)
-[![Python](https://img.shields.io/pypi/pyversions/numpy-stl?style=plastic)](https://pypi.org/project/numpy-stl/)
-[![Monthly downloads](https://static.pepy.tech/badge/numpy-stl/month)](https://pepy.tech/projects/numpy-stl)
-[![Documentation](https://img.shields.io/readthedocs/numpy-stl/latest?style=plastic)](https://numpy-stl.readthedocs.io/)
-[![License](https://img.shields.io/pypi/l/numpy-stl?style=plastic)](https://github.com/WoLpH/numpy-stl/blob/develop/LICENSE)
+[![CI on master](https://img.shields.io/github/actions/workflow/status/wolph/numpy-stl/ci.yml?branch=master&label=CI&style=flat-square&labelColor=555)](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Coverage on master](https://img.shields.io/coverallsCoverage/github/wolph/numpy-stl?branch=master&style=flat-square&labelColor=555)](https://coveralls.io/github/wolph/numpy-stl?branch=master)
+[![PyPI](https://img.shields.io/pypi/v/numpy-stl?style=flat-square&labelColor=555&color=007ec6)](https://pypi.org/project/numpy-stl/)
+[![Python](https://img.shields.io/pypi/pyversions/numpy-stl?style=flat-square&labelColor=555&color=007ec6)](https://pypi.org/project/numpy-stl/)
+[![Monthly downloads](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fapi.pepy.tech%2Fbadge%2Fnumpy-stl%2Fmonth&query=%28%2F%2F%2A%5Blocal-name%28%29%3D%22text%22%5D%29%5Blast%28%29%5D&label=downloads%2Fmonth&style=flat-square&labelColor=555&color=007ec6)](https://pepy.tech/projects/numpy-stl)
+[![Documentation](https://img.shields.io/readthedocs/numpy-stl/latest?style=flat-square&labelColor=555)](https://numpy-stl.readthedocs.io/)
+[![License](https://img.shields.io/pypi/l/numpy-stl?style=flat-square&labelColor=555&color=007ec6)](https://github.com/WoLpH/numpy-stl/blob/develop/LICENSE)
 
 A fast library for reading, writing, and modifying STL files, powered
 by NumPy. Every mesh operation uses vectorized array math for speed.
