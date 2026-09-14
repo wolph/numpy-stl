@@ -3,7 +3,7 @@
 </h1>
 
 [![CI on master](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml?query=branch%3Amaster)
-[![Coverage on master](https://coveralls.io/repos/github/WoLpH/numpy-stl/badge.svg?branch=master)](https://coveralls.io/github/WoLpH/numpy-stl?branch=master)
+[![Coverage on master](https://coveralls.io/repos/github/wolph/numpy-stl/badge.svg?branch=master)](https://coveralls.io/github/wolph/numpy-stl?branch=master)
 [![PyPI](https://img.shields.io/pypi/v/numpy-stl)](https://pypi.org/project/numpy-stl/)
 [![Python](https://img.shields.io/pypi/pyversions/numpy-stl)](https://pypi.org/project/numpy-stl/)
 [![Downloads](https://img.shields.io/pypi/dm/numpy-stl)](https://pypi.org/project/numpy-stl/)
