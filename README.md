@@ -4,11 +4,11 @@
 
 [![CI on master](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/wolph/numpy-stl/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Coverage on master](https://coveralls.io/repos/github/wolph/numpy-stl/badge.svg?branch=master)](https://coveralls.io/github/wolph/numpy-stl?branch=master)
-[![PyPI](https://img.shields.io/pypi/v/numpy-stl)](https://pypi.org/project/numpy-stl/)
-[![Python](https://img.shields.io/pypi/pyversions/numpy-stl)](https://pypi.org/project/numpy-stl/)
-[![Downloads](https://img.shields.io/pypi/dm/numpy-stl)](https://pypi.org/project/numpy-stl/)
-[![Documentation](https://readthedocs.org/projects/numpy-stl/badge/?version=latest)](https://numpy-stl.readthedocs.io/)
-[![License](https://img.shields.io/pypi/l/numpy-stl)](https://github.com/WoLpH/numpy-stl/blob/develop/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/numpy-stl?style=plastic)](https://pypi.org/project/numpy-stl/)
+[![Python](https://img.shields.io/pypi/pyversions/numpy-stl?style=plastic)](https://pypi.org/project/numpy-stl/)
+[![Monthly downloads](https://static.pepy.tech/badge/numpy-stl/month)](https://pepy.tech/projects/numpy-stl)
+[![Documentation](https://img.shields.io/readthedocs/numpy-stl/latest?style=plastic)](https://numpy-stl.readthedocs.io/)
+[![License](https://img.shields.io/pypi/l/numpy-stl?style=plastic)](https://github.com/WoLpH/numpy-stl/blob/develop/LICENSE)
 
 A fast library for reading, writing, and modifying STL files, powered
 by NumPy. Every mesh operation uses vectorized array math for speed.
