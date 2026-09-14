@@ -78,6 +78,13 @@ jobs:
           merge-multiple: true
       - name: Combine coverage and check threshold
         run: tox -e coverage
+      - name: Upload combined coverage to Coveralls
+        if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/heads/')
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
+        with:
+          file: .tox/coverage.lcov
+          format: lcov
+          fail-on-error: true
 
   lint:
     runs-on: ubuntu-latest

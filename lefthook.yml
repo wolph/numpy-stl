@@ -13,4 +13,4 @@ pre-commit:
       run: uv run ruff format {staged_files}
       stage_fixed: true
     ty-check:
-      run: uv run ty check stl
+      run: uv run --extra tox tox -e ty
