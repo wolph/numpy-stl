@@ -59,6 +59,43 @@ def test_3mf_valid_file(tmp_path):
     )
 
 
+@pytest.mark.parametrize('calculate_normals', [False, True])
+def test_3mf_normals(tmp_path: pathlib.Path, calculate_normals: bool) -> None:
+    loaded = next(
+        mesh.Mesh.from_3mf_file(
+            _make_3mf(tmp_path), calculate_normals=calculate_normals
+        )
+    )
+    expected = [[0, 0, 1]] if calculate_normals else [[0, 0, 0]]
+    np.testing.assert_array_equal(loaded.normals, expected)
+
+
+def test_3mf_constructor_options(tmp_path: pathlib.Path) -> None:
+    filename = _make_3mf(
+        tmp_path,
+        triangles=_GOOD_TRIANGLES + '<triangle v1="0" v2="0" v3="0"/>',
+    )
+    loaded = next(
+        mesh.Mesh.from_3mf_file(
+            filename, remove_empty_areas=True, name='example', speedups=False
+        )
+    )
+    assert loaded.name == 'example'
+    assert loaded.speedups is False
+    assert len(loaded) == 1
+    np.testing.assert_array_equal(
+        loaded.vectors, [[[0, 0, 0], [1, 0, 0], [0, 1, 0]]]
+    )
+
+
+def test_3mf_empty_mesh(tmp_path: pathlib.Path) -> None:
+    loaded = next(
+        mesh.Mesh.from_3mf_file(_make_3mf(tmp_path, vertices='', triangles=''))
+    )
+    assert loaded.vectors.shape == (0, 3, 3)
+    assert loaded.normals.shape == (0, 3)
+
+
 def test_3mf_vertex_missing_coordinate(tmp_path):
     # Used to crash with a raw KeyError: 'z'.
     filename = _make_3mf(
