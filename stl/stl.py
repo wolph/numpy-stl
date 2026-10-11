@@ -390,12 +390,15 @@ class BaseStl(base.BaseMesh):
                 :class:`Mode` value.
 
         Example:
+            >>> from pathlib import Path
+            >>> from tempfile import TemporaryDirectory
             >>> import numpy as np
             >>> from stl import mesh
             >>> data = np.zeros(1, dtype=mesh.Mesh.dtype)
             >>> data['vectors'][0] = [[0, 0, 0], [1, 0, 0], [0, 1, 0]]
             >>> m = mesh.Mesh(data, remove_empty_areas=False)
-            >>> m.save('/tmp/_numpy_stl_test.stl')
+            >>> with TemporaryDirectory() as directory:
+            ...     m.save(str(Path(directory) / 'example.stl'))
 
         Warning:
             Even for ASCII output, the file handle must be
@@ -891,7 +894,10 @@ class BaseStl(base.BaseMesh):
         Example:
             >>> from stl import mesh
             >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
-            >>> m.save_ply('/tmp/_numpy_stl_test.ply')
+            >>> from pathlib import Path
+            >>> from tempfile import TemporaryDirectory
+            >>> with TemporaryDirectory() as directory:
+            ...     m.save_ply(str(Path(directory) / 'example.ply'))
         """
         from .ply import write_ply
 
