@@ -685,17 +685,22 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self, density: float
     ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None:
         """Accumulate signed tetrahedron moments as exact dyadic integers."""
-        ratios = [float(x).as_integer_ratio() for x in self.vectors.ravel()]
-        scale = max(denominator for _, denominator in ratios)
-        values = [
-            numerator * (scale // denominator)
-            for numerator, denominator in ratios
-        ]
+        scale = max(
+            float(x).as_integer_ratio()[1] for x in self.vectors.ravel()
+        )
         volume = 0
         first = [0] * 3
         second = [[0] * 3 for _ in range(3)]
-        for k in range(0, len(values), 9):
-            a, b, c = [values[k + i : k + i + 3] for i in (0, 3, 6)]
+        for triangle in self.vectors:
+            a, b, c = [
+                [
+                    numerator * (scale // denominator)
+                    for numerator, denominator in (
+                        float(x).as_integer_ratio() for x in vertex
+                    )
+                ]
+                for vertex in triangle
+            ]
             determinant = (
                 a[0] * (b[1] * c[2] - b[2] * c[1])
                 - a[1] * (b[0] * c[2] - b[2] * c[0])
@@ -754,16 +759,29 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         spans = (upper - lower)[labels]
         points = self.vectors.astype(np.float64)
-        lengths = np.linalg.norm(points - np.roll(points, 1, axis=1), axis=2)
-        # Small facets on an enormous component can destroy central moments
-        # in any float64 reference frame. Integer moments also make this path
-        # independent of facet subdivision, ordering and reference selection.
+        edge_a = points[:, 1] - points[:, 0]
+        edge_b = points[:, 2] - points[:, 0]
+        longest = np.maximum(
+            np.linalg.norm(edge_a, axis=1),
+            np.maximum(
+                np.linalg.norm(edge_b, axis=1),
+                np.linalg.norm(edge_b - edge_a, axis=1),
+            ),
+        )
+        altitudes = np.divide(
+            np.linalg.norm(np.cross(edge_a, edge_b), axis=1),
+            longest,
+            out=np.zeros_like(longest),
+            where=longest != 0,
+        )
+        # Both short edges and nearly collinear long facets can destroy
+        # float64 central moments. Stream exact moments in that range.
         if (
             np.any(
-                (lengths > 0)
+                (altitudes > 0)
                 & (
-                    spans.max(axis=1)[:, None]
-                    > lengths / np.sqrt(np.finfo(np.float64).eps)
+                    spans.max(axis=1)
+                    > altitudes / np.sqrt(np.finfo(np.float64).eps)
                 )
             )
             and np.isfinite(points).all()
