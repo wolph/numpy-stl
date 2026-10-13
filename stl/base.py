@@ -677,60 +677,62 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             if np.array_equal(parents, previous):
                 break
         roots, labels = np.unique(parents, return_inverse=True)
-        # Score adjacent tetrahedra by volume per longest edge, including
-        # out-of-plane thickness and long extensions at an attachment.
-        points = vertices[triangles].astype(np.float64)
-        first_edge = points[:, 1] - points[:, 0]
-        second_edge = points[:, 2] - points[:, 0]
-        longest = np.stack(
-            [
-                np.linalg.norm(first_edge, axis=1),
-                np.linalg.norm(second_edge, axis=1),
-                np.linalg.norm(points[:, 2] - points[:, 1], axis=1),
-            ]
-        ).max(axis=0)
-        opposite = triangles[:, (2, 0, 1)]
-        lower_opposite = np.full(
-            len(unique_edges), len(vertices), dtype=np.intp
-        )
-        upper_opposite = np.zeros(len(unique_edges), dtype=np.intp)
-        np.minimum.at(lower_opposite, edge_indices.ravel(), opposite.ravel())
-        np.maximum.at(upper_opposite, edge_indices.ravel(), opposite.ravel())
-        adjacent = vertices[
-            np.column_stack(
-                [lower_opposite[edge_indices], upper_opposite[edge_indices]]
-            )
-        ].astype(np.float64)
-        tetra_longest = np.maximum(
-            longest[:, None],
-            np.stack(
-                [
-                    np.linalg.norm(adjacent - points[:, None, i], axis=2)
-                    for i in range(3)
-                ]
-            ).max(axis=0),
-        )
-        scores = np.abs(
-            np.einsum(
-                'ij,ikj->ik',
-                np.cross(first_edge, second_edge),
-                adjacent - points[:, None, 0],
-            )
-        )
-        scores = np.divide(
-            scores,
-            tetra_longest,
-            out=np.zeros_like(scores),
-            where=tetra_longest != 0,
-        ).max(axis=1)
-        largest = np.zeros(len(roots))
-        np.maximum.at(largest, labels, scores)
-        selected = scores == largest[labels]
         references = np.full(len(roots), len(vertices), dtype=np.intp)
-        np.minimum.at(
-            references, labels[selected], triangles[selected].min(axis=1)
-        )
+        np.minimum.at(references, labels, triangles.min(axis=1))
         return labels, vertices[references].astype(np.float64)
+
+    def _get_mass_properties_exact(
+        self, density: float
+    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None:
+        """Accumulate signed tetrahedron moments as exact dyadic integers."""
+        ratios = [float(x).as_integer_ratio() for x in self.vectors.ravel()]
+        scale = max(denominator for _, denominator in ratios)
+        values = [
+            numerator * (scale // denominator)
+            for numerator, denominator in ratios
+        ]
+        volume = 0
+        first = [0] * 3
+        second = [[0] * 3 for _ in range(3)]
+        for k in range(0, len(values), 9):
+            a, b, c = [values[k + i : k + i + 3] for i in (0, 3, 6)]
+            determinant = (
+                a[0] * (b[1] * c[2] - b[2] * c[1])
+                - a[1] * (b[0] * c[2] - b[2] * c[0])
+                + a[2] * (b[0] * c[1] - b[1] * c[0])
+            )
+            volume += determinant
+            sums = [a[i] + b[i] + c[i] for i in range(3)]
+            for i in range(3):
+                first[i] += determinant * sums[i]
+                for j in range(3):
+                    second[i][j] += determinant * (
+                        sums[i] * sums[j]
+                        + a[i] * a[j]
+                        + b[i] * b[j]
+                        + c[i] * c[j]
+                    )
+        if not volume:
+            return None
+        cog = np.array([f / (4 * volume * scale) for f in first])
+        # Integral xx^T minus (integral x)(integral x)^T / volume.
+        # Form the central moments before converting to float64.
+        central = np.array(
+            [
+                [
+                    (4 * volume * second[i][j] - 5 * first[i] * first[j])
+                    / (480 * volume * scale**5)
+                    for j in range(3)
+                ]
+                for i in range(3)
+            ]
+        )
+        inertia = -central
+        for i in range(3):
+            j, k = (i + 1) % 3, (i + 2) % 3
+            inertia[i, i] = central[j, j] + central[k, k]
+        result_volume = np.float64(volume / (6 * scale**3))
+        return result_volume, result_volume * density, cog, inertia * density
 
     def _get_mass_properties(
         self, density: float
@@ -751,6 +753,24 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             upper, labels, np.column_stack([a.max(axis=1) for a in (x, y, z)])
         )
         spans = (upper - lower)[labels]
+        points = self.vectors.astype(np.float64)
+        lengths = np.linalg.norm(points - np.roll(points, 1, axis=1), axis=2)
+        # Small facets on an enormous component can destroy central moments
+        # in any float64 reference frame. Integer moments also make this path
+        # independent of facet subdivision, ordering and reference selection.
+        if (
+            np.any(
+                (lengths > 0)
+                & (
+                    spans.max(axis=1)[:, None]
+                    > lengths / np.sqrt(np.finfo(np.float64).eps)
+                )
+            )
+            and np.isfinite(points).all()
+        ):
+            exact = self._get_mass_properties_exact(density)
+            if exact is not None:
+                return exact
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
