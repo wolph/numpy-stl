@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `get_mass_properties()` and `get_mass_properties_with_density()` returned
+  a wrong centre of gravity and inertia tensor, often with negative diagonal
+  entries, for closed meshes away from the origin or built from distant
+  parts. Both now integrate each connected component in float64 around a
+  local reference point and combine the parts with the parallel-axis
+  theorem. Thanks to @antonsoo (#245)
+
 ## [4.0.1] - 2026-09-07
 
 ### Fixed
