@@ -76,6 +76,59 @@ def test_empty_mass_properties(density: float | None) -> None:
     assert np.isnan(inertia).all()
 
 
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize('tiny_first', [False, True])
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_mass_properties_with_distant_small_component(
+    binary_path: Path, density: float | None, tiny_first: bool, axis: int
+) -> None:
+    """A distant low-volume component cannot choose the integration origin."""
+    cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    tiny_data = cube.data.copy()
+    sides = np.full(3, 2e-8)
+    sides[axis] = 20
+    offset = np.zeros(3)
+    offset[axis] = 500000
+    tiny_data['vectors'] = tiny_data['vectors'] * sides / 2 + offset
+    parts = [tiny_data, cube.data] if tiny_first else [cube.data, tiny_data]
+    compound = Mesh(np.concatenate(parts))
+    before = compound.data.copy()
+    assert compound.check(exact=True)
+
+    # Analytic cuboid moments use the actual stored float32 bounds.
+    tiny_vectors = tiny_data['vectors'].astype(np.float64)
+    low = tiny_vectors.min(axis=(0, 1))
+    high = tiny_vectors.max(axis=(0, 1))
+    sizes = high - low
+    tiny_volume = sizes.prod()
+    tiny_cog = (low + high) / 2
+    expected_volume = 8 + tiny_volume
+    expected_cog = (8 * np.ones(3) + tiny_volume * tiny_cog) / expected_volume
+    expected_inertia = np.eye(3) * (16 / 3)
+    expected_inertia += np.diag(
+        tiny_volume / 12 * (np.sum(sizes**2) - sizes**2)
+    )
+    for volume, center in [(8, np.ones(3)), (tiny_volume, tiny_cog)]:
+        shift = center - expected_cog
+        expected_inertia += volume * (
+            np.eye(3) * (shift @ shift) - np.outer(shift, shift)
+        )
+
+    if density is None:
+        volume, cog, inertia = compound.get_mass_properties()
+    else:
+        volume, _, cog, inertia = compound.get_mass_properties_with_density(
+            density
+        )
+        expected_inertia *= density
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(cog, expected_cog, rtol=0, atol=1e-10)
+    np.testing.assert_allclose(
+        inertia, expected_inertia, rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_array_equal(compound.data, before)
+
+
 def close(a, b):
     return np.allclose(a, b, atol=tolerance)
 

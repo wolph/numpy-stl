@@ -650,6 +650,24 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         return False
 
+    def _get_mass_properties_origin(self) -> _f64_1d:
+        """Estimate the volume centroid for integration near the mass."""
+        if not self.vectors.size:
+            return np.zeros(3)
+        points = self.vectors.astype(np.float64)
+        origin = points[0, 0].copy()
+        points -= origin
+        normals = np.cross(
+            points[:, 1] - points[:, 0], points[:, 2] - points[:, 0]
+        )
+        volumes = np.einsum('ij,ij->i', points[:, 0], normals)
+        total_volume = volumes.sum()
+        if total_volume != 0:
+            origin += (volumes[:, None] * points.sum(axis=1)).sum(axis=0) / (
+                4 * total_volume
+            )
+        return origin
+
     def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
 
@@ -683,11 +701,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
         # Integrate near the mesh instead of subtracting large moments
         # about the world origin. Keep the stored float32 vertices unchanged.
-        origin = (
-            self.vectors[0, 0].astype(np.float64)
-            if self.vectors.size
-            else np.zeros(3)
-        )
+        origin = self._get_mass_properties_origin()
         x = self.x.astype(np.float64) - origin[0]
         y = self.y.astype(np.float64) - origin[1]
         z = self.z.astype(np.float64) - origin[2]
@@ -1147,11 +1161,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """
         self.check(True)
 
-        origin = (
-            self.vectors[0, 0].astype(np.float64)
-            if self.vectors.size
-            else np.zeros(3)
-        )
+        origin = self._get_mass_properties_origin()
         x = self.x.astype(np.float64) - origin[0]
         y = self.y.astype(np.float64) - origin[1]
         z = self.z.astype(np.float64) - origin[2]
