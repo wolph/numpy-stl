@@ -682,13 +682,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         points = vertices[triangles].astype(np.float64)
         first_edge = points[:, 1] - points[:, 0]
         second_edge = points[:, 2] - points[:, 0]
-        longest = np.maximum.reduce(
+        longest = np.stack(
             [
                 np.linalg.norm(first_edge, axis=1),
                 np.linalg.norm(second_edge, axis=1),
                 np.linalg.norm(points[:, 2] - points[:, 1], axis=1),
             ]
-        )
+        ).max(axis=0)
         heights = np.divide(
             np.linalg.norm(np.cross(first_edge, second_edge), axis=1),
             longest,
