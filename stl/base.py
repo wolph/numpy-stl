@@ -677,8 +677,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             if np.array_equal(parents, previous):
                 break
         roots, labels = np.unique(parents, return_inverse=True)
-        # Favor facets with a large shortest altitude. A long, thin appendage
-        # must not select its distant endpoint as the integration reference.
+        # Score adjacent tetrahedra by volume per longest edge, including
+        # out-of-plane thickness and long extensions at an attachment.
         points = vertices[triangles].astype(np.float64)
         first_edge = points[:, 1] - points[:, 0]
         second_edge = points[:, 2] - points[:, 0]
@@ -689,15 +689,43 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 np.linalg.norm(points[:, 2] - points[:, 1], axis=1),
             ]
         ).max(axis=0)
-        heights = np.divide(
-            np.linalg.norm(np.cross(first_edge, second_edge), axis=1),
-            longest,
-            out=np.zeros(len(triangles)),
-            where=longest != 0,
+        opposite = triangles[:, (2, 0, 1)]
+        lower_opposite = np.full(
+            len(unique_edges), len(vertices), dtype=np.intp
         )
+        upper_opposite = np.zeros(len(unique_edges), dtype=np.intp)
+        np.minimum.at(lower_opposite, edge_indices.ravel(), opposite.ravel())
+        np.maximum.at(upper_opposite, edge_indices.ravel(), opposite.ravel())
+        adjacent = vertices[
+            np.column_stack(
+                [lower_opposite[edge_indices], upper_opposite[edge_indices]]
+            )
+        ].astype(np.float64)
+        tetra_longest = np.maximum(
+            longest[:, None],
+            np.stack(
+                [
+                    np.linalg.norm(adjacent - points[:, None, i], axis=2)
+                    for i in range(3)
+                ]
+            ).max(axis=0),
+        )
+        scores = np.abs(
+            np.einsum(
+                'ij,ikj->ik',
+                np.cross(first_edge, second_edge),
+                adjacent - points[:, None, 0],
+            )
+        )
+        scores = np.divide(
+            scores,
+            tetra_longest,
+            out=np.zeros_like(scores),
+            where=tetra_longest != 0,
+        ).max(axis=1)
         largest = np.zeros(len(roots))
-        np.maximum.at(largest, labels, heights)
-        selected = heights == largest[labels]
+        np.maximum.at(largest, labels, scores)
+        selected = scores == largest[labels]
         references = np.full(len(roots), len(vertices), dtype=np.intp)
         np.minimum.at(
             references, labels[selected], triangles[selected].min(axis=1)
@@ -746,45 +774,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         x -= references[:, 0, None]
         y -= references[:, 1, None]
         z -= references[:, 2, None]
-        # A connected component can contain a long, low-volume appendage.
-        # Estimate its mass centroid before integrating second moments.
-        initial_terms = [
-            d0 * x.sum(axis=1) / 6,
-            d0 * subexpression(x)[1] / 24,
-            d1 * subexpression(y)[1] / 24,
-            d2 * subexpression(z)[1] / 24,
-        ]
-        initial = np.stack(
-            [
-                np.bincount(labels, weights=term, minlength=len(origins))
-                for term in initial_terms
-            ],
-            axis=1,
-        ).astype(np.float64, copy=False)
-        volume_roundoff = (
-            np.bincount(
-                labels,
-                weights=np.abs(initial_terms[0]),
-                minlength=len(origins),
-            )
-            * np.bincount(labels, minlength=len(origins))
-            * np.finfo(np.float64).eps
-        )
-        shifts = np.divide(
-            initial[:, 1:4],
-            initial[:, :1],
-            out=np.zeros_like(origins),
-            where=np.abs(initial[:, :1]) > volume_roundoff[:, None],
-        )
-        origins += shifts
-        x -= shifts[labels, 0, None]
-        y -= shifts[labels, 1, None]
-        z -= shifts[labels, 2, None]
+        # Keep integration near the substantial local surface. A negligible
+        # remote plate can move the centroid far from that surface.
         f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)
         terms = [
-            d0 * f1x,
+            np.choose(spans.argmax(axis=1), [d0 * f1x, d1 * f1y, d2 * f1z]),
             d0 * f2x,
             d1 * f2y,
             d2 * f2z,
