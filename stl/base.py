@@ -650,23 +650,123 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         return False
 
-    def _get_mass_properties_origin(self) -> _f64_1d:
-        """Estimate the volume centroid for integration near the mass."""
+    def _get_mass_properties_components(self) -> tuple[_intp_1d, _f64_2d]:
+        """Find connected components and a local reference for each."""
         if not self.vectors.size:
-            return np.zeros(3)
-        points = self.vectors.astype(np.float64)
-        origin = points[0, 0].copy()
-        points -= origin
-        normals = np.cross(
-            points[:, 1] - points[:, 0], points[:, 2] - points[:, 0]
+            return np.zeros(0, dtype=np.intp), np.zeros((1, 3))
+        vertices, indices = np.unique(
+            self.vectors.reshape(-1, 3), axis=0, return_inverse=True
         )
-        volumes = np.einsum('ij,ij->i', points[:, 0], normals)
-        total_volume = volumes.sum()
-        if total_volume != 0:
-            origin += (volumes[:, None] * points.sum(axis=1)).sum(axis=0) / (
-                4 * total_volume
+        parents = np.arange(vertices.shape[0], dtype=np.intp)
+        triangles = indices.reshape(-1, 3)
+        while True:
+            previous = parents.copy()
+            triangle_roots = parents[triangles]
+            np.minimum.at(
+                parents,
+                triangle_roots.ravel(),
+                np.repeat(triangle_roots.min(axis=1), 3),
             )
-        return origin
+            parents = parents[parents]
+            if np.array_equal(parents, previous):
+                break
+        roots, labels = np.unique(
+            parents[triangles[:, 0]], return_inverse=True
+        )
+        return labels, vertices[roots].astype(np.float64)
+
+    def _get_mass_properties(
+        self, density: float
+    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
+        """Integrate local Eberly moments and combine at the mass centroid."""
+        self.check(True)
+        labels, origins = self._get_mass_properties_components()
+        references = origins[labels]
+        x = self.x.astype(np.float64) - references[:, 0, None]
+        y = self.y.astype(np.float64) - references[:, 1, None]
+        z = self.z.astype(np.float64) - references[:, 2, None]
+
+        def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
+            w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
+            temp0 = w0 + w1
+            f1 = temp0 + w2
+            temp1 = w0 * w0
+            temp2 = temp1 + w1 * temp0
+            f2 = temp2 + w2 * f1
+            f3 = w0 * temp1 + w1 * temp2 + w2 * f2
+            g0 = f2 + w0 * (f1 + w0)
+            g1 = f2 + w1 * (f1 + w1)
+            g2 = f2 + w2 * (f1 + w2)
+            return f1, f2, f3, g0, g1, g2
+
+        x0, x1, x2 = x[:, 0], x[:, 1], x[:, 2]
+        y0, y1, y2 = y[:, 0], y[:, 1], y[:, 2]
+        z0, z1, z2 = z[:, 0], z[:, 1], z[:, 2]
+        a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
+        a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
+        d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
+        terms = [
+            d0 * f1x,
+            d0 * f2x,
+            d1 * f2y,
+            d2 * f2z,
+            d0 * f3x,
+            d1 * f3y,
+            d2 * f3z,
+            d0 * (y0 * g0x + y1 * g1x + y2 * g2x),
+            d1 * (z0 * g0y + z1 * g1y + z2 * g2y),
+            d2 * (x0 * g0z + x1 * g1z + x2 * g2z),
+        ]
+        intg = np.stack(
+            [
+                np.bincount(labels, weights=term, minlength=len(origins))
+                for term in terms
+            ],
+            axis=1,
+        ).astype(np.float64, copy=False)
+        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        # Zero-volume closed surfaces must not contaminate other components.
+        nonzero = intg[:, 0] != 0
+        if nonzero.any():
+            intg, origins = intg[nonzero], origins[nonzero]
+        volumes = intg[:, 0]
+        volume = volumes.sum()
+        component_cog = intg[:, 1:4] / volumes[:, None]
+        centers = component_cog + origins
+        cog = (volumes[:, None] * centers).sum(axis=0) / volume
+        cogsq = component_cog**2
+        masses = volumes * density
+        inertia = np.zeros((len(volumes), 3, 3))
+        inertia[:, 0, 0] = (intg[:, 5] + intg[:, 6]) * density - masses * (
+            cogsq[:, 1] + cogsq[:, 2]
+        )
+        inertia[:, 1, 1] = (intg[:, 4] + intg[:, 6]) * density - masses * (
+            cogsq[:, 2] + cogsq[:, 0]
+        )
+        inertia[:, 2, 2] = (intg[:, 4] + intg[:, 5]) * density - masses * (
+            cogsq[:, 0] + cogsq[:, 1]
+        )
+        inertia[:, 0, 1] = inertia[:, 1, 0] = -(
+            intg[:, 7] * density
+            - masses * component_cog[:, 0] * component_cog[:, 1]
+        )
+        inertia[:, 1, 2] = inertia[:, 2, 1] = -(
+            intg[:, 8] * density
+            - masses * component_cog[:, 1] * component_cog[:, 2]
+        )
+        inertia[:, 0, 2] = inertia[:, 2, 0] = -(
+            intg[:, 9] * density
+            - masses * component_cog[:, 2] * component_cog[:, 0]
+        )
+        offsets = centers - cog
+        inertia += masses[:, None, None] * (
+            np.sum(offsets**2, axis=1)[:, None, None] * np.eye(3)
+            - offsets[:, :, None] * offsets[:, None, :]
+        )
+        return volume, volume * density, cog, inertia.sum(axis=0)
 
     def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
@@ -697,58 +797,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             the (then unreliable) values. Use
             :meth:`is_closed` to verify beforehand.
         """
-        self.check(True)
-
-        # Integrate near the mesh instead of subtracting large moments
-        # about the world origin. Keep the stored float32 vertices unchanged.
-        origin = self._get_mass_properties_origin()
-        x = self.x.astype(np.float64) - origin[0]
-        y = self.y.astype(np.float64) - origin[1]
-        z = self.z.astype(np.float64) - origin[2]
-
-        def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
-            w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
-            temp0 = w0 + w1
-            f1 = temp0 + w2
-            temp1 = w0 * w0
-            temp2 = temp1 + w1 * temp0
-            f2 = temp2 + w2 * f1
-            f3 = w0 * temp1 + w1 * temp2 + w2 * f2
-            g0 = f2 + w0 * (f1 + w0)
-            g1 = f2 + w1 * (f1 + w1)
-            g2 = f2 + w2 * (f1 + w2)
-            return f1, f2, f3, g0, g1, g2
-
-        x0, x1, x2 = x[:, 0], x[:, 1], x[:, 2]
-        y0, y1, y2 = y[:, 0], y[:, 1], y[:, 2]
-        z0, z1, z2 = z[:, 0], z[:, 1], z[:, 2]
-        a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
-        a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
-        d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
-
-        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
-
-        intg = np.zeros(10)
-        intg[0] = sum(d0 * f1x)
-        intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
-        intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
-        intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
-        intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
-        intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
-        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
-        volume = intg[0]
-        cog = intg[1:4] / volume
-        cogsq = cog**2
-        inertia = np.zeros((3, 3))
-        inertia[0, 0] = intg[5] + intg[6] - volume * (cogsq[1] + cogsq[2])
-        inertia[1, 1] = intg[4] + intg[6] - volume * (cogsq[2] + cogsq[0])
-        inertia[2, 2] = intg[4] + intg[5] - volume * (cogsq[0] + cogsq[1])
-        inertia[0, 1] = inertia[1, 0] = -(intg[7] - volume * cog[0] * cog[1])
-        inertia[1, 2] = inertia[2, 1] = -(intg[8] - volume * cog[1] * cog[2])
-        inertia[0, 2] = inertia[2, 0] = -(intg[9] - volume * cog[2] * cog[0])
-        return volume, cog + origin, inertia
+        volume, _, cog, inertia = self._get_mass_properties(1.0)
+        return volume, cog, inertia
 
     def is_convex(self) -> bool:
         """Return True if the mesh is convex.
@@ -1159,68 +1209,4 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             open meshes, but still computes and returns
             the (then unreliable) values.
         """
-        self.check(True)
-
-        origin = self._get_mass_properties_origin()
-        x = self.x.astype(np.float64) - origin[0]
-        y = self.y.astype(np.float64) - origin[1]
-        z = self.z.astype(np.float64) - origin[2]
-
-        def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
-            w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
-            temp0 = w0 + w1
-            f1 = temp0 + w2
-            temp1 = w0 * w0
-            temp2 = temp1 + w1 * temp0
-            f2 = temp2 + w2 * f1
-            f3 = w0 * temp1 + w1 * temp2 + w2 * f2
-            g0 = f2 + w0 * (f1 + w0)
-            g1 = f2 + w1 * (f1 + w1)
-            g2 = f2 + w2 * (f1 + w2)
-            return f1, f2, f3, g0, g1, g2
-
-        x0, x1, x2 = x[:, 0], x[:, 1], x[:, 2]
-        y0, y1, y2 = y[:, 0], y[:, 1], y[:, 2]
-        z0, z1, z2 = z[:, 0], z[:, 1], z[:, 2]
-        a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
-        a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
-        d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
-
-        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
-
-        intg = np.zeros(10)
-        intg[0] = sum(d0 * f1x)
-        intg[1:4] = sum(d0 * f2x), sum(d1 * f2y), sum(d2 * f2z)
-        intg[4:7] = sum(d0 * f3x), sum(d1 * f3y), sum(d2 * f3z)
-        intg[7] = sum(d0 * (y0 * g0x + y1 * g1x + y2 * g2x))
-        intg[8] = sum(d1 * (z0 * g0y + z1 * g1y + z2 * g2y))
-        intg[9] = sum(d2 * (x0 * g0z + x1 * g1z + x2 * g2z))
-        intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
-        volume = intg[0]
-        cog = intg[1:4] / volume
-        cogsq = cog**2
-        vmass = volume * density
-        inertia = np.zeros((3, 3))
-
-        inertia[0, 0] = (intg[5] + intg[6]) * density - vmass * (
-            cogsq[1] + cogsq[2]
-        )
-        inertia[1, 1] = (intg[4] + intg[6]) * density - vmass * (
-            cogsq[2] + cogsq[0]
-        )
-        inertia[2, 2] = (intg[4] + intg[5]) * density - vmass * (
-            cogsq[0] + cogsq[1]
-        )
-        inertia[0, 1] = inertia[1, 0] = -(
-            intg[7] * density - vmass * cog[0] * cog[1]
-        )
-        inertia[1, 2] = inertia[2, 1] = -(
-            intg[8] * density - vmass * cog[1] * cog[2]
-        )
-        inertia[0, 2] = inertia[2, 0] = -(
-            intg[9] * density - vmass * cog[2] * cog[0]
-        )
-
-        return volume, vmass, cog + origin, inertia
+        return self._get_mass_properties(density)

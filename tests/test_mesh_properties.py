@@ -79,16 +79,26 @@ def test_empty_mass_properties(density: float | None) -> None:
 @pytest.mark.parametrize('density', [None, 0.7, 2.3])
 @pytest.mark.parametrize('tiny_first', [False, True])
 @pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize(
+    ('length', 'thickness', 'distance'),
+    [(20, 2e-8, 500000), (1e10, 3.16e-14, 1e15)],
+)
 def test_mass_properties_with_distant_small_component(
-    binary_path: Path, density: float | None, tiny_first: bool, axis: int
+    binary_path: Path,
+    density: float | None,
+    tiny_first: bool,
+    axis: int,
+    length: float,
+    thickness: float,
+    distance: float,
 ) -> None:
     """A distant low-volume component cannot choose the integration origin."""
     cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
     tiny_data = cube.data.copy()
-    sides = np.full(3, 2e-8)
-    sides[axis] = 20
+    sides = np.full(3, thickness)
+    sides[axis] = length
     offset = np.zeros(3)
-    offset[axis] = 500000
+    offset[axis] = distance
     tiny_data['vectors'] = tiny_data['vectors'] * sides / 2 + offset
     parts = [tiny_data, cube.data] if tiny_first else [cube.data, tiny_data]
     compound = Mesh(np.concatenate(parts))
@@ -127,6 +137,50 @@ def test_mass_properties_with_distant_small_component(
         inertia, expected_inertia, rtol=1e-12, atol=1e-10
     )
     np.testing.assert_array_equal(compound.data, before)
+
+
+@pytest.mark.parametrize('density', [None, 0.0, 2.3])
+def test_mass_properties_with_inner_cavity(
+    binary_path: Path, density: float | None
+) -> None:
+    """Opposite winding subtracts a cavity rather than adding its volume."""
+    original = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    outer, inner = original.data.copy(), original.data.copy()
+    outer['vectors'] *= 1.5
+    inner['vectors'] = inner['vectors'][:, ::-1] / 2 + 1
+    hollow = Mesh(np.concatenate([outer, inner]))
+    assert hollow.check(exact=True)
+    if density is None:
+        volume, cog, inertia = hollow.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = hollow.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, 26 * density)
+        scale = density
+    np.testing.assert_allclose(volume, 26)
+    np.testing.assert_allclose(cog, [1.5, 1.5, 1.5])
+    np.testing.assert_allclose(
+        inertia, np.eye(3) * (40.5 - 1 / 6) * scale, atol=1e-12
+    )
+
+
+def test_zero_volume_component_keeps_cube_mass_properties(
+    binary_path: Path,
+) -> None:
+    """A closed zero-volume surface cannot contaminate another component."""
+    cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    vertices = np.array([[10, 10, 0], [11, 10, 0], [10, 11, 0], [11, 11, 0]])
+    faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
+    data = np.zeros(4, dtype=Mesh.dtype)
+    data['vectors'] = vertices[faces]
+    compound = Mesh(np.concatenate([cube.data, data]))
+    assert compound.check(exact=True)
+    volume, cog, inertia = compound.get_mass_properties()
+    np.testing.assert_allclose(volume, 8)
+    np.testing.assert_allclose(cog, [1, 1, 1])
+    np.testing.assert_allclose(inertia, np.eye(3) * 16 / 3, atol=1e-12)
 
 
 def close(a, b):
