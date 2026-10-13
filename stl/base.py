@@ -682,9 +682,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         self.check(True)
         labels, origins = self._get_mass_properties_components()
         references = origins[labels]
-        x = self.x.astype(np.float64) - references[:, 0, None]
-        y = self.y.astype(np.float64) - references[:, 1, None]
-        z = self.z.astype(np.float64) - references[:, 2, None]
+        x = self.x.astype(np.float64)
+        y = self.y.astype(np.float64)
+        z = self.z.astype(np.float64)
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
@@ -705,6 +705,34 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
         a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
         d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
+        x -= references[:, 0, None]
+        y -= references[:, 1, None]
+        z -= references[:, 2, None]
+        # A connected component can contain a long, low-volume appendage.
+        # Estimate its mass centroid before integrating second moments.
+        initial_terms = [
+            d0 * x.sum(axis=1) / 6,
+            d0 * subexpression(x)[1] / 24,
+            d1 * subexpression(y)[1] / 24,
+            d2 * subexpression(z)[1] / 24,
+        ]
+        initial = np.stack(
+            [
+                np.bincount(labels, weights=term, minlength=len(origins))
+                for term in initial_terms
+            ],
+            axis=1,
+        ).astype(np.float64, copy=False)
+        shifts = np.divide(
+            initial[:, 1:4],
+            initial[:, :1],
+            out=np.zeros_like(origins),
+            where=initial[:, :1] != 0,
+        )
+        origins += shifts
+        x -= shifts[labels, 0, None]
+        y -= shifts[labels, 1, None]
+        z -= shifts[labels, 2, None]
         f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
         f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
         f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059

@@ -80,8 +80,8 @@ def test_empty_mass_properties(density: float | None) -> None:
 @pytest.mark.parametrize('tiny_first', [False, True])
 @pytest.mark.parametrize('axis', [0, 1, 2])
 @pytest.mark.parametrize(
-    ('length', 'thickness', 'distance'),
-    [(20, 2e-8, 500000), (1e10, 3.16e-14, 1e15)],
+    ('length', 'thickness', 'distance', 'cube_distance'),
+    [(20, 2e-8, 500000, 0), (1e10, 3.16e-14, 1e15, 0), (1e6, 2e-9, 0, 1e6)],
 )
 def test_mass_properties_with_distant_small_component(
     binary_path: Path,
@@ -91,10 +91,14 @@ def test_mass_properties_with_distant_small_component(
     length: float,
     thickness: float,
     distance: float,
+    cube_distance: float,
 ) -> None:
     """A distant low-volume component cannot choose the integration origin."""
     cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
     tiny_data = cube.data.copy()
+    cube_offset = np.zeros(3)
+    cube_offset[axis] = cube_distance
+    cube.translate(cube_offset)
     sides = np.full(3, thickness)
     sides[axis] = length
     offset = np.zeros(3)
@@ -113,12 +117,13 @@ def test_mass_properties_with_distant_small_component(
     tiny_volume = sizes.prod()
     tiny_cog = (low + high) / 2
     expected_volume = 8 + tiny_volume
-    expected_cog = (8 * np.ones(3) + tiny_volume * tiny_cog) / expected_volume
+    cube_cog = np.ones(3) + cube_offset
+    expected_cog = (8 * cube_cog + tiny_volume * tiny_cog) / expected_volume
     expected_inertia = np.eye(3) * (16 / 3)
     expected_inertia += np.diag(
         tiny_volume / 12 * (np.sum(sizes**2) - sizes**2)
     )
-    for volume, center in [(8, np.ones(3)), (tiny_volume, tiny_cog)]:
+    for volume, center in [(8, cube_cog), (tiny_volume, tiny_cog)]:
         shift = center - expected_cog
         expected_inertia += volume * (
             np.eye(3) * (shift @ shift) - np.outer(shift, shift)
@@ -132,7 +137,8 @@ def test_mass_properties_with_distant_small_component(
         )
         expected_inertia *= density
     np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
-    np.testing.assert_allclose(cog, expected_cog, rtol=0, atol=1e-10)
+    cog_tolerance = max(1e-10, 2 * np.spacing(np.abs(expected_cog).max()))
+    np.testing.assert_allclose(cog, expected_cog, rtol=0, atol=cog_tolerance)
     np.testing.assert_allclose(
         inertia, expected_inertia, rtol=1e-12, atol=1e-10
     )
