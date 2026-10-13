@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -7,6 +8,266 @@ from stl.mesh import Mesh
 from stl import stl
 
 tolerance = 1e-5
+
+
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize(
+    'offset', [(0, 0, 0), (1000, -2000, 3000), (1e6, 1e6, 1e6)]
+)
+def test_translated_cuboid_mass_properties(
+    binary_path: Path,
+    density: float | None,
+    offset: tuple[float, float, float],
+) -> None:
+    """A closed cuboid keeps its physical mass properties after translation."""
+    original = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    sides = np.array([2.0, 3.0, 5.0])
+    data = original.data.copy()
+    data['vectors'] *= sides / 2
+    cuboid = Mesh(data)
+    cuboid.translate(offset)
+    before = cuboid.data.copy()
+    if density is None:
+        volume, cog, inertia = cuboid.get_mass_properties()
+        mass = volume
+        material_density = 1.0
+    else:
+        volume, mass, cog, inertia = cuboid.get_mass_properties_with_density(
+            density
+        )
+        material_density = density
+    expected_volume = np.prod(sides)
+    expected_inertia = (
+        expected_volume
+        * material_density
+        / 12
+        * np.diag(
+            [
+                sides[1] ** 2 + sides[2] ** 2,
+                sides[0] ** 2 + sides[2] ** 2,
+                sides[0] ** 2 + sides[1] ** 2,
+            ]
+        )
+    )
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(
+        mass, expected_volume * material_density, rtol=1e-12
+    )
+    np.testing.assert_allclose(cog, sides / 2 + offset, rtol=0, atol=1e-10)
+    np.testing.assert_allclose(
+        inertia, expected_inertia, rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_array_equal(cuboid.data, before)
+
+
+@pytest.mark.parametrize('density', [None, 2.3])
+def test_empty_mass_properties(density: float | None) -> None:
+    """Empty meshes keep their existing undefined mass-property results."""
+    empty = Mesh(np.zeros(0, dtype=Mesh.dtype), remove_empty_areas=False)
+    with np.errstate(invalid='ignore'):
+        if density is None:
+            volume, cog, inertia = empty.get_mass_properties()
+        else:
+            volume, _, cog, inertia = empty.get_mass_properties_with_density(
+                density
+            )
+    assert volume == 0
+    assert np.isnan(cog).all()
+    assert np.isnan(inertia).all()
+
+
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize('tiny_first', [False, True])
+@pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize(
+    ('length', 'thickness', 'distance', 'cube_distance'),
+    [
+        (20, 2e-8, 500000, 0),
+        (1e10, 3.16e-14, 1e15, 0),
+        (1e6, 2e-9, 0, 1e6),
+        (1e15, 3.162e-14, -1e15, 0),
+    ],
+)
+def test_mass_properties_with_distant_small_component(
+    binary_path: Path,
+    density: float | None,
+    tiny_first: bool,
+    axis: int,
+    length: float,
+    thickness: float,
+    distance: float,
+    cube_distance: float,
+) -> None:
+    """A distant low-volume component cannot choose the integration origin."""
+    cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    tiny_data = cube.data.copy()
+    cube_offset = np.zeros(3)
+    cube_offset[axis] = cube_distance
+    cube.translate(cube_offset)
+    sides = np.full(3, thickness)
+    sides[axis] = length
+    offset = np.zeros(3)
+    offset[axis] = distance
+    if distance < 0:
+        offset[np.arange(3) != axis] = -thickness
+    tiny_data['vectors'] = tiny_data['vectors'] * sides / 2 + offset
+    parts = [tiny_data, cube.data] if tiny_first else [cube.data, tiny_data]
+    compound = Mesh(np.concatenate(parts))
+    before = compound.data.copy()
+    assert compound.check(exact=True)
+
+    # Analytic cuboid moments use the actual stored float32 bounds.
+    tiny_vectors = tiny_data['vectors'].astype(np.float64)
+    low = tiny_vectors.min(axis=(0, 1))
+    high = tiny_vectors.max(axis=(0, 1))
+    sizes = high - low
+    tiny_volume = sizes.prod()
+    tiny_cog = (low + high) / 2
+    expected_volume = 8 + tiny_volume
+    cube_cog = np.ones(3) + cube_offset
+    expected_cog = (8 * cube_cog + tiny_volume * tiny_cog) / expected_volume
+    expected_inertia = np.eye(3) * (16 / 3)
+    expected_inertia += np.diag(
+        tiny_volume / 12 * (np.sum(sizes**2) - sizes**2)
+    )
+    for volume, center in [(8, cube_cog), (tiny_volume, tiny_cog)]:
+        shift = center - expected_cog
+        expected_inertia += volume * (
+            np.eye(3) * (shift @ shift) - np.outer(shift, shift)
+        )
+
+    if density is None:
+        volume, cog, inertia = compound.get_mass_properties()
+    else:
+        volume, _, cog, inertia = compound.get_mass_properties_with_density(
+            density
+        )
+        expected_inertia *= density
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    cog_tolerance = max(1e-10, 2 * np.spacing(np.abs(expected_cog).max()))
+    np.testing.assert_allclose(cog, expected_cog, rtol=0, atol=cog_tolerance)
+    np.testing.assert_allclose(
+        inertia, expected_inertia, rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_array_equal(compound.data, before)
+
+
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+def test_point_touching_signed_shell_moments(
+    binary_path: Path, density: float | None
+) -> None:
+    """Signed moments survive cancellation in two point-touching shells."""
+    original = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    parts = [original.data.copy() for _ in range(3)]
+    parts[1]['vectors'] = parts[1]['vectors'][:, ::-1] + 2
+    parts[2]['vectors'] += 10
+    signed = Mesh(np.concatenate(parts))
+    assert signed.check(exact=True)
+    before = signed.data.copy()
+    if density is None:
+        volume, cog, inertia = signed.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = signed.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, 8 * density)
+        scale = density
+    expected_cog = np.full(3, 9.0)
+    expected_inertia = np.eye(3) * (16 / 3)
+    for sign, center in [(1, 1), (-1, 3), (1, 11)]:
+        shift = np.full(3, center) - expected_cog
+        expected_inertia += (
+            sign * 8 * (np.eye(3) * (shift @ shift) - np.outer(shift, shift))
+        )
+    np.testing.assert_allclose(volume, 8)
+    np.testing.assert_allclose(cog, expected_cog)
+    np.testing.assert_allclose(inertia, expected_inertia * scale, atol=1e-10)
+    np.testing.assert_array_equal(signed.data, before)
+
+
+def test_zero_signed_volume_retains_first_and_second_moments(
+    binary_path: Path,
+) -> None:
+    """A closed signed surface can have zero volume and nonzero moments."""
+    # Two tetrahedra share a base and have equal heights, but their apexes
+    # differ. The boundary has zero signed volume without zero moments.
+    vertices = np.array(
+        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [2, 0, 1]]
+    )
+    faces = [[0, 1, 3], [1, 2, 3], [2, 0, 3], [1, 0, 4], [2, 1, 4], [0, 2, 4]]
+    data = np.zeros(len(faces), dtype=Mesh.dtype)
+    data['vectors'] = vertices[faces]
+    cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    cube.translate([10, 10, 10])
+    signed = Mesh(np.concatenate([data, cube.data]))
+    assert signed.check(exact=True)
+    first = np.full(3, 8 * 11.0)
+    second = np.full((3, 3), 8 * 11.0**2)
+    second += np.eye(3) * (8 / 3)
+    # Independent simplex integrals: E[x] = sum(vertices)/4 and
+    # E[xx^T] = (sum(vv^T) + sum(v)sum(v)^T)/20.
+    for sign, apex in [(1, 3), (-1, 4)]:
+        tetrahedron = vertices[[0, 1, 2, apex]]
+        total = tetrahedron.sum(axis=0)
+        first += sign / 6 * total / 4
+        second += (
+            sign
+            / 6
+            * (tetrahedron.T @ tetrahedron + np.outer(total, total))
+            / 20
+        )
+    expected_cog = first / 8
+    central = second - 8 * np.outer(expected_cog, expected_cog)
+    expected_inertia = np.trace(central) * np.eye(3) - central
+    volume, cog, inertia = signed.get_mass_properties()
+    np.testing.assert_allclose(volume, 8)
+    np.testing.assert_allclose(cog, expected_cog, atol=1e-12)
+    np.testing.assert_allclose(inertia, expected_inertia, atol=1e-10)
+
+
+@pytest.mark.parametrize('density', [None, 0.0, 2.3])
+def test_mass_properties_with_inner_cavity(
+    binary_path: Path, density: float | None
+) -> None:
+    """Opposite winding subtracts a cavity rather than adding its volume."""
+    original = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    outer, inner = original.data.copy(), original.data.copy()
+    outer['vectors'] *= 1.5
+    inner['vectors'] = inner['vectors'][:, ::-1] / 2 + 1
+    hollow = Mesh(np.concatenate([outer, inner]))
+    assert hollow.check(exact=True)
+    if density is None:
+        volume, cog, inertia = hollow.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = hollow.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, 26 * density)
+        scale = density
+    np.testing.assert_allclose(volume, 26)
+    np.testing.assert_allclose(cog, [1.5, 1.5, 1.5])
+    np.testing.assert_allclose(
+        inertia, np.eye(3) * (40.5 - 1 / 6) * scale, atol=1e-12
+    )
+
+
+def test_zero_volume_component_keeps_cube_mass_properties(
+    binary_path: Path,
+) -> None:
+    """A closed zero-volume surface cannot contaminate another component."""
+    cube = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    vertices = np.array([[10, 10, 0], [11, 10, 0], [10, 11, 0], [11, 11, 0]])
+    faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
+    data = np.zeros(4, dtype=Mesh.dtype)
+    data['vectors'] = vertices[faces]
+    compound = Mesh(np.concatenate([cube.data, data]))
+    assert compound.check(exact=True)
+    volume, cog, inertia = compound.get_mass_properties()
+    np.testing.assert_allclose(volume, 8)
+    np.testing.assert_allclose(cog, [1, 1, 1])
+    np.testing.assert_allclose(inertia, np.eye(3) * 16 / 3, atol=1e-12)
 
 
 def close(a, b):
