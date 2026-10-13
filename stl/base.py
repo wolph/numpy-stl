@@ -651,29 +651,35 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         return False
 
     def _get_mass_properties_components(self) -> tuple[_intp_1d, _f64_2d]:
-        """Find connected components and a local reference for each."""
+        """Find edge-connected components and a local reference for each."""
         if not self.vectors.size:
             return np.zeros(0, dtype=np.intp), np.zeros((1, 3))
         vertices, indices = np.unique(
             self.vectors.reshape(-1, 3), axis=0, return_inverse=True
         )
-        parents = np.arange(vertices.shape[0], dtype=np.intp)
         triangles = indices.reshape(-1, 3)
+        edges = np.sort(triangles[:, ((0, 1), (1, 2), (2, 0))], axis=2)
+        unique_edges, edge_indices = np.unique(
+            edges.reshape(-1, 2), axis=0, return_inverse=True
+        )
+        edge_indices = edge_indices.reshape(-1, 3)
+        parents = np.arange(len(triangles), dtype=np.intp)
         while True:
             previous = parents.copy()
-            triangle_roots = parents[triangles]
-            np.minimum.at(
-                parents,
-                triangle_roots.ravel(),
-                np.repeat(triangle_roots.min(axis=1), 3),
+            edge_roots = np.full(
+                len(unique_edges), len(triangles), dtype=np.intp
             )
+            np.minimum.at(
+                edge_roots, edge_indices.ravel(), np.repeat(parents, 3)
+            )
+            parents = edge_roots[edge_indices].min(axis=1)
             parents = parents[parents]
             if np.array_equal(parents, previous):
                 break
-        roots, labels = np.unique(
-            parents[triangles[:, 0]], return_inverse=True
-        )
-        return labels, vertices[roots].astype(np.float64)
+        roots, labels = np.unique(parents, return_inverse=True)
+        references = np.full(len(roots), len(vertices), dtype=np.intp)
+        np.minimum.at(references, labels, triangles.min(axis=1))
+        return labels, vertices[references].astype(np.float64)
 
     def _get_mass_properties(
         self, density: float
@@ -723,11 +729,20 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             ],
             axis=1,
         ).astype(np.float64, copy=False)
+        volume_roundoff = (
+            np.bincount(
+                labels,
+                weights=np.abs(initial_terms[0]),
+                minlength=len(origins),
+            )
+            * np.bincount(labels, minlength=len(origins))
+            * np.finfo(np.float64).eps
+        )
         shifts = np.divide(
             initial[:, 1:4],
             initial[:, :1],
             out=np.zeros_like(origins),
-            where=initial[:, :1] != 0,
+            where=np.abs(initial[:, :1]) > volume_roundoff[:, None],
         )
         origins += shifts
         x -= shifts[labels, 0, None]
@@ -756,45 +771,32 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             axis=1,
         ).astype(np.float64, copy=False)
         intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
-        # Zero-volume closed surfaces must not contaminate other components.
-        nonzero = intg[:, 0] != 0
-        if nonzero.any():
-            intg, origins = intg[nonzero], origins[nonzero]
         volumes = intg[:, 0]
         volume = volumes.sum()
-        component_cog = intg[:, 1:4] / volumes[:, None]
-        centers = component_cog + origins
-        cog = (volumes[:, None] * centers).sum(axis=0) / volume
-        cogsq = component_cog**2
-        masses = volumes * density
-        inertia = np.zeros((len(volumes), 3, 3))
-        inertia[:, 0, 0] = (intg[:, 5] + intg[:, 6]) * density - masses * (
-            cogsq[:, 1] + cogsq[:, 2]
+        first = intg[:, 1:4]
+        cog = (first + volumes[:, None] * origins).sum(axis=0) / volume
+        # Translate raw moments, including any zero-volume signed component.
+        # Dividing each first moment by its volume would lose such components.
+        second = np.zeros((len(volumes), 3, 3))
+        second[:, 0, 0], second[:, 1, 1], second[:, 2, 2] = intg[:, 4:7].T
+        second[:, 0, 1] = second[:, 1, 0] = intg[:, 7]
+        second[:, 1, 2] = second[:, 2, 1] = intg[:, 8]
+        second[:, 0, 2] = second[:, 2, 0] = intg[:, 9]
+        offsets = origins - cog
+        second += (
+            first[:, :, None] * offsets[:, None, :]
+            + offsets[:, :, None] * first[:, None, :]
+            + volumes[:, None, None]
+            * offsets[:, :, None]
+            * offsets[:, None, :]
         )
-        inertia[:, 1, 1] = (intg[:, 4] + intg[:, 6]) * density - masses * (
-            cogsq[:, 2] + cogsq[:, 0]
-        )
-        inertia[:, 2, 2] = (intg[:, 4] + intg[:, 5]) * density - masses * (
-            cogsq[:, 0] + cogsq[:, 1]
-        )
-        inertia[:, 0, 1] = inertia[:, 1, 0] = -(
-            intg[:, 7] * density
-            - masses * component_cog[:, 0] * component_cog[:, 1]
-        )
-        inertia[:, 1, 2] = inertia[:, 2, 1] = -(
-            intg[:, 8] * density
-            - masses * component_cog[:, 1] * component_cog[:, 2]
-        )
-        inertia[:, 0, 2] = inertia[:, 2, 0] = -(
-            intg[:, 9] * density
-            - masses * component_cog[:, 2] * component_cog[:, 0]
-        )
-        offsets = centers - cog
-        inertia += masses[:, None, None] * (
-            np.sum(offsets**2, axis=1)[:, None, None] * np.eye(3)
-            - offsets[:, :, None] * offsets[:, None, :]
-        )
-        return volume, volume * density, cog, inertia.sum(axis=0)
+        second = second.sum(axis=0)
+        inertia = -second
+        inertia[0, 0] = second[1, 1] + second[2, 2]
+        inertia[1, 1] = second[0, 0] + second[2, 2]
+        inertia[2, 2] = second[0, 0] + second[1, 1]
+        inertia *= density
+        return volume, volume * density, cog, inertia
 
     def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
