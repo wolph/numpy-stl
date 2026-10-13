@@ -274,6 +274,106 @@ def close(a, b):
     return np.allclose(a, b, atol=tolerance)
 
 
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_mass_properties_extreme_edge_connected_appendage(
+    density: float | None, axis: int
+) -> None:
+    """A conforming thin appendage preserves every central tensor entry."""
+    length, width = float(np.float32(1e15)), float(np.float32(3.162e-14))
+    vertices = np.array(
+        [
+            [-length, 0, 0],
+            [-length, 0, width],
+            [-length, width, 0],
+            [-length, width, width],
+            [0, 0, 0],
+            [0, 0, width],
+            [0, 0, 2],
+            [0, width, 0],
+            [0, width, width],
+            [0, 2, 0],
+            [0, 2, 2],
+            [2, 0, 0],
+            [2, 0, 2],
+            [2, 2, 0],
+            [2, 2, 2],
+        ]
+    )
+    faces = [
+        [14, 13, 9],
+        [9, 10, 14],
+        [12, 11, 13],
+        [13, 14, 12],
+        [6, 5, 11],
+        [5, 4, 11],
+        [11, 12, 6],
+        [14, 10, 6],
+        [6, 12, 14],
+        [4, 7, 11],
+        [7, 9, 11],
+        [9, 13, 11],
+        [10, 5, 6],
+        [10, 8, 5],
+        [10, 7, 8],
+        [10, 9, 7],
+        [3, 2, 0],
+        [0, 1, 3],
+        [8, 7, 2],
+        [2, 3, 8],
+        [1, 0, 4],
+        [4, 5, 1],
+        [8, 3, 1],
+        [1, 5, 8],
+        [4, 0, 2],
+        [2, 7, 4],
+    ]
+    data = np.zeros(len(faces), dtype=Mesh.dtype)
+    data['vectors'] = np.roll(vertices[faces], axis, axis=2)
+    joined = Mesh(data)
+    before = joined.data.copy()
+    assert joined.check(exact=True)
+    assert len(np.unique(joined._get_mass_properties_components()[0])) == 1
+    tiny_volume = length * width**2
+    cube_center = np.ones(3)
+    tiny_center = np.array([-length / 2, width / 2, width / 2])
+    expected_volume = 8 + tiny_volume
+    expected_cog = (
+        8 * cube_center + tiny_volume * tiny_center
+    ) / expected_volume
+    expected_inertia = np.eye(3) * (16 / 3)
+    expected_inertia += (
+        tiny_volume
+        / 12
+        * np.diag([2 * width**2, length**2 + width**2, length**2 + width**2])
+    )
+    for volume, center in [(8, cube_center), (tiny_volume, tiny_center)]:
+        offset = center - expected_cog
+        expected_inertia += volume * (
+            np.eye(3) * (offset @ offset) - np.outer(offset, offset)
+        )
+    if density is None:
+        volume, cog, inertia = joined.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = joined.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, expected_volume * density)
+        scale = density
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(
+        cog, np.roll(expected_cog, axis), rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_allclose(
+        inertia,
+        np.roll(expected_inertia, (axis, axis), axis=(0, 1)) * scale,
+        rtol=1e-12,
+        atol=1e-10,
+    )
+    np.testing.assert_array_equal(joined.data, before)
+
+
 def test_mass_properties_for_half_donut(binary_ascii_path, speedups):
     """
     Checks the results of method get_mass_properties() on

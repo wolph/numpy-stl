@@ -677,8 +677,31 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             if np.array_equal(parents, previous):
                 break
         roots, labels = np.unique(parents, return_inverse=True)
+        # Favor facets with a large shortest altitude. A long, thin appendage
+        # must not select its distant endpoint as the integration reference.
+        points = vertices[triangles].astype(np.float64)
+        first_edge = points[:, 1] - points[:, 0]
+        second_edge = points[:, 2] - points[:, 0]
+        longest = np.maximum.reduce(
+            [
+                np.linalg.norm(first_edge, axis=1),
+                np.linalg.norm(second_edge, axis=1),
+                np.linalg.norm(points[:, 2] - points[:, 1], axis=1),
+            ]
+        )
+        heights = np.divide(
+            np.linalg.norm(np.cross(first_edge, second_edge), axis=1),
+            longest,
+            out=np.zeros(len(triangles)),
+            where=longest != 0,
+        )
+        largest = np.zeros(len(roots))
+        np.maximum.at(largest, labels, heights)
+        selected = heights == largest[labels]
         references = np.full(len(roots), len(vertices), dtype=np.intp)
-        np.minimum.at(references, labels, triangles.min(axis=1))
+        np.minimum.at(
+            references, labels[selected], triangles[selected].min(axis=1)
+        )
         return labels, vertices[references].astype(np.float64)
 
     def _get_mass_properties(
@@ -691,6 +714,15 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         x = self.x.astype(np.float64)
         y = self.y.astype(np.float64)
         z = self.z.astype(np.float64)
+        lower = np.full_like(origins, np.inf)
+        upper = np.full_like(origins, -np.inf)
+        np.minimum.at(
+            lower, labels, np.column_stack([a.min(axis=1) for a in (x, y, z)])
+        )
+        np.maximum.at(
+            upper, labels, np.column_stack([a.max(axis=1) for a in (x, y, z)])
+        )
+        spans = (upper - lower)[labels]
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
@@ -759,9 +791,21 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             d0 * f3x,
             d1 * f3y,
             d2 * f3z,
-            d0 * (y0 * g0x + y1 * g1x + y2 * g2x),
-            d1 * (z0 * g0y + z1 * g1y + z2 * g2y),
-            d2 * (x0 * g0z + x1 * g1z + x2 * g2z),
+            np.where(
+                spans[:, 0] >= spans[:, 1],
+                d0 * (y0 * g0x + y1 * g1x + y2 * g2x),
+                d1 * (x0 * g0y + x1 * g1y + x2 * g2y),
+            ),
+            np.where(
+                spans[:, 1] >= spans[:, 2],
+                d1 * (z0 * g0y + z1 * g1y + z2 * g2y),
+                d2 * (y0 * g0z + y1 * g1z + y2 * g2z),
+            ),
+            np.where(
+                spans[:, 2] >= spans[:, 0],
+                d2 * (x0 * g0z + x1 * g1z + x2 * g2z),
+                d0 * (z0 * g0x + z1 * g1x + z2 * g2x),
+            ),
         ]
         intg = np.stack(
             [
