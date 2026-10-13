@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parts. Both now integrate each connected component in float64 around a
   local reference point and combine the parts with the parallel-axis
   theorem. Thanks to @antonsoo (#245)
+- The `save()` and `save_ply()` docstring examples wrote to a fixed path
+  under `/tmp`, which does not exist on Windows and left files behind after
+  every test run. The doctests now run in a temporary directory with a copy
+  of the example data, so the examples read and write plain relative paths.
+  Thanks to @schlagskill (#244)
 
 ## [4.0.1] - 2026-09-07
 

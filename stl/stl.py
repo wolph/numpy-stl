@@ -395,7 +395,7 @@ class BaseStl(base.BaseMesh):
             >>> data = np.zeros(1, dtype=mesh.Mesh.dtype)
             >>> data['vectors'][0] = [[0, 0, 0], [1, 0, 0], [0, 1, 0]]
             >>> m = mesh.Mesh(data, remove_empty_areas=False)
-            >>> m.save('/tmp/_numpy_stl_test.stl')
+            >>> m.save('example.stl')
 
         Warning:
             Even for ASCII output, the file handle must be
@@ -891,7 +891,7 @@ class BaseStl(base.BaseMesh):
         Example:
             >>> from stl import mesh
             >>> m = mesh.Mesh.from_file('tests/stl_binary/HalfDonut.stl')
-            >>> m.save_ply('/tmp/_numpy_stl_test.ply')
+            >>> m.save_ply('example.ply')
         """
         from .ply import write_ply
 
