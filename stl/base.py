@@ -776,7 +776,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         # Both short edges and nearly collinear long facets can destroy
         # float64 central moments. Stream exact moments in that range.
-        if (
+        needs_exact = (
             np.any(
                 (altitudes > 0)
                 & (
@@ -785,7 +785,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 )
             )
             and np.isfinite(points).all()
-        ):
+        )
+        del points, edge_a, edge_b, longest, altitudes
+        if needs_exact:
             exact = self._get_mass_properties_exact(density)
             if exact is not None:
                 return exact
@@ -812,8 +814,44 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         x -= references[:, 0, None]
         y -= references[:, 1, None]
         z -= references[:, 2, None]
-        # Keep integration near the substantial local surface. A negligible
-        # remote plate can move the centroid far from that surface.
+        # Estimate each component's mass centroid before second moments.
+        initial_terms = [
+            np.choose(
+                spans.argmax(axis=1),
+                [d0 * x.sum(axis=1), d1 * y.sum(axis=1), d2 * z.sum(axis=1)],
+            )
+            / 6,
+            d0 * subexpression(x)[1] / 24,
+            d1 * subexpression(y)[1] / 24,
+            d2 * subexpression(z)[1] / 24,
+        ]
+        initial = np.stack(
+            [
+                np.bincount(labels, weights=term, minlength=len(origins))
+                for term in initial_terms
+            ],
+            axis=1,
+        ).astype(np.float64, copy=False)
+        volume_roundoff = (
+            np.bincount(
+                labels,
+                weights=np.abs(initial_terms[0]),
+                minlength=len(origins),
+            )
+            * np.bincount(labels, minlength=len(origins))
+            * np.finfo(np.float64).eps
+        )
+        shifts = np.divide(
+            initial[:, 1:4],
+            initial[:, :1],
+            out=np.zeros_like(origins),
+            where=np.abs(initial[:, :1]) > volume_roundoff[:, None],
+        )
+        origins += shifts
+        x -= shifts[labels, 0, None]
+        y -= shifts[labels, 1, None]
+        z -= shifts[labels, 2, None]
+        del initial_terms, initial, volume_roundoff, shifts
         f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
         f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)
         f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)
