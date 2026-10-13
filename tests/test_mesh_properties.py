@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -7,6 +8,72 @@ from stl.mesh import Mesh
 from stl import stl
 
 tolerance = 1e-5
+
+
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize(
+    'offset', [(0, 0, 0), (1000, -2000, 3000), (1e6, 1e6, 1e6)]
+)
+def test_translated_cuboid_mass_properties(
+    binary_path: Path,
+    density: float | None,
+    offset: tuple[float, float, float],
+) -> None:
+    """A closed cuboid keeps its physical mass properties after translation."""
+    original = Mesh.from_file(str(binary_path / 'Cube.stl'))
+    sides = np.array([2.0, 3.0, 5.0])
+    data = original.data.copy()
+    data['vectors'] *= sides / 2
+    cuboid = Mesh(data)
+    cuboid.translate(offset)
+    before = cuboid.data.copy()
+    if density is None:
+        volume, cog, inertia = cuboid.get_mass_properties()
+        mass = volume
+        material_density = 1.0
+    else:
+        volume, mass, cog, inertia = cuboid.get_mass_properties_with_density(
+            density
+        )
+        material_density = density
+    expected_volume = np.prod(sides)
+    expected_inertia = (
+        expected_volume
+        * material_density
+        / 12
+        * np.diag(
+            [
+                sides[1] ** 2 + sides[2] ** 2,
+                sides[0] ** 2 + sides[2] ** 2,
+                sides[0] ** 2 + sides[1] ** 2,
+            ]
+        )
+    )
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(
+        mass, expected_volume * material_density, rtol=1e-12
+    )
+    np.testing.assert_allclose(cog, sides / 2 + offset, rtol=0, atol=1e-10)
+    np.testing.assert_allclose(
+        inertia, expected_inertia, rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_array_equal(cuboid.data, before)
+
+
+@pytest.mark.parametrize('density', [None, 2.3])
+def test_empty_mass_properties(density: float | None) -> None:
+    """Empty meshes keep their existing undefined mass-property results."""
+    empty = Mesh(np.zeros(0, dtype=Mesh.dtype), remove_empty_areas=False)
+    with np.errstate(invalid='ignore'):
+        if density is None:
+            volume, cog, inertia = empty.get_mass_properties()
+        else:
+            volume, _, cog, inertia = empty.get_mass_properties_with_density(
+                density
+            )
+    assert volume == 0
+    assert np.isnan(cog).all()
+    assert np.isnan(inertia).all()
 
 
 def close(a, b):

@@ -70,6 +70,7 @@ _u16_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.uint16]]
 _f32_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.float32]]
 _f32_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float32]]
 _f32_3d: TypeAlias = np.ndarray[tuple[int, int, int], np.dtype[np.float32]]
+_f64_1d: TypeAlias = np.ndarray[tuple[int], np.dtype[np.float64]]
 _f64_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float64]]
 
 # {"normals": _float32_1d, "vectors": _float32_2d, "attr": _uint16_1d}
@@ -649,7 +650,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         return False
 
-    def get_mass_properties(self) -> tuple[np.float32, _f32_1d, _f64_2d]:
+    def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
 
         Uses the polyhedral mass properties algorithm from
@@ -658,7 +659,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         Returns:
             A tuple of (volume, center_of_gravity, inertia):
 
-            - **volume** -- Mesh volume as float32.
+            - **volume** -- Mesh volume as float64.
             - **center_of_gravity** -- COG as (3,) array.
             - **inertia** -- Inertia tensor as (3, 3) array
               expressed at the COG.
@@ -680,7 +681,18 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """
         self.check(True)
 
-        def subexpression(x: _f32_2d) -> tuple[_f32_1d, ...]:
+        # Integrate near the mesh instead of subtracting large moments
+        # about the world origin. Keep the stored float32 vertices unchanged.
+        origin = (
+            self.vectors[0, 0].astype(np.float64)
+            if self.vectors.size
+            else np.zeros(3)
+        )
+        x = self.x.astype(np.float64) - origin[0]
+        y = self.y.astype(np.float64) - origin[1]
+        z = self.z.astype(np.float64) - origin[2]
+
+        def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
             f1 = temp0 + w2
@@ -693,16 +705,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             g2 = f2 + w2 * (f1 + w2)
             return f1, f2, f3, g0, g1, g2
 
-        x0, x1, x2 = self.x[:, 0], self.x[:, 1], self.x[:, 2]
-        y0, y1, y2 = self.y[:, 0], self.y[:, 1], self.y[:, 2]
-        z0, z1, z2 = self.z[:, 0], self.z[:, 1], self.z[:, 2]
+        x0, x1, x2 = x[:, 0], x[:, 1], x[:, 2]
+        y0, y1, y2 = y[:, 0], y[:, 1], y[:, 2]
+        z0, z1, z2 = z[:, 0], z[:, 1], z[:, 2]
         a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
         a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
         d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
 
-        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(self.x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)  # noqa: RUF059
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
 
         intg = np.zeros(10)
         intg[0] = sum(d0 * f1x)
@@ -722,7 +734,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         inertia[0, 1] = inertia[1, 0] = -(intg[7] - volume * cog[0] * cog[1])
         inertia[1, 2] = inertia[2, 1] = -(intg[8] - volume * cog[1] * cog[2])
         inertia[0, 2] = inertia[2, 0] = -(intg[9] - volume * cog[2] * cog[0])
-        return volume, cog, inertia
+        return volume, cog + origin, inertia
 
     def is_convex(self) -> bool:
         """Return True if the mesh is convex.
@@ -1107,7 +1119,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     def get_mass_properties_with_density(
         self,
         density: float,
-    ) -> tuple[np.float32, np.float32, _f32_1d, _f64_2d]:
+    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
         """Compute mass properties with a given density.
 
         Like :meth:`get_mass_properties` but scales volume
@@ -1135,7 +1147,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """
         self.check(True)
 
-        def subexpression(x: _f32_2d) -> tuple[_f32_1d, ...]:
+        origin = (
+            self.vectors[0, 0].astype(np.float64)
+            if self.vectors.size
+            else np.zeros(3)
+        )
+        x = self.x.astype(np.float64) - origin[0]
+        y = self.y.astype(np.float64) - origin[1]
+        z = self.z.astype(np.float64) - origin[2]
+
+        def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
             temp0 = w0 + w1
             f1 = temp0 + w2
@@ -1148,16 +1169,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             g2 = f2 + w2 * (f1 + w2)
             return f1, f2, f3, g0, g1, g2
 
-        x0, x1, x2 = self.x[:, 0], self.x[:, 1], self.x[:, 2]
-        y0, y1, y2 = self.y[:, 0], self.y[:, 1], self.y[:, 2]
-        z0, z1, z2 = self.z[:, 0], self.z[:, 1], self.z[:, 2]
+        x0, x1, x2 = x[:, 0], x[:, 1], x[:, 2]
+        y0, y1, y2 = y[:, 0], y[:, 1], y[:, 2]
+        z0, z1, z2 = z[:, 0], z[:, 1], z[:, 2]
         a1, b1, c1 = x1 - x0, y1 - y0, z1 - z0
         a2, b2, c2 = x2 - x0, y2 - y0, z2 - z0
         d0, d1, d2 = b1 * c2 - b2 * c1, a2 * c1 - a1 * c2, a1 * b2 - a2 * b1
 
-        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(self.x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(self.y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(self.z)  # noqa: RUF059
+        f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
 
         intg = np.zeros(10)
         intg[0] = sum(d0 * f1x)
@@ -1192,4 +1213,4 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             intg[9] * density - vmass * cog[2] * cog[0]
         )
 
-        return volume, vmass, cog, inertia
+        return volume, vmass, cog + origin, inertia
