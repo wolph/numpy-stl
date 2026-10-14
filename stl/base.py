@@ -731,6 +731,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         ]
         # Sum central diagonal moments before conversion too: signed solids
         # can cancel in a small principal inertia even at stable volume.
+        density_numerator, density_denominator = (
+            float(density).as_integer_ratio()
+            if math.isfinite(density)
+            else (1, 1)
+        )
         inertia = np.array(
             [
                 [
@@ -739,14 +744,17 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                         if i == j
                         else -central[i][j]
                     )
-                    / (480 * volume * scale**5)
+                    * density_numerator
+                    / (480 * volume * scale**5 * density_denominator)
                     for j in range(3)
                 ]
                 for i in range(3)
             ]
         )
         result_volume = np.float64(volume / (6 * scale**3))
-        return result_volume, result_volume * density, cog, inertia * density
+        if not math.isfinite(density):
+            inertia *= density
+        return result_volume, result_volume * density, cog, inertia
 
     def _get_mass_properties_ordinary(
         self, labels: _intp_1d, origins: _f64_2d, bounds: _f64_2d
@@ -997,7 +1005,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             * offsets[:, :, None]
             * offsets[:, None, :]
         )
-        inertia_scale = np.abs(
+        inertia_scale = np.abs(second).sum(axis=0)
+        inertia_scale[(0, 1, 2), (0, 1, 2)] = np.abs(
             second[:, (1, 2, 0), (1, 2, 0)] + second[:, (2, 0, 1), (2, 0, 1)]
         ).sum(axis=0)
         second = second.sum(axis=0)
@@ -1007,7 +1016,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         inertia[2, 2] = second[0, 0] + second[1, 1]
         if exact_components is not None:
             inertia += exact_components[3]
-            inertia_scale += np.abs(np.diag(exact_components[3]))
+            inertia_scale += np.abs(exact_components[3])
         unstable = (
             exact_components is not None
             # A net-positive exact subset can contain opposing components.
@@ -1020,7 +1029,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 or np.any(
                     (inertia_scale > 0)
                     & (
-                        np.abs(np.diag(inertia))
+                        np.abs(inertia)
                         <= inertia_scale
                         * len(self.vectors)
                         * np.sqrt(np.finfo(np.float64).eps)
