@@ -1055,23 +1055,22 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                     * np.sqrt(np.finfo(np.float64).eps)
                 )
             )
-            # A net-positive exact subset can contain opposing components.
             or (
                 opposing_signs
-                and (
-                    abs(volume)
-                    <= np.abs(volumes).sum()
+                and abs(volume)
+                <= np.abs(volumes).sum()
+                * len(self.vectors)
+                * np.sqrt(np.finfo(np.float64).eps)
+            )
+            # Central and parallel-axis products can cancel even when every
+            # component has positive volume.
+            or np.any(
+                (inertia_scale > 0)
+                & (
+                    np.abs(inertia)
+                    <= inertia_scale
                     * len(self.vectors)
                     * np.sqrt(np.finfo(np.float64).eps)
-                    or np.any(
-                        (inertia_scale > 0)
-                        & (
-                            np.abs(inertia)
-                            <= inertia_scale
-                            * len(self.vectors)
-                            * np.sqrt(np.finfo(np.float64).eps)
-                        )
-                    )
                 )
             )
         )
