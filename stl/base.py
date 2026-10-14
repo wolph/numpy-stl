@@ -688,7 +688,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         """Accumulate signed tetrahedron moments as exact dyadic integers."""
         if vectors is None:
             vectors = self.vectors
-        scale = max(float(x).as_integer_ratio()[1] for x in vectors.ravel())
+        scale = max(float(x).as_integer_ratio()[1] for x in vectors.flat)
         volume = 0
         first = [0] * 3
         second = [[0] * 3 for _ in range(3)]
@@ -760,7 +760,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     def _get_mass_properties_ordinary(
         self, labels: _intp_1d, origins: _f64_2d, bounds: _f64_2d
     ) -> tuple[_bool_1d | None, bool]:
-        """Select floating components and retain their winding signs."""
+        """Select floating components and flag possible volume cancellation."""
         points = self.vectors.astype(np.float64)
         edge_a = points[:, 1] - points[:, 0]
         edge_b = points[:, 2] - points[:, 0]
@@ -815,10 +815,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         if not flagged.any():
             return None, False
         ordinary = ~np.isin(labels, np.unique(labels[flagged]))
-        opposing_signs = bool(
-            np.any(signed_volumes > 0) and np.any(signed_volumes < 0)
+        # A conditioned volume estimate can have the wrong sign. Treat its
+        # winding as unknown when deciding whether mixed moments can cancel.
+        possible_cancellation = bool(
+            conditioned.any()
+            or (np.any(signed_volumes > 0) and np.any(signed_volumes < 0))
         )
-        if opposing_signs:
+        if possible_cancellation:
             # Reserve whole-mesh exact work for cancellation which can amplify
             # a conservative summation error bound beyond sqrt(eps).
             # Flagged facets will be exact and contribute no floating bound.
@@ -828,8 +831,10 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 * np.sqrt(np.finfo(np.float64).eps)
             )
             if abs(signed_volumes.sum()) <= cancellation_bound:
-                return np.zeros(len(labels), dtype=np.bool_), opposing_signs
-        return ordinary, opposing_signs
+                return np.zeros(
+                    len(labels), dtype=np.bool_
+                ), possible_cancellation
+        return ordinary, possible_cancellation
 
     def _get_mass_properties_bounds(
         self, labels: _intp_1d, origins: _f64_2d
@@ -849,7 +854,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
         labels, origins = self._get_mass_properties_components()
         bounds = self._get_mass_properties_bounds(labels, origins)
-        ordinary, opposing_signs = self._get_mass_properties_ordinary(
+        ordinary, possible_cancellation = self._get_mass_properties_ordinary(
             labels, origins, bounds
         )
         exact_components: (
@@ -1056,7 +1061,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 )
             )
             or (
-                opposing_signs
+                possible_cancellation
                 and abs(volume)
                 <= np.abs(volumes).sum()
                 * len(self.vectors)
