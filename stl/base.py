@@ -682,16 +682,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         return labels, vertices[references].astype(np.float64)
 
     def _get_mass_properties_exact(
-        self, density: float
+        self, density: float, vectors: _f32_3d | None = None
     ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None:
         """Accumulate signed tetrahedron moments as exact dyadic integers."""
-        scale = max(
-            float(x).as_integer_ratio()[1] for x in self.vectors.ravel()
-        )
+        if vectors is None:
+            vectors = self.vectors
+        scale = max(float(x).as_integer_ratio()[1] for x in vectors.ravel())
         volume = 0
         first = [0] * 3
         second = [[0] * 3 for _ in range(3)]
-        for triangle in self.vectors:
+        for triangle in vectors:
             a, b, c = [
                 [
                     numerator * (scale // denominator)
@@ -739,21 +739,10 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         result_volume = np.float64(volume / (6 * scale**3))
         return result_volume, result_volume * density, cog, inertia * density
 
-    def _get_mass_properties(
-        self, density: float
-    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
-        """Integrate local Eberly moments and combine at the mass centroid."""
-        self.check(True)
-
-        def component_spans(labels: _intp_1d, origins: _f64_2d) -> _f64_2d:
-            lower = np.full_like(origins, np.inf)
-            upper = np.full_like(origins, -np.inf)
-            np.minimum.at(lower, labels, self.vectors.min(axis=1))
-            np.maximum.at(upper, labels, self.vectors.max(axis=1))
-            return upper - lower
-
-        labels, origins = self._get_mass_properties_components()
-        bounds = component_spans(labels, origins)
+    def _get_mass_properties_ordinary(
+        self, labels: _intp_1d, origins: _f64_2d, bounds: _f64_2d
+    ) -> _bool_1d | None:
+        """Select components safe for floating-point moment integration."""
         points = self.vectors.astype(np.float64)
         edge_a = points[:, 1] - points[:, 0]
         edge_b = points[:, 2] - points[:, 0]
@@ -772,29 +761,78 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         # Both short edges and nearly collinear long facets can destroy
         # float64 central moments. Stream exact moments in that range.
-        needs_exact = (
-            np.any(
-                (altitudes > 0)
-                & (
-                    bounds.max(axis=1)[labels]
-                    > altitudes / np.sqrt(np.finfo(np.float64).eps)
-                )
+        flagged = (
+            (altitudes > 0)
+            & (
+                bounds.max(axis=1)[labels]
+                > altitudes / np.sqrt(np.finfo(np.float64).eps)
             )
-            and np.isfinite(points).all()
+            & np.isfinite(points).all()
         )
-        del points, edge_a, edge_b, longest, altitudes
-        if needs_exact:
+        if not flagged.any():
+            return None
+        signed_terms: _f64_1d = (
+            (points[:, 0] - origins[labels]) * np.cross(edge_a, edge_b)
+        ).sum(axis=1)
+        signed_volumes = np.bincount(
+            labels, weights=signed_terms, minlength=len(origins)
+        ).astype(np.float64, copy=False)
+        if np.any(signed_volumes > 0) and np.any(signed_volumes < 0):
+            # Opposing component volumes can cancel when combined in float64.
+            return np.zeros(len(labels), dtype=np.bool_)
+        return ~np.isin(labels, np.unique(labels[flagged]))
+
+    def _get_mass_properties(
+        self, density: float
+    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
+        """Integrate local Eberly moments and combine at the mass centroid."""
+        self.check(True)
+
+        def component_spans(labels: _intp_1d, origins: _f64_2d) -> _f64_2d:
+            lower = np.full_like(origins, np.inf)
+            upper = np.full_like(origins, -np.inf)
+            np.minimum.at(lower, labels, self.vectors.min(axis=1))
+            np.maximum.at(upper, labels, self.vectors.max(axis=1))
+            return upper - lower
+
+        labels, origins = self._get_mass_properties_components()
+        bounds = component_spans(labels, origins)
+        ordinary = self._get_mass_properties_ordinary(labels, origins, bounds)
+        exact_components: (
+            tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None
+        ) = None
+        if ordinary is not None and not ordinary.any():
+            del ordinary
             del labels, origins, bounds
             exact = self._get_mass_properties_exact(density)
             if exact is not None:
                 return exact
             labels, origins = self._get_mass_properties_components()
             bounds = component_spans(labels, origins)
+            ordinary = None
+        elif ordinary is not None:
+            exact_components = self._get_mass_properties_exact(
+                1.0, cast('_f32_3d', self.vectors[~ordinary])
+            )
+            if exact_components is None:
+                # A zero-volume signed subset can retain nonzero raw moments.
+                # Integrate the whole mesh rather than dropping those moments.
+                del ordinary, labels, origins, bounds
+                exact = self._get_mass_properties_exact(density)
+                if exact is not None:
+                    return exact
+                labels, origins = self._get_mass_properties_components()
+                bounds = component_spans(labels, origins)
+                ordinary = None
 
+        vectors = self.vectors if ordinary is None else self.vectors[ordinary]
+        if ordinary is not None:
+            labels = labels[ordinary]
+        del ordinary
         references = origins[labels]
-        x = self.x.astype(np.float64)
-        y = self.y.astype(np.float64)
-        z = self.z.astype(np.float64)
+        x = vectors[:, :, 0].astype(np.float64)
+        y = vectors[:, :, 1].astype(np.float64)
+        z = vectors[:, :, 2].astype(np.float64)
         spans = bounds[labels]
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
@@ -892,6 +930,27 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             axis=1,
         ).astype(np.float64, copy=False)
         intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        if exact_components is not None:
+            exact_volume, _, exact_cog, exact_inertia = exact_components
+            central = np.eye(3) * np.trace(exact_inertia) / 2 - exact_inertia
+            intg = np.vstack(
+                (
+                    intg,
+                    [
+                        exact_volume,
+                        0,
+                        0,
+                        0,
+                        central[0, 0],
+                        central[1, 1],
+                        central[2, 2],
+                        central[0, 1],
+                        central[1, 2],
+                        central[0, 2],
+                    ],
+                )
+            )
+            origins = np.vstack((origins, exact_cog))
         volumes = intg[:, 0]
         volume = volumes.sum()
         first = intg[:, 1:4]
