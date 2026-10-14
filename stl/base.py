@@ -1045,31 +1045,32 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         if exact_components is not None:
             inertia += exact_components[3]
             inertia_scale += np.abs(exact_components[3])
-        unstable = (
-            exact_components is not None
-            # A net-positive exact subset can contain opposing components.
-            and opposing_signs
-            and (
-                abs(volume)
-                <= np.abs(volumes).sum()
-                * len(self.vectors)
-                * np.sqrt(np.finfo(np.float64).eps)
-                or np.any(
-                    (first_scale > 0)
-                    & (
-                        np.abs(first_global.sum(axis=0))
-                        <= first_scale
-                        * len(self.vectors)
-                        * np.sqrt(np.finfo(np.float64).eps)
-                    )
+        unstable = exact_components is not None and (
+            np.any(
+                (first_scale > 0)
+                & (
+                    np.abs(first_global.sum(axis=0))
+                    <= first_scale
+                    * len(self.vectors)
+                    * np.sqrt(np.finfo(np.float64).eps)
                 )
-                or np.any(
-                    (inertia_scale > 0)
-                    & (
-                        np.abs(inertia)
-                        <= inertia_scale
-                        * len(self.vectors)
-                        * np.sqrt(np.finfo(np.float64).eps)
+            )
+            # A net-positive exact subset can contain opposing components.
+            or (
+                opposing_signs
+                and (
+                    abs(volume)
+                    <= np.abs(volumes).sum()
+                    * len(self.vectors)
+                    * np.sqrt(np.finfo(np.float64).eps)
+                    or np.any(
+                        (inertia_scale > 0)
+                        & (
+                            np.abs(inertia)
+                            <= inertia_scale
+                            * len(self.vectors)
+                            * np.sqrt(np.finfo(np.float64).eps)
+                        )
                     )
                 )
             )

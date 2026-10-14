@@ -77,12 +77,15 @@ def test_nearly_coplanar_solid_with_broad_facets(axis, density):
 
 @pytest.mark.parametrize('axis', [0, 1, 2])
 @pytest.mark.parametrize('density', [0.0, 0.7, -2.3])
-def test_partial_exact_first_moment_cancellation(axis, density):
+@pytest.mark.parametrize('signed', [False, True])
+def test_partial_exact_first_moment_cancellation(axis, density, signed):
     ordinary = subdivide(box([-(2.0**100), 0, 0], [2.0**78] * 3))
     positive = box([2.0**100, 0, 0], [2.0**78, 2.0**127, 2.0**29])
     narrow = box([2.0**120, 0, 0], [2.0**100, 2.0**60, 1])
     negative = box([0, 0, 0], [2.0**100, 2.0**60, 1], -1)
-    parts = [(ordinary, 1), (positive, 1), (narrow, 1), (negative, -1)]
+    parts = [(ordinary, 1), (positive, 1), (narrow, 1)]
+    if signed:
+        parts.append((negative, -1))
     volume, mass, center, inertia = box_properties(parts, density)
     assert center[0] == 2.0**45
     data = np.concatenate([part for part, _ in parts])
