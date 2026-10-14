@@ -744,20 +744,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
     ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
         """Integrate local Eberly moments and combine at the mass centroid."""
         self.check(True)
+
+        def component_spans(labels: _intp_1d, origins: _f64_2d) -> _f64_2d:
+            lower = np.full_like(origins, np.inf)
+            upper = np.full_like(origins, -np.inf)
+            np.minimum.at(lower, labels, self.vectors.min(axis=1))
+            np.maximum.at(upper, labels, self.vectors.max(axis=1))
+            return upper - lower
+
         labels, origins = self._get_mass_properties_components()
-        references = origins[labels]
-        x = self.x.astype(np.float64)
-        y = self.y.astype(np.float64)
-        z = self.z.astype(np.float64)
-        lower = np.full_like(origins, np.inf)
-        upper = np.full_like(origins, -np.inf)
-        np.minimum.at(
-            lower, labels, np.column_stack([a.min(axis=1) for a in (x, y, z)])
-        )
-        np.maximum.at(
-            upper, labels, np.column_stack([a.max(axis=1) for a in (x, y, z)])
-        )
-        spans = (upper - lower)[labels]
+        bounds = component_spans(labels, origins)
         points = self.vectors.astype(np.float64)
         edge_a = points[:, 1] - points[:, 0]
         edge_b = points[:, 2] - points[:, 0]
@@ -780,7 +776,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             np.any(
                 (altitudes > 0)
                 & (
-                    spans.max(axis=1)
+                    bounds.max(axis=1)[labels]
                     > altitudes / np.sqrt(np.finfo(np.float64).eps)
                 )
             )
@@ -788,9 +784,18 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         del points, edge_a, edge_b, longest, altitudes
         if needs_exact:
+            del labels, origins, bounds
             exact = self._get_mass_properties_exact(density)
             if exact is not None:
                 return exact
+            labels, origins = self._get_mass_properties_components()
+            bounds = component_spans(labels, origins)
+
+        references = origins[labels]
+        x = self.x.astype(np.float64)
+        y = self.y.astype(np.float64)
+        z = self.z.astype(np.float64)
+        spans = bounds[labels]
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
