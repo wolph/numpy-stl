@@ -130,3 +130,54 @@ def test_zero_volume_narrow_and_ordinary_components():
     assert volume == 0
     assert np.isnan(cog).all()
     assert np.isnan(inertia).all()
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_mixed_components_preserve_small_principal_inertia(axis):
+    rod, _, _, _ = _unit_cube()
+    rod['vectors'] *= [1e10, 1e-10, 1e-10]
+    tiny, _, _, _ = _unit_cube()
+    tiny['vectors'] *= 1e-12
+    tiny['vectors'] += [0, 0, 1e-8]
+    parts = []
+    for data in (rod, tiny):
+        bounds = np.array(
+            [
+                data['vectors'].min(axis=(0, 1)),
+                data['vectors'].max(axis=(0, 1)),
+            ],
+            dtype=np.float64,
+        )
+        lengths = bounds[1] - bounds[0]
+        volume = np.prod(lengths)
+        center = bounds.mean(axis=0)
+        inertia = np.array(
+            [
+                volume
+                * (lengths[(i + 1) % 3] ** 2 + lengths[(i + 2) % 3] ** 2)
+                / 12
+                for i in range(3)
+            ]
+        )
+        parts.append((volume, center, inertia))
+    expected_volume = sum(v for v, _, _ in parts)
+    expected_cog = sum(v * c for v, c, _ in parts) / expected_volume
+    expected_inertia = sum(inertia for _, _, inertia in parts)
+    for volume, center, _ in parts:
+        delta = center - expected_cog
+        expected_inertia += volume * np.array(
+            [
+                delta[(i + 1) % 3] ** 2 + delta[(i + 2) % 3] ** 2
+                for i in range(3)
+            ]
+        )
+    data = np.concatenate((rod, tiny))
+    data['vectors'] = np.roll(data['vectors'], axis, axis=2)
+    result = mesh.Mesh(data, calculate_normals=False).get_mass_properties()
+    np.testing.assert_allclose(result[0], expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(
+        result[1], np.roll(expected_cog, axis), rtol=1e-12, atol=1e-30
+    )
+    np.testing.assert_allclose(
+        np.diag(result[2]), np.roll(expected_inertia, axis), rtol=1e-12, atol=0
+    )

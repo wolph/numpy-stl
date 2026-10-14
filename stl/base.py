@@ -826,8 +826,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 ordinary = None
 
         vectors = self.vectors if ordinary is None else self.vectors[ordinary]
-        if ordinary is not None:
-            labels = labels[ordinary]
+        labels = labels if ordinary is None else labels[ordinary]
         del ordinary
         references = origins[labels]
         x = vectors[:, :, 0].astype(np.float64)
@@ -931,23 +930,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         ).astype(np.float64, copy=False)
         intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         if exact_components is not None:
-            exact_volume, _, exact_cog, exact_inertia = exact_components
-            central = np.eye(3) * np.trace(exact_inertia) / 2 - exact_inertia
+            exact_volume, _, exact_cog, _ = exact_components
+            # Translate the exact subset as a point mass here. Add its central
+            # inertia directly below, preserving small principal moments.
             intg = np.vstack(
                 (
                     intg,
-                    [
-                        exact_volume,
-                        0,
-                        0,
-                        0,
-                        central[0, 0],
-                        central[1, 1],
-                        central[2, 2],
-                        central[0, 1],
-                        central[1, 2],
-                        central[0, 2],
-                    ],
+                    [exact_volume, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 )
             )
             origins = np.vstack((origins, exact_cog))
@@ -975,6 +964,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         inertia[0, 0] = second[1, 1] + second[2, 2]
         inertia[1, 1] = second[0, 0] + second[2, 2]
         inertia[2, 2] = second[0, 0] + second[1, 1]
+        if exact_components is not None:
+            inertia += exact_components[3]
         inertia *= density
         return volume, volume * density, cog, inertia
 
