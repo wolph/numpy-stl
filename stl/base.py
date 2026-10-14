@@ -787,15 +787,34 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             )
             & np.isfinite(points).all()
         )
-        if not flagged.any():
-            return None, False
-        ordinary = ~np.isin(labels, np.unique(labels[flagged]))
+        # Broad triangles can still enclose a nearly coplanar solid. Include
+        # cancellation inside the cross products, not just their final signs.
+        cross_scale = np.abs(
+            edge_a[:, (1, 2, 0)] * edge_b[:, (2, 0, 1)]
+        ) + np.abs(edge_a[:, (2, 0, 1)] * edge_b[:, (1, 2, 0)])
         signed_terms: _f64_1d = (
             (points[:, 0] - origins[labels]) * np.cross(edge_a, edge_b)
         ).sum(axis=1)
         signed_volumes = np.bincount(
             labels, weights=signed_terms, minlength=len(origins)
         ).astype(np.float64, copy=False)
+        solid_scale = np.bincount(
+            labels,
+            weights=(np.abs(points[:, 0] - origins[labels]) * cross_scale).sum(
+                axis=1
+            ),
+            minlength=len(origins),
+        )
+        conditioned = (solid_scale > 0) & (
+            np.abs(signed_volumes)
+            <= solid_scale
+            * np.bincount(labels, minlength=len(origins))
+            * np.sqrt(np.finfo(np.float64).eps)
+        )
+        flagged |= conditioned[labels] & np.isfinite(points).all()
+        if not flagged.any():
+            return None, False
+        ordinary = ~np.isin(labels, np.unique(labels[flagged]))
         opposing_signs = bool(
             np.any(signed_volumes > 0) and np.any(signed_volumes < 0)
         )
@@ -994,7 +1013,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         volumes = intg[:, 0]
         volume = volumes.sum()
         first = intg[:, 1:4]
-        cog = (first + volumes[:, None] * origins).sum(axis=0) / volume
+        first_global = first + volumes[:, None] * origins
+        first_scale = np.abs(first).sum(axis=0) + np.abs(
+            volumes[:, None] * origins
+        ).sum(axis=0)
+        cog = first_global.sum(axis=0) / volume
         # Translate raw moments, including any zero-volume signed component.
         # Dividing each first moment by its volume would lose such components.
         second = np.zeros((len(volumes), 3, 3))
@@ -1032,6 +1055,15 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 * len(self.vectors)
                 * np.sqrt(np.finfo(np.float64).eps)
                 or np.any(
+                    (first_scale > 0)
+                    & (
+                        np.abs(first_global.sum(axis=0))
+                        <= first_scale
+                        * len(self.vectors)
+                        * np.sqrt(np.finfo(np.float64).eps)
+                    )
+                )
+                or np.any(
                     (inertia_scale > 0)
                     & (
                         np.abs(inertia)
@@ -1053,7 +1085,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             del f1y, f2y, f3y, g0y, g1y, g2y
             del f1z, f2z, f3z, g0z, g1z, g2z
             del terms, intg, volumes, first, second, offsets
-            del inertia_scale, exact_components
+            del inertia_scale, first_global, first_scale, exact_components
             exact = self._get_mass_properties_exact(density)
             return exact or result
         return result
