@@ -1019,61 +1019,14 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         result = volume, volume * density, cog, inertia
         if unstable:
             # Release facet-sized arrays before streaming a signed fallback.
-            del (
-                vectors,
-                labels,
-                origins,
-                bounds,
-                references,
-                spans,
-                x,
-                y,
-                z,
-                x0,
-                x1,
-                x2,
-                y0,
-                y1,
-                y2,
-                z0,
-                z1,
-                z2,
-                a1,
-                b1,
-                c1,
-                a2,
-                b2,
-                c2,
-                d0,
-                d1,
-                d2,
-                f1x,
-                f2x,
-                f3x,
-                g0x,
-                g1x,
-                g2x,
-                f1y,
-                f2y,
-                f3y,
-                g0y,
-                g1y,
-                g2y,
-                f1z,
-                f2z,
-                f3z,
-                g0z,
-                g1z,
-                g2z,
-                terms,
-                intg,
-                volumes,
-                first,
-                second,
-                offsets,
-                inertia_scale,
-                exact_components,
-            )
+            del vectors, labels, origins, bounds, references, spans
+            del x, y, z, x0, x1, x2, y0, y1, y2, z0, z1, z2
+            del a1, b1, c1, a2, b2, c2, d0, d1, d2
+            del f1x, f2x, f3x, g0x, g1x, g2x
+            del f1y, f2y, f3y, g0y, g1y, g2y
+            del f1z, f2z, f3z, g0z, g1z, g2z
+            del terms, intg, volumes, first, second, offsets
+            del inertia_scale, exact_components
             exact = self._get_mass_properties_exact(density)
             return exact or result
         return result
