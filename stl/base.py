@@ -1,3 +1,4 @@
+import contextlib
 import enum
 import itertools
 import logging
@@ -736,24 +737,24 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             if math.isfinite(density)
             else (1, 1)
         )
-        inertia = np.array(
-            [
-                [
-                    (
-                        sum(central[k][k] for k in range(3) if k != i)
-                        if i == j
-                        else -central[i][j]
-                    )
-                    * density_numerator
-                    / (480 * volume * scale**5 * density_denominator)
-                    for j in range(3)
-                ]
-                for i in range(3)
-            ]
-        )
+        inertia = np.empty((3, 3), dtype=np.float64)
+        denominator = 480 * volume * scale**5 * density_denominator
+        for i in range(3):
+            for j in range(3):
+                numerator = (
+                    sum(central[k][k] for k in range(3) if k != i)
+                    if i == j
+                    else -central[i][j]
+                )
+                if math.isfinite(density):
+                    inertia[i, j] = numerator * density_numerator / denominator
+                else:
+                    # Only the exact sign is needed for infinite/NaN density.
+                    # Converting the unit-density value could overflow first.
+                    sign = (numerator > 0) - (numerator < 0)
+                    sign *= 1 if volume > 0 else -1
+                    inertia[i, j] = np.float64(sign) * density
         result_volume = np.float64(volume / (6 * scale**3))
-        if not math.isfinite(density):
-            inertia *= density
         return result_volume, result_volume * density, cog, inertia
 
     def _get_mass_properties_ordinary(
@@ -849,9 +850,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             bounds = self._get_mass_properties_bounds(labels, origins)
             ordinary = None
         elif ordinary is not None:
-            exact_components = self._get_mass_properties_exact(
-                1.0, cast('_f32_3d', self.vectors[~ordinary])
-            )
+            # An unrepresentable centered subset also needs whole-mesh exact
+            # work: cancellation within the subset can exceed float64 even
+            # when the complete mesh's central moments fit.
+            with contextlib.suppress(OverflowError):
+                exact_components = self._get_mass_properties_exact(
+                    1.0, cast('_f32_3d', self.vectors[~ordinary])
+                )
             if exact_components is None:
                 # A zero-volume signed subset can retain nonzero raw moments.
                 # Integrate the whole mesh rather than dropping those moments.

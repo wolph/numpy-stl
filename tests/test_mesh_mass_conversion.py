@@ -17,7 +17,7 @@ def box(center, size, sign=1):
     return data
 
 
-def box_properties(parts, density):
+def box_properties(parts, density, raw=False):
     properties = []
     for data, sign in parts:
         lower = [Fraction(float(x)) for x in data['vectors'].min(axis=(0, 1))]
@@ -41,6 +41,8 @@ def box_properties(parts, density):
                     if i == j
                     else -delta[i] * delta[j]
                 )
+    if raw:
+        return volume, center, inertia
     return (
         float(volume),
         float(volume * Fraction(density)),
@@ -121,3 +123,63 @@ def test_exact_inertia_nonfinite_density(density):
         np.testing.assert_array_equal(result[3], expected[3] * density)
     np.testing.assert_array_equal(result[0], expected[0])
     np.testing.assert_array_equal(result[2], expected[2])
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_unrepresentable_exact_subset_preserves_complete_mesh(axis):
+    unit, _, _, _ = _unit_cube()
+    ordinary = subdivide(unit)
+    ordinary['vectors'] *= 2.0**97
+    positive = unit.copy()
+    positive['vectors'] *= [2.0**126, 2.0**90, 2.0**126]
+    negative = positive.copy()
+    negative['vectors'][:, :, 0] += 2.0**127
+    negative['vectors'] = negative['vectors'][:, ::-1]
+    tiny = unit.copy()
+    tiny['vectors'] *= [1, 2**-50, 2**-50]
+    parts = [(ordinary, 1), (positive, 1), (negative, -1), (tiny, 1)]
+    volume, mass, center, inertia = box_properties(parts, 1.0)
+    data = np.concatenate([part for part, _ in parts])
+    data['vectors'] = np.roll(data['vectors'], axis, axis=2)
+    original = data.copy()
+    solid = mesh.Mesh(data, calculate_normals=False)
+    with np.errstate(over='ignore', invalid='ignore'):
+        assert solid.check(exact=True)
+        result = solid.get_mass_properties_with_density(1.0)
+    np.testing.assert_array_equal(result[0], volume)
+    np.testing.assert_array_equal(result[1], mass)
+    np.testing.assert_array_equal(result[2], np.roll(center, axis))
+    np.testing.assert_array_equal(
+        result[3], np.roll(inertia, (axis, axis), axis=(0, 1))
+    )
+    np.testing.assert_array_equal(data, original)
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize('density', [np.inf, -np.inf, np.nan])
+def test_unrepresentable_unit_inertia_nonfinite_density(axis, density):
+    unit, _, _, _ = _unit_cube()
+    positive = unit.copy()
+    positive['vectors'] *= 2.0**126
+    positive['vectors'][:, :, 0] -= 2.0**126
+    negative = unit.copy()
+    negative['vectors'] *= 2.0**126
+    negative['vectors'][:, :, 0] += 2.0**126
+    negative['vectors'] = negative['vectors'][:, ::-1]
+    tiny = unit.copy()
+    tiny['vectors'] *= [2**-120, 2**-149, 2**-149]
+    parts = [(positive, 1), (negative, -1), (tiny, 1)]
+    volume, center, inertia = box_properties(parts, 1.0, raw=True)
+    signs = np.array([[(x > 0) - (x < 0) for x in row] for row in inertia])
+    data = np.concatenate([part for part, _ in parts])
+    data['vectors'] = np.roll(data['vectors'], axis, axis=2)
+    solid = mesh.Mesh(data, calculate_normals=False)
+    with np.errstate(over='ignore', invalid='ignore'):
+        result = solid.get_mass_properties_with_density(density)
+        expected = np.roll(signs, (axis, axis), axis=(0, 1)) * density
+        np.testing.assert_array_equal(result[1], float(volume) * density)
+    np.testing.assert_array_equal(result[0], float(volume))
+    np.testing.assert_array_equal(
+        result[2], np.roll([float(x) for x in center], axis)
+    )
+    np.testing.assert_array_equal(result[3], expected)
