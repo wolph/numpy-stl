@@ -771,6 +771,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         )
         if not flagged.any():
             return None
+        ordinary = ~np.isin(labels, np.unique(labels[flagged]))
         signed_terms: _f64_1d = (
             (points[:, 0] - origins[labels]) * np.cross(edge_a, edge_b)
         ).sum(axis=1)
@@ -778,9 +779,17 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             labels, weights=signed_terms, minlength=len(origins)
         ).astype(np.float64, copy=False)
         if np.any(signed_volumes > 0) and np.any(signed_volumes < 0):
-            # Opposing component volumes can cancel when combined in float64.
-            return np.zeros(len(labels), dtype=np.bool_)
-        return ~np.isin(labels, np.unique(labels[flagged]))
+            # Reserve whole-mesh exact work for cancellation which can amplify
+            # a conservative summation error bound beyond sqrt(eps).
+            # Flagged facets will be exact and contribute no floating bound.
+            cancellation_bound = (
+                np.sum(np.abs(signed_terms), where=ordinary)
+                * np.count_nonzero(ordinary)
+                * np.sqrt(np.finfo(np.float64).eps)
+            )
+            if abs(signed_volumes.sum()) <= cancellation_bound:
+                return np.zeros(len(labels), dtype=np.bool_)
+        return ordinary
 
     def _get_mass_properties(
         self, density: float
@@ -801,7 +810,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         exact_components: (
             tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None
         ) = None
-        if ordinary is not None and not ordinary.any():
+        if ordinary is not None and np.count_nonzero(ordinary) * 2 <= len(
+            ordinary
+        ):
+            # When exact facets dominate, stream the original array and release
+            # component state rather than copying the majority subset.
             del ordinary
             del labels, origins, bounds
             exact = self._get_mass_properties_exact(density)

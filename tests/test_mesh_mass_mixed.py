@@ -8,6 +8,7 @@ from .test_mesh_mass_sliver import _unit_cube, sliver
 
 def mixed_components(zero_volume_subset=False, ordinary_sign=1):
     ordinary, volume, cog, inertia = _unit_cube()
+    ordinary = subdivide(ordinary)
     ordinary['vectors'] += [0, 0, 4]
     if ordinary_sign < 0:
         ordinary['vectors'] = ordinary['vectors'][:, ::-1]
@@ -36,6 +37,22 @@ def mixed_components(zero_volume_subset=False, ordinary_sign=1):
             np.dot(offset, offset) * np.eye(3) - np.outer(offset, offset)
         )
     return np.concatenate(data), volume, cog, inertia
+
+
+def subdivide(data):
+    a, b, c = data['vectors'].transpose(1, 0, 2)
+    ab, bc, ca = (a + b) / 2, (b + c) / 2, (c + a) / 2
+    result = np.zeros(4 * len(data), dtype=mesh.Mesh.dtype)
+    result['vectors'] = np.stack(
+        (
+            np.stack((a, ab, ca), axis=1),
+            np.stack((ab, b, bc), axis=1),
+            np.stack((ca, bc, c), axis=1),
+            np.stack((ab, bc, ca), axis=1),
+        ),
+        axis=1,
+    ).reshape(-1, 3, 3)
+    return result
 
 
 @pytest.mark.parametrize('axis', [0, 1, 2])
@@ -75,7 +92,10 @@ def test_mixed_component_mass_properties(
     np.testing.assert_array_equal(solid.data, data)
     # An unrelated ordinary solid must not increase scalar exact work.
     # A signed zero-volume subset needs whole-mesh raw moments instead.
-    assert calls == ([len(solid)] if zero_volume_subset else [14])
+    if zero_volume_subset:
+        assert calls[-1] == len(solid)
+    else:
+        assert calls == [14]
 
 
 def test_opposing_signed_components_use_exact_moments(monkeypatch):
@@ -96,6 +116,72 @@ def test_opposing_signed_components_use_exact_moments(monkeypatch):
     np.testing.assert_allclose(cog, expected_cog, rtol=1e-8, atol=1e-8)
     np.testing.assert_allclose(inertia, expected_inertia, rtol=1e-8, atol=1e-8)
     np.testing.assert_array_equal(solid.data, data)
+    assert calls == [len(solid)]
+
+
+def test_stable_hollow_components_leave_only_sliver_exact(monkeypatch):
+    outer, _, _, _ = _unit_cube()
+    outer = subdivide(outer)
+    outer['vectors'] *= 2
+    outer['vectors'] += [0, 0, 4]
+    inner, _, _, _ = _unit_cube()
+    inner = subdivide(inner)
+    inner['vectors'] += [0.5, 0.5, 4.5]
+    inner['vectors'] = inner['vectors'][:, ::-1]
+    narrow, volume, cog, inertia = sliver()
+    expected_volume = 7 + volume
+    center = np.array([1, 1, 5])
+    expected_cog = (7 * center + volume * cog) / expected_volume
+    expected_inertia = np.eye(3) * (16 / 3 - 1 / 6) + inertia
+    for v, c in [(7, center), (volume, cog)]:
+        delta = c - expected_cog
+        expected_inertia += v * (
+            np.dot(delta, delta) * np.eye(3) - np.outer(delta, delta)
+        )
+    solid = mesh.Mesh(
+        np.concatenate((outer, inner, narrow)), calculate_normals=False
+    )
+    assert solid.check(exact=True)
+    calls = []
+    original = mesh.Mesh._get_mass_properties_exact
+
+    def count_exact(self, density, *args):
+        calls.append(len(args[0]) if args else len(self))
+        return original(self, density, *args)
+
+    monkeypatch.setattr(mesh.Mesh, '_get_mass_properties_exact', count_exact)
+    volume, cog, inertia = solid.get_mass_properties()
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(cog, expected_cog, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        inertia, expected_inertia, rtol=1e-12, atol=1e-8
+    )
+    assert calls == [14]
+
+
+def test_majority_exact_component_does_not_copy_vectors(monkeypatch):
+    rod, _, _, _ = _unit_cube()
+    rod = subdivide(rod)
+    rod['vectors'] *= [1e10, 1e-10, 1e-10]
+    tiny, _, _, _ = _unit_cube()
+    tiny['vectors'] *= 1e-12
+    tiny['vectors'] += [0, 0, 1e-8]
+    solid = mesh.Mesh(np.concatenate((rod, tiny)), calculate_normals=False)
+    expected = solid._get_mass_properties_exact(1.0)
+    assert expected is not None
+    original = mesh.Mesh._get_mass_properties_exact
+    calls = []
+
+    def check_exact(self, density, *args):
+        assert not args
+        calls.append(len(self))
+        return original(self, density)
+
+    monkeypatch.setattr(mesh.Mesh, '_get_mass_properties_exact', check_exact)
+    volume, cog, inertia = solid.get_mass_properties()
+    np.testing.assert_allclose(volume, expected[0], rtol=1e-12)
+    np.testing.assert_allclose(cog, expected[2], rtol=1e-12, atol=1e-30)
+    np.testing.assert_allclose(inertia, expected[3], rtol=1e-12, atol=0)
     assert calls == [len(solid)]
 
 
