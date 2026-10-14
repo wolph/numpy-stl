@@ -325,3 +325,83 @@ def test_mixed_components_preserve_small_principal_inertia(axis):
     np.testing.assert_allclose(
         np.diag(result[2]), np.roll(expected_inertia, axis), rtol=1e-12, atol=0
     )
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize('density', [0.0, 0.7, -2.3])
+def test_cancelling_exact_subset_preserves_component_signs(axis, density):
+    unit, _, _, _ = _unit_cube()
+    ordinary = subdivide(unit)
+    positive, negative = unit.copy(), unit.copy()
+    positive['vectors'] *= [2**20, 2**-20, 1]
+    positive['vectors'] += [0, 0, 100]
+    negative['vectors'] *= [2**20 * (1 + 2**-23), 2**-20 * (1 - 2**-23), 1]
+    negative['vectors'] += [0, 0, -100]
+    negative['vectors'] = negative['vectors'][:, ::-1]
+    parts = []
+    for data, sign in [(ordinary, 1), (positive, 1), (negative, -1)]:
+        lower = [Fraction(float(x)) for x in data['vectors'].min(axis=(0, 1))]
+        upper = [Fraction(float(x)) for x in data['vectors'].max(axis=(0, 1))]
+        sizes = [b - a for a, b in zip(lower, upper, strict=True)]
+        volume = sign * sizes[0] * sizes[1] * sizes[2]
+        center = [(a + b) / 2 for a, b in zip(lower, upper, strict=True)]
+        principal = [
+            volume * (sizes[(k + 1) % 3] ** 2 + sizes[(k + 2) % 3] ** 2) / 12
+            for k in range(3)
+        ]
+        parts.append((volume, center, principal))
+    volume = sum(v for v, _, _ in parts)
+    center = [sum(v * c[k] for v, c, _ in parts) / volume for k in range(3)]
+    inertia = [[Fraction(0) for _ in range(3)] for _ in range(3)]
+    for v, c, principal in parts:
+        delta = [c[k] - center[k] for k in range(3)]
+        for i in range(3):
+            for j in range(3):
+                inertia[i][j] += (
+                    principal[i]
+                    + v * sum(delta[k] ** 2 for k in range(3) if k != i)
+                    if i == j
+                    else -v * delta[i] * delta[j]
+                )
+    data = np.concatenate((ordinary, positive, negative))
+    data['vectors'] = np.roll(data['vectors'], axis, axis=2)
+    original = data.copy()
+    solid = mesh.Mesh(data, calculate_normals=False)
+    assert solid.check(exact=True)
+    result_volume, mass, cog, result_inertia = (
+        solid.get_mass_properties_with_density(density)
+    )
+    np.testing.assert_array_equal(result_volume, float(volume))
+    np.testing.assert_array_equal(mass, float(volume) * density)
+    np.testing.assert_array_equal(
+        cog, np.roll([float(x) for x in center], axis)
+    )
+    expected = np.array([[float(x) for x in row] for row in inertia])
+    np.testing.assert_array_equal(
+        result_inertia, np.roll(expected, (axis, axis), axis=(0, 1)) * density
+    )
+    np.testing.assert_array_equal(solid.data, original)
+
+
+def test_ordinary_majority_does_not_retain_a_vector_copy(monkeypatch):
+    import inspect
+
+    data, volume, cog, inertia = mixed_components()
+    solid = mesh.Mesh(data, calculate_normals=False)
+    original = np.bincount
+    observed = []
+
+    def inspect_vectors(*args, **kwargs):
+        frame = inspect.currentframe().f_back
+        if frame.f_code.co_name == '_get_mass_properties':
+            observed.append(True)
+            assert np.shares_memory(frame.f_locals['vectors'], solid.data)
+        del frame
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(np, 'bincount', inspect_vectors)
+    result_volume, result_cog, result_inertia = solid.get_mass_properties()
+    assert observed
+    np.testing.assert_allclose(result_volume, volume, rtol=1e-12)
+    np.testing.assert_allclose(result_cog, cog, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(result_inertia, inertia, rtol=1e-12, atol=1e-7)

@@ -750,8 +750,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
     def _get_mass_properties_ordinary(
         self, labels: _intp_1d, origins: _f64_2d, bounds: _f64_2d
-    ) -> _bool_1d | None:
-        """Select components safe for floating-point moment integration."""
+    ) -> tuple[_bool_1d | None, bool]:
+        """Select floating components and retain their winding signs."""
         points = self.vectors.astype(np.float64)
         edge_a = points[:, 1] - points[:, 0]
         edge_b = points[:, 2] - points[:, 0]
@@ -779,7 +779,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             & np.isfinite(points).all()
         )
         if not flagged.any():
-            return None
+            return None, False
         ordinary = ~np.isin(labels, np.unique(labels[flagged]))
         signed_terms: _f64_1d = (
             (points[:, 0] - origins[labels]) * np.cross(edge_a, edge_b)
@@ -787,7 +787,10 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         signed_volumes = np.bincount(
             labels, weights=signed_terms, minlength=len(origins)
         ).astype(np.float64, copy=False)
-        if np.any(signed_volumes > 0) and np.any(signed_volumes < 0):
+        opposing_signs = bool(
+            np.any(signed_volumes > 0) and np.any(signed_volumes < 0)
+        )
+        if opposing_signs:
             # Reserve whole-mesh exact work for cancellation which can amplify
             # a conservative summation error bound beyond sqrt(eps).
             # Flagged facets will be exact and contribute no floating bound.
@@ -797,8 +800,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 * np.sqrt(np.finfo(np.float64).eps)
             )
             if abs(signed_volumes.sum()) <= cancellation_bound:
-                return np.zeros(len(labels), dtype=np.bool_)
-        return ordinary
+                return np.zeros(len(labels), dtype=np.bool_), opposing_signs
+        return ordinary, opposing_signs
 
     def _get_mass_properties_bounds(
         self, labels: _intp_1d, origins: _f64_2d
@@ -818,7 +821,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
 
         labels, origins = self._get_mass_properties_components()
         bounds = self._get_mass_properties_bounds(labels, origins)
-        ordinary = self._get_mass_properties_ordinary(labels, origins, bounds)
+        ordinary, opposing_signs = self._get_mass_properties_ordinary(
+            labels, origins, bounds
+        )
         exact_components: (
             tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None
         ) = None
@@ -850,9 +855,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 bounds = self._get_mass_properties_bounds(labels, origins)
                 ordinary = None
 
-        vectors = self.vectors if ordinary is None else self.vectors[ordinary]
-        labels = labels if ordinary is None else labels[ordinary]
-        del ordinary
+        # Bin only ordinary contributions without copying the majority array.
+        vectors = self.vectors
         references = origins[labels]
         x = vectors[:, :, 0].astype(np.float64)
         y = vectors[:, :, 1].astype(np.float64)
@@ -894,7 +898,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         ]
         initial = np.stack(
             [
-                np.bincount(labels, weights=term, minlength=len(origins))
+                np.bincount(
+                    labels,
+                    weights=term if ordinary is None else term * ordinary,
+                    minlength=len(origins),
+                )
                 for term in initial_terms
             ],
             axis=1,
@@ -948,11 +956,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         ]
         intg = np.stack(
             [
-                np.bincount(labels, weights=term, minlength=len(origins))
+                np.bincount(
+                    labels,
+                    weights=term if ordinary is None else term * ordinary,
+                    minlength=len(origins),
+                )
                 for term in terms
             ],
             axis=1,
         ).astype(np.float64, copy=False)
+        del ordinary
         intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
         if exact_components is not None:
             exact_volume, _, exact_cog, _ = exact_components
@@ -997,8 +1010,8 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             inertia_scale += np.abs(np.diag(exact_components[3]))
         unstable = (
             exact_components is not None
-            and np.any(volumes > 0)
-            and np.any(volumes < 0)
+            # A net-positive exact subset can contain opposing components.
+            and opposing_signs
             and (
                 abs(volume)
                 <= np.abs(volumes).sum()
