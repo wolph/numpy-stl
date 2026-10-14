@@ -1,3 +1,5 @@
+from fractions import Fraction
+
 import numpy as np
 import pytest
 
@@ -183,6 +185,62 @@ def test_majority_exact_component_does_not_copy_vectors(monkeypatch):
     np.testing.assert_allclose(cog, expected[2], rtol=1e-12, atol=1e-30)
     np.testing.assert_allclose(inertia, expected[3], rtol=1e-12, atol=0)
     assert calls == [len(solid)]
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_signed_principal_inertia_is_formed_before_conversion(axis):
+    unit, _, _, _ = _unit_cube()
+    outer = unit.copy()
+    outer['vectors'] *= 2
+    outer['vectors'] += [0, 0, 4]
+    inner = unit.copy()
+    inner['vectors'] += [0.5, 0.5 + float(np.float32(4.4928808)), 4.5]
+    inner['vectors'] = inner['vectors'][:, ::-1]
+    narrow, _, _, _ = sliver()
+    parts = []
+    for data, sign in [(outer, 1), (inner, -1), (unit, 1)]:
+        lower = [Fraction(float(x)) for x in data['vectors'].min(axis=(0, 1))]
+        upper = [Fraction(float(x)) for x in data['vectors'].max(axis=(0, 1))]
+        sizes = [b - a for a, b in zip(lower, upper, strict=True)]
+        volume = sign * sizes[0] * sizes[1] * sizes[2]
+        center = [(a + b) / 2 for a, b in zip(lower, upper, strict=True)]
+        principal = volume * (sizes[1] ** 2 + sizes[2] ** 2) / 12
+        parts.append((volume, center, principal))
+    face = unit['vectors'][
+        np.flatnonzero(np.all(unit['vectors'][:, :, 1] == 0, axis=1))[0]
+    ]
+    vertices = [
+        [Fraction(float(x)) for x in vertex]
+        for vertex in np.vstack(
+            (face, np.array([-6e7, -1e-6, 0.5], dtype=np.float32))
+        )
+    ]
+    volume = abs(vertices[-1][1]) / 6
+    center = [sum(vertex[k] for vertex in vertices) / 4 for k in range(3)]
+    principal = (
+        volume
+        * sum(
+            (vertex[k] - center[k]) ** 2 for vertex in vertices for k in (1, 2)
+        )
+        / 20
+    )
+    parts.append((volume, center, principal))
+    volume = sum(v for v, _, _ in parts)
+    center = [sum(v * c[k] for v, c, _ in parts) / volume for k in range(3)]
+    expected = sum(
+        principal + v * ((c[1] - center[1]) ** 2 + (c[2] - center[2]) ** 2)
+        for v, c, principal in parts
+    )
+    data = np.concatenate((outer, inner, narrow))
+    data['vectors'] = np.roll(data['vectors'], axis, axis=2)
+    original = data.copy()
+    solid = mesh.Mesh(data, calculate_normals=False)
+    assert solid.check(exact=True)
+    _, _, inertia = solid.get_mass_properties()
+    np.testing.assert_allclose(
+        inertia[axis, axis], float(expected), rtol=1e-12, atol=0
+    )
+    np.testing.assert_array_equal(solid.data, original)
 
 
 def test_zero_volume_narrow_component_preserves_ordinary_solid():

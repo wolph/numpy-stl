@@ -722,20 +722,29 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         cog = np.array([f / (4 * volume * scale) for f in first])
         # Integral xx^T minus (integral x)(integral x)^T / volume.
         # Form the central moments before converting to float64.
-        central = np.array(
+        central = [
+            [
+                4 * volume * second[i][j] - 5 * first[i] * first[j]
+                for j in range(3)
+            ]
+            for i in range(3)
+        ]
+        # Sum central diagonal moments before conversion too: signed solids
+        # can cancel in a small principal inertia even at stable volume.
+        inertia = np.array(
             [
                 [
-                    (4 * volume * second[i][j] - 5 * first[i] * first[j])
+                    (
+                        sum(central[k][k] for k in range(3) if k != i)
+                        if i == j
+                        else -central[i][j]
+                    )
                     / (480 * volume * scale**5)
                     for j in range(3)
                 ]
                 for i in range(3)
             ]
         )
-        inertia = -central
-        for i in range(3):
-            j, k = (i + 1) % 3, (i + 2) % 3
-            inertia[i, i] = central[j, j] + central[k, k]
         result_volume = np.float64(volume / (6 * scale**3))
         return result_volume, result_volume * density, cog, inertia * density
 
@@ -791,21 +800,24 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 return np.zeros(len(labels), dtype=np.bool_)
         return ordinary
 
+    def _get_mass_properties_bounds(
+        self, labels: _intp_1d, origins: _f64_2d
+    ) -> _f64_2d:
+        """Compute coordinate spans for each connected component."""
+        lower = np.full_like(origins, np.inf)
+        upper = np.full_like(origins, -np.inf)
+        np.minimum.at(lower, labels, self.vectors.min(axis=1))
+        np.maximum.at(upper, labels, self.vectors.max(axis=1))
+        return upper - lower
+
     def _get_mass_properties(
         self, density: float
     ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
         """Integrate local Eberly moments and combine at the mass centroid."""
         self.check(True)
 
-        def component_spans(labels: _intp_1d, origins: _f64_2d) -> _f64_2d:
-            lower = np.full_like(origins, np.inf)
-            upper = np.full_like(origins, -np.inf)
-            np.minimum.at(lower, labels, self.vectors.min(axis=1))
-            np.maximum.at(upper, labels, self.vectors.max(axis=1))
-            return upper - lower
-
         labels, origins = self._get_mass_properties_components()
-        bounds = component_spans(labels, origins)
+        bounds = self._get_mass_properties_bounds(labels, origins)
         ordinary = self._get_mass_properties_ordinary(labels, origins, bounds)
         exact_components: (
             tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None
@@ -821,7 +833,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             if exact is not None:
                 return exact
             labels, origins = self._get_mass_properties_components()
-            bounds = component_spans(labels, origins)
+            bounds = self._get_mass_properties_bounds(labels, origins)
             ordinary = None
         elif ordinary is not None:
             exact_components = self._get_mass_properties_exact(
@@ -835,7 +847,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 if exact is not None:
                     return exact
                 labels, origins = self._get_mass_properties_components()
-                bounds = component_spans(labels, origins)
+                bounds = self._get_mass_properties_bounds(labels, origins)
                 ordinary = None
 
         vectors = self.vectors if ordinary is None else self.vectors[ordinary]
@@ -972,6 +984,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             * offsets[:, :, None]
             * offsets[:, None, :]
         )
+        inertia_scale = np.abs(
+            second[:, (1, 2, 0), (1, 2, 0)] + second[:, (2, 0, 1), (2, 0, 1)]
+        ).sum(axis=0)
         second = second.sum(axis=0)
         inertia = -second
         inertia[0, 0] = second[1, 1] + second[2, 2]
@@ -979,8 +994,89 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         inertia[2, 2] = second[0, 0] + second[1, 1]
         if exact_components is not None:
             inertia += exact_components[3]
+            inertia_scale += np.abs(np.diag(exact_components[3]))
+        unstable = (
+            exact_components is not None
+            and np.any(volumes > 0)
+            and np.any(volumes < 0)
+            and (
+                abs(volume)
+                <= np.abs(volumes).sum()
+                * len(self.vectors)
+                * np.sqrt(np.finfo(np.float64).eps)
+                or np.any(
+                    (inertia_scale > 0)
+                    & (
+                        np.abs(np.diag(inertia))
+                        <= inertia_scale
+                        * len(self.vectors)
+                        * np.sqrt(np.finfo(np.float64).eps)
+                    )
+                )
+            )
+        )
         inertia *= density
-        return volume, volume * density, cog, inertia
+        result = volume, volume * density, cog, inertia
+        if unstable:
+            # Release facet-sized arrays before streaming a signed fallback.
+            del (
+                vectors,
+                labels,
+                origins,
+                bounds,
+                references,
+                spans,
+                x,
+                y,
+                z,
+                x0,
+                x1,
+                x2,
+                y0,
+                y1,
+                y2,
+                z0,
+                z1,
+                z2,
+                a1,
+                b1,
+                c1,
+                a2,
+                b2,
+                c2,
+                d0,
+                d1,
+                d2,
+                f1x,
+                f2x,
+                f3x,
+                g0x,
+                g1x,
+                g2x,
+                f1y,
+                f2y,
+                f3y,
+                g0y,
+                g1y,
+                g2y,
+                f1z,
+                f2z,
+                f3z,
+                g0z,
+                g1z,
+                g2z,
+                terms,
+                intg,
+                volumes,
+                first,
+                second,
+                offsets,
+                inertia_scale,
+                exact_components,
+            )
+            exact = self._get_mass_properties_exact(density)
+            return exact or result
+        return result
 
     def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
