@@ -119,3 +119,77 @@ def test_strided_exact_integration_memory():
     np.testing.assert_array_equal(result[2], [299.5, 0.5, 0.5])
     # Streaming must not allocate a facet-sized contiguous vector copy.
     assert peak < solid.vectors.nbytes // 2
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize('density', [None, 0.7, -2.3])
+@pytest.mark.parametrize('vertex_roll', [0, 1, 2])
+def test_recentered_centroid_cancellation(axis, density, vertex_roll):
+    vertices = np.array(
+        [
+            [659 * 2.0**89, 469 * 2.0**113, -173 / 512],
+            [215 * 2.0**90, -423 * 2.0**113, -173 / 512],
+            [-1089 * 2.0**89, -46 * 2.0**113, 2.0**59],
+            [25 * 2.0**-135, -921 * 2.0**34, -173 / 512],
+        ],
+        dtype=np.float32,
+    )
+    points = [[Fraction(float(x)) for x in row] for row in vertices]
+    a, b, c = [[p[i] - points[0][i] for i in range(3)] for p in points[1:]]
+    volume = (
+        a[0] * (b[1] * c[2] - b[2] * c[1])
+        - a[1] * (b[0] * c[2] - b[2] * c[0])
+        + a[2] * (b[0] * c[1] - b[1] * c[0])
+    ) / 6
+    center = [sum(p[i] for p in points) / 4 for i in range(3)]
+    second = [
+        [
+            volume
+            * sum((p[i] - center[i]) * (p[j] - center[j]) for p in points)
+            / 20
+            for j in range(3)
+        ]
+        for i in range(3)
+    ]
+    scale = Fraction(1 if density is None else density)
+    expected = np.array(
+        [
+            [
+                float(
+                    scale
+                    * (
+                        sum(second[k][k] for k in range(3) if k != i)
+                        if i == j
+                        else -second[i][j]
+                    )
+                )
+                for j in range(3)
+            ]
+            for i in range(3)
+        ]
+    )
+    faces = np.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+    data = np.zeros(4, dtype=mesh.Mesh.dtype)
+    data['vectors'] = np.roll(
+        np.roll(vertices[faces], axis, axis=2), vertex_roll, axis=1
+    )
+    original = data.copy()
+    solid = mesh.Mesh(data, calculate_normals=False)
+    # Stored float32 normals overflow at these coordinates; integration
+    # computes its cross products in float64.
+    with np.errstate(over='ignore', invalid='ignore'):
+        if density is None:
+            actual_volume, cog, inertia = solid.get_mass_properties()
+        else:
+            actual_volume, mass, cog, inertia = (
+                solid.get_mass_properties_with_density(density)
+            )
+            assert mass == float(volume) * density
+    assert actual_volume == float(volume)
+    np.testing.assert_array_equal(
+        cog, np.roll([float(x) for x in center], axis)
+    )
+    np.testing.assert_array_equal(
+        inertia, np.roll(expected, (axis, axis), axis=(0, 1))
+    )
+    np.testing.assert_array_equal(data, original)

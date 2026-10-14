@@ -959,6 +959,16 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             out=np.zeros_like(origins),
             where=np.abs(initial[:, :1]) > volume_roundoff[:, None],
         )
+        # Keep the cancellation scale from the original integration frame.
+        # Recentering can otherwise hide a lost coordinate of the centroid.
+        centroid_scale = np.array(
+            [
+                np.sum(np.abs(term), where=ordinary)
+                if ordinary is not None
+                else np.sum(np.abs(term))
+                for term in initial_terms[1:]
+            ]
+        ) + np.abs(initial[:, :1] * origins).sum(axis=0)
         origins += shifts
         x -= shifts[labels, 0, None]
         y -= shifts[labels, 1, None]
@@ -1019,9 +1029,11 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         volume = volumes.sum()
         first = intg[:, 1:4]
         first_global = first + volumes[:, None] * origins
-        first_scale = np.abs(first).sum(axis=0) + np.abs(
-            volumes[:, None] * origins
-        ).sum(axis=0)
+        first_scale = (
+            centroid_scale
+            + np.abs(first).sum(axis=0)
+            + np.abs(volumes[:, None] * origins).sum(axis=0)
+        )
         cog = first_global.sum(axis=0) / volume
         # Translate raw moments, including any zero-volume signed component.
         # Dividing each first moment by its volume would lose such components.
@@ -1050,32 +1062,34 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         if exact_components is not None:
             inertia += exact_components[3]
             inertia_scale += np.abs(exact_components[3])
-        unstable = exact_components is not None and (
-            np.any(
-                (first_scale > 0)
-                & (
-                    np.abs(first_global.sum(axis=0))
-                    <= first_scale
-                    * len(self.vectors)
-                    * np.sqrt(np.finfo(np.float64).eps)
-                )
-            )
-            or (
-                possible_cancellation
-                and abs(volume)
-                <= np.abs(volumes).sum()
+        unstable = np.any(
+            (first_scale > 0)
+            & (
+                np.abs(first_global.sum(axis=0))
+                <= first_scale
                 * len(self.vectors)
                 * np.sqrt(np.finfo(np.float64).eps)
             )
-            # Central and parallel-axis products can cancel even when every
-            # component has positive volume.
-            or np.any(
-                (inertia_scale > 0)
-                & (
-                    np.abs(inertia)
-                    <= inertia_scale
+        ) or (
+            exact_components is not None
+            and (
+                (
+                    possible_cancellation
+                    and abs(volume)
+                    <= np.abs(volumes).sum()
                     * len(self.vectors)
                     * np.sqrt(np.finfo(np.float64).eps)
+                )
+                # Central and parallel-axis products can cancel even when
+                # every component has positive volume.
+                or np.any(
+                    (inertia_scale > 0)
+                    & (
+                        np.abs(inertia)
+                        <= inertia_scale
+                        * len(self.vectors)
+                        * np.sqrt(np.finfo(np.float64).eps)
+                    )
                 )
             )
         )
@@ -1091,6 +1105,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             del f1z, f2z, f3z, g0z, g1z, g2z
             del terms, intg, volumes, first, second, offsets
             del inertia_scale, first_global, first_scale, exact_components
+            del centroid_scale
             exact = self._get_mass_properties_exact(density)
             return exact or result
         return result
