@@ -747,7 +747,14 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                     else -central[i][j]
                 )
                 if math.isfinite(density):
-                    inertia[i, j] = numerator * density_numerator / denominator
+                    try:
+                        inertia[i, j] = (
+                            numerator * density_numerator / denominator
+                        )
+                    except OverflowError:
+                        # The exact quotient does not fit in a float64. The
+                        # floating path overflows to inf instead of raising.
+                        return None
                 else:
                     # Only the exact sign is needed for infinite/NaN density.
                     # Converting the unit-density value could overflow first.

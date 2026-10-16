@@ -125,6 +125,30 @@ def test_exact_inertia_nonfinite_density(density):
     np.testing.assert_array_equal(result[2], expected[2])
 
 
+def test_exact_inertia_overflowing_density_falls_back():
+    """A finite density that overflows the exact inertia does not raise."""
+    data = box([2.0**19, 0, 0], [2.0**20, 2.0**-10, 2.0**-10])
+    solid = mesh.Mesh(data, calculate_normals=False)
+    assert solid.check(exact=True)
+    density = 2.0**1023
+    unit = solid.get_mass_properties_with_density(1.0)
+    with np.errstate(over='ignore'):
+        expected = unit[3] * density
+        result = solid.get_mass_properties_with_density(density)
+    np.testing.assert_allclose(result[0], unit[0], rtol=1e-12)
+    np.testing.assert_allclose(result[1], unit[0] * density, rtol=1e-12)
+    np.testing.assert_allclose(result[2], unit[2], rtol=1e-12)
+    np.testing.assert_array_equal(np.isinf(result[3]), np.isinf(expected))
+    finite = np.isfinite(expected)
+    assert np.isinf(expected).any()
+    np.testing.assert_allclose(
+        result[3][finite],
+        expected[finite],
+        rtol=1e-6,
+        atol=1e-9 * np.abs(expected[finite]).max(),
+    )
+
+
 @pytest.mark.parametrize('axis', [0, 1, 2])
 def test_unrepresentable_exact_subset_preserves_complete_mesh(axis):
     unit, _, _, _ = _unit_cube()
