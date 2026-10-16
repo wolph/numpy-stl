@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-10-16
+
 ### Fixed
 - `Mesh.from_3mf_file()` built each mesh from zeros and filled in the
   triangles afterwards, so the normals of a loaded 3MF mesh were all zero
@@ -34,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every test run. The doctests now run in a temporary directory with a copy
   of the example data, so the examples read and write plain relative paths.
   Thanks to @schlagskill (#244)
+
+### Changed
+- Pull requests now receive automatic Ruff fixes from autofix.ci, and the
+  README badges report CI and coverage for master.
 
 ## [4.0.1] - 2026-09-07
 
@@ -168,7 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.0.1...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/WoLpH/numpy-stl/compare/v4.0.1...v4.1.0
 [4.0.1]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/WoLpH/numpy-stl/compare/v3.2.0...v4.0.0
 [3.2.0]: https://github.com/WoLpH/numpy-stl/compare/v3.1.0...v3.2.0
