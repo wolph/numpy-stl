@@ -274,6 +274,106 @@ def close(a, b):
     return np.allclose(a, b, atol=tolerance)
 
 
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_mass_properties_extreme_edge_connected_appendage(
+    density: float | None, axis: int
+) -> None:
+    """A conforming thin appendage preserves every central tensor entry."""
+    length, width = float(np.float32(1e15)), float(np.float32(3.162e-14))
+    vertices = np.array(
+        [
+            [-length, 0, 0],
+            [-length, 0, width],
+            [-length, width, 0],
+            [-length, width, width],
+            [0, 0, 0],
+            [0, 0, width],
+            [0, 0, 2],
+            [0, width, 0],
+            [0, width, width],
+            [0, 2, 0],
+            [0, 2, 2],
+            [2, 0, 0],
+            [2, 0, 2],
+            [2, 2, 0],
+            [2, 2, 2],
+        ]
+    )
+    faces = [
+        [14, 13, 9],
+        [9, 10, 14],
+        [12, 11, 13],
+        [13, 14, 12],
+        [6, 5, 11],
+        [5, 4, 11],
+        [11, 12, 6],
+        [14, 10, 6],
+        [6, 12, 14],
+        [4, 7, 11],
+        [7, 9, 11],
+        [9, 13, 11],
+        [10, 5, 6],
+        [10, 8, 5],
+        [10, 7, 8],
+        [10, 9, 7],
+        [3, 2, 0],
+        [0, 1, 3],
+        [8, 7, 2],
+        [2, 3, 8],
+        [1, 0, 4],
+        [4, 5, 1],
+        [8, 3, 1],
+        [1, 5, 8],
+        [4, 0, 2],
+        [2, 7, 4],
+    ]
+    data = np.zeros(len(faces), dtype=Mesh.dtype)
+    data['vectors'] = np.roll(vertices[faces], axis, axis=2)
+    joined = Mesh(data)
+    before = joined.data.copy()
+    assert joined.check(exact=True)
+    assert len(np.unique(joined._get_mass_properties_components()[0])) == 1
+    tiny_volume = length * width**2
+    cube_center = np.ones(3)
+    tiny_center = np.array([-length / 2, width / 2, width / 2])
+    expected_volume = 8 + tiny_volume
+    expected_cog = (
+        8 * cube_center + tiny_volume * tiny_center
+    ) / expected_volume
+    expected_inertia = np.eye(3) * (16 / 3)
+    expected_inertia += (
+        tiny_volume
+        / 12
+        * np.diag([2 * width**2, length**2 + width**2, length**2 + width**2])
+    )
+    for volume, center in [(8, cube_center), (tiny_volume, tiny_center)]:
+        offset = center - expected_cog
+        expected_inertia += volume * (
+            np.eye(3) * (offset @ offset) - np.outer(offset, offset)
+        )
+    if density is None:
+        volume, cog, inertia = joined.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = joined.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, expected_volume * density)
+        scale = density
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-12)
+    np.testing.assert_allclose(
+        cog, np.roll(expected_cog, axis), rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_allclose(
+        inertia,
+        np.roll(expected_inertia, (axis, axis), axis=(0, 1)) * scale,
+        rtol=1e-12,
+        atol=1e-10,
+    )
+    np.testing.assert_array_equal(joined.data, before)
+
+
 def test_mass_properties_for_half_donut(binary_ascii_path, speedups):
     """
     Checks the results of method get_mass_properties() on
@@ -411,3 +511,179 @@ def test_mass_properties_open_mesh_warns_and_returns(caplog):
     assert np.isclose(volume, 0)
     assert cog.shape == (3,)
     assert inertia.shape == (3, 3)
+
+
+@pytest.mark.parametrize('density', [None, 0.7, 2.3])
+@pytest.mark.parametrize('axis', [0, 1, 2])
+def test_mass_properties_edge_connected_broad_plate(
+    density: float | None, axis: int
+) -> None:
+    """A negligible broad plate keeps the integration frame near the body."""
+    length = float(np.float32(1e15))
+    end = float(np.float32(1.01e15))
+    width = float(np.float32(1e13))
+    thickness = float(np.float32(1e-28))
+    vertices = np.array(
+        [
+            [0, 0, 0],
+            [0, 0, thickness],
+            [0, 0, 2],
+            [0, 1, 0],
+            [0, 1, thickness],
+            [0, 1, 2],
+            [0, 2, 0],
+            [0, 2, thickness],
+            [0, 2, 2],
+            [2, 0, 0],
+            [2, 0, thickness],
+            [2, 0, 2],
+            [2, 1, 0],
+            [2, 1, thickness],
+            [2, 1, 2],
+            [2, 2, 0],
+            [2, 2, thickness],
+            [2, 2, 2],
+            [length, 0, 0],
+            [length, 0, thickness],
+            [length, 1, 0],
+            [length, 1, thickness],
+            [length, 2, 0],
+            [length, 2, thickness],
+            [length, width, 0],
+            [length, width, thickness],
+            [end, 0, 0],
+            [end, 0, thickness],
+            [end, 1, 0],
+            [end, 1, thickness],
+            [end, 2, 0],
+            [end, 2, thickness],
+            [end, width, 0],
+            [end, width, thickness],
+        ]
+    )
+    faces = [
+        [1, 4, 3],
+        [1, 3, 0],
+        [9, 10, 1],
+        [9, 1, 0],
+        [3, 12, 9],
+        [3, 9, 0],
+        [2, 5, 4],
+        [2, 4, 1],
+        [10, 13, 14],
+        [10, 14, 11],
+        [10, 11, 2],
+        [10, 2, 1],
+        [2, 11, 14],
+        [2, 14, 5],
+        [4, 7, 6],
+        [4, 6, 3],
+        [12, 15, 16],
+        [12, 16, 13],
+        [6, 7, 16],
+        [6, 16, 15],
+        [6, 15, 12],
+        [6, 12, 3],
+        [5, 8, 7],
+        [5, 7, 4],
+        [13, 16, 17],
+        [13, 17, 14],
+        [7, 8, 17],
+        [7, 17, 16],
+        [5, 14, 17],
+        [5, 17, 8],
+        [18, 19, 10],
+        [18, 10, 9],
+        [12, 13, 21],
+        [12, 21, 20],
+        [12, 20, 18],
+        [12, 18, 9],
+        [10, 19, 21],
+        [10, 21, 13],
+        [26, 28, 29],
+        [26, 29, 27],
+        [26, 27, 19],
+        [26, 19, 18],
+        [20, 28, 26],
+        [20, 26, 18],
+        [19, 27, 29],
+        [19, 29, 21],
+        [21, 23, 22],
+        [21, 22, 20],
+        [28, 30, 31],
+        [28, 31, 29],
+        [22, 30, 28],
+        [22, 28, 20],
+        [21, 29, 31],
+        [21, 31, 23],
+        [23, 25, 24],
+        [23, 24, 22],
+        [30, 32, 33],
+        [30, 33, 31],
+        [24, 25, 33],
+        [24, 33, 32],
+        [24, 32, 30],
+        [24, 30, 22],
+        [23, 31, 33],
+        [23, 33, 25],
+    ]
+    data = np.zeros(len(faces), dtype=Mesh.dtype)
+    data['vectors'] = np.roll(vertices[faces], axis, axis=2)
+    joined = Mesh(data, calculate_normals=False)
+    before = joined.data.copy()
+    assert joined.check(exact=True)
+    assert len(np.unique(joined._get_mass_properties_components()[0])) == 1
+    sides = np.array(
+        [
+            [2, 2, 2],
+            [length - 2, 1, thickness],
+            [end - length, width, thickness],
+        ]
+    )
+    centers = np.array(
+        [
+            [1, 1, 1],
+            [(length + 2) / 2, 0.5, thickness / 2],
+            [(end + length) / 2, width / 2, thickness / 2],
+        ]
+    )
+    volumes = sides.prod(axis=1)
+    expected_volume = volumes.sum()
+    expected_cog = (volumes[:, None] * centers).sum(axis=0) / expected_volume
+    expected_inertia = np.zeros((3, 3))
+    for component_volume, dimensions, center in zip(
+        volumes, sides, centers, strict=True
+    ):
+        offset = center - expected_cog
+        for i in range(3):
+            j, k = (i + 1) % 3, (i + 2) % 3
+            expected_inertia[i, i] += component_volume * (
+                (dimensions[j] ** 2 + dimensions[k] ** 2) / 12
+                + offset[j] ** 2
+                + offset[k] ** 2
+            )
+            for j in range(3):
+                if i != j:
+                    expected_inertia[i, j] -= (
+                        component_volume * offset[i] * offset[j]
+                    )
+    if density is None:
+        volume, cog, inertia = joined.get_mass_properties()
+        scale = 1.0
+    else:
+        volume, mass, cog, inertia = joined.get_mass_properties_with_density(
+            density
+        )
+        np.testing.assert_allclose(mass, expected_volume * density, rtol=1e-10)
+        scale = density
+    np.testing.assert_allclose(volume, expected_volume, rtol=1e-10)
+    np.testing.assert_allclose(
+        cog, np.roll(expected_cog, axis), rtol=1e-10, atol=1e-8
+    )
+    np.testing.assert_allclose(
+        inertia,
+        np.roll(expected_inertia, (axis, axis), axis=(0, 1)) * scale,
+        rtol=1e-10,
+        atol=1e-8,
+    )
+    np.testing.assert_array_equal(joined.data, before)

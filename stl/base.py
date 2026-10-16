@@ -1,3 +1,4 @@
+import contextlib
 import enum
 import itertools
 import logging
@@ -681,16 +682,223 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         np.minimum.at(references, labels, triangles.min(axis=1))
         return labels, vertices[references].astype(np.float64)
 
+    def _get_mass_properties_exact(
+        self, density: float, vectors: _f32_3d | None = None
+    ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None:
+        """Accumulate signed tetrahedron moments as exact dyadic integers."""
+        if vectors is None:
+            vectors = self.vectors
+        scale = max(float(x).as_integer_ratio()[1] for x in vectors.flat)
+        volume = 0
+        first = [0] * 3
+        second = [[0] * 3 for _ in range(3)]
+        for triangle in vectors:
+            a, b, c = [
+                [
+                    numerator * (scale // denominator)
+                    for numerator, denominator in (
+                        float(x).as_integer_ratio() for x in vertex
+                    )
+                ]
+                for vertex in triangle
+            ]
+            determinant = (
+                a[0] * (b[1] * c[2] - b[2] * c[1])
+                - a[1] * (b[0] * c[2] - b[2] * c[0])
+                + a[2] * (b[0] * c[1] - b[1] * c[0])
+            )
+            volume += determinant
+            sums = [a[i] + b[i] + c[i] for i in range(3)]
+            for i in range(3):
+                first[i] += determinant * sums[i]
+                for j in range(3):
+                    second[i][j] += determinant * (
+                        sums[i] * sums[j]
+                        + a[i] * a[j]
+                        + b[i] * b[j]
+                        + c[i] * c[j]
+                    )
+        if not volume:
+            return None
+        cog = np.array([f / (4 * volume * scale) for f in first])
+        # Integral xx^T minus (integral x)(integral x)^T / volume.
+        # Form the central moments before converting to float64.
+        central = [
+            [
+                4 * volume * second[i][j] - 5 * first[i] * first[j]
+                for j in range(3)
+            ]
+            for i in range(3)
+        ]
+        # Sum central diagonal moments before conversion too: signed solids
+        # can cancel in a small principal inertia even at stable volume.
+        density_numerator, density_denominator = (
+            float(density).as_integer_ratio()
+            if math.isfinite(density)
+            else (1, 1)
+        )
+        inertia = np.empty((3, 3), dtype=np.float64)
+        denominator = 480 * volume * scale**5 * density_denominator
+        for i in range(3):
+            for j in range(3):
+                numerator = (
+                    sum(central[k][k] for k in range(3) if k != i)
+                    if i == j
+                    else -central[i][j]
+                )
+                if math.isfinite(density):
+                    inertia[i, j] = numerator * density_numerator / denominator
+                else:
+                    # Only the exact sign is needed for infinite/NaN density.
+                    # Converting the unit-density value could overflow first.
+                    sign = (numerator > 0) - (numerator < 0)
+                    sign *= 1 if volume > 0 else -1
+                    inertia[i, j] = np.float64(sign) * density
+        result_volume = np.float64(volume / (6 * scale**3))
+        return result_volume, result_volume * density, cog, inertia
+
+    def _get_mass_properties_ordinary(
+        self, labels: _intp_1d, origins: _f64_2d, bounds: _f64_2d
+    ) -> tuple[_bool_1d | None, bool]:
+        """Select floating components and flag possible volume cancellation."""
+        points = self.vectors.astype(np.float64)
+        edge_a = points[:, 1] - points[:, 0]
+        edge_b = points[:, 2] - points[:, 0]
+        longest = np.maximum(
+            np.linalg.norm(edge_a, axis=1),
+            np.maximum(
+                np.linalg.norm(edge_b, axis=1),
+                np.linalg.norm(edge_b - edge_a, axis=1),
+            ),
+        )
+        altitudes = np.divide(
+            np.linalg.norm(np.cross(edge_a, edge_b), axis=1),
+            longest,
+            out=np.zeros_like(longest),
+            where=longest != 0,
+        )
+        # Both short edges and nearly collinear long facets can destroy
+        # float64 central moments. Stream exact moments in that range.
+        flagged = (
+            (altitudes > 0)
+            & (
+                bounds.max(axis=1)[labels]
+                > altitudes / np.sqrt(np.finfo(np.float64).eps)
+            )
+            & np.isfinite(points).all()
+        )
+        # Broad triangles can still enclose a nearly coplanar solid. Include
+        # cancellation inside the cross products, not just their final signs.
+        cross_scale = np.abs(
+            edge_a[:, (1, 2, 0)] * edge_b[:, (2, 0, 1)]
+        ) + np.abs(edge_a[:, (2, 0, 1)] * edge_b[:, (1, 2, 0)])
+        signed_terms: _f64_1d = (
+            (points[:, 0] - origins[labels]) * np.cross(edge_a, edge_b)
+        ).sum(axis=1)
+        signed_volumes = np.bincount(
+            labels, weights=signed_terms, minlength=len(origins)
+        ).astype(np.float64, copy=False)
+        solid_scale = np.bincount(
+            labels,
+            weights=(np.abs(points[:, 0] - origins[labels]) * cross_scale).sum(
+                axis=1
+            ),
+            minlength=len(origins),
+        )
+        conditioned = (solid_scale > 0) & (
+            np.abs(signed_volumes)
+            <= solid_scale
+            * np.bincount(labels, minlength=len(origins))
+            * np.sqrt(np.finfo(np.float64).eps)
+        )
+        flagged |= conditioned[labels] & np.isfinite(points).all()
+        if not flagged.any():
+            return None, False
+        ordinary = ~np.isin(labels, np.unique(labels[flagged]))
+        # A conditioned volume estimate can have the wrong sign. Treat its
+        # winding as unknown when deciding whether mixed moments can cancel.
+        possible_cancellation = bool(
+            conditioned.any()
+            or (np.any(signed_volumes > 0) and np.any(signed_volumes < 0))
+        )
+        if possible_cancellation:
+            # Reserve whole-mesh exact work for cancellation which can amplify
+            # a conservative summation error bound beyond sqrt(eps).
+            # Flagged facets will be exact and contribute no floating bound.
+            cancellation_bound = (
+                np.sum(np.abs(signed_terms), where=ordinary)
+                * np.count_nonzero(ordinary)
+                * np.sqrt(np.finfo(np.float64).eps)
+            )
+            if abs(signed_volumes.sum()) <= cancellation_bound:
+                return np.zeros(
+                    len(labels), dtype=np.bool_
+                ), possible_cancellation
+        return ordinary, possible_cancellation
+
+    def _get_mass_properties_bounds(
+        self, labels: _intp_1d, origins: _f64_2d
+    ) -> _f64_2d:
+        """Compute coordinate spans for each connected component."""
+        lower = np.full_like(origins, np.inf)
+        upper = np.full_like(origins, -np.inf)
+        np.minimum.at(lower, labels, self.vectors.min(axis=1))
+        np.maximum.at(upper, labels, self.vectors.max(axis=1))
+        return upper - lower
+
     def _get_mass_properties(
         self, density: float
     ) -> tuple[np.float64, np.float64, _f64_1d, _f64_2d]:
         """Integrate local Eberly moments and combine at the mass centroid."""
         self.check(True)
+
         labels, origins = self._get_mass_properties_components()
+        bounds = self._get_mass_properties_bounds(labels, origins)
+        ordinary, possible_cancellation = self._get_mass_properties_ordinary(
+            labels, origins, bounds
+        )
+        exact_components: (
+            tuple[np.float64, np.float64, _f64_1d, _f64_2d] | None
+        ) = None
+        if ordinary is not None and np.count_nonzero(ordinary) * 2 <= len(
+            ordinary
+        ):
+            # When exact facets dominate, stream the original array and release
+            # component state rather than copying the majority subset.
+            del ordinary
+            del labels, origins, bounds
+            exact = self._get_mass_properties_exact(density)
+            if exact is not None:
+                return exact
+            labels, origins = self._get_mass_properties_components()
+            bounds = self._get_mass_properties_bounds(labels, origins)
+            ordinary = None
+        elif ordinary is not None:
+            # An unrepresentable centered subset also needs whole-mesh exact
+            # work: cancellation within the subset can exceed float64 even
+            # when the complete mesh's central moments fit.
+            with contextlib.suppress(OverflowError):
+                exact_components = self._get_mass_properties_exact(
+                    1.0, cast('_f32_3d', self.vectors[~ordinary])
+                )
+            if exact_components is None:
+                # A zero-volume signed subset can retain nonzero raw moments.
+                # Integrate the whole mesh rather than dropping those moments.
+                del ordinary, labels, origins, bounds
+                exact = self._get_mass_properties_exact(density)
+                if exact is not None:
+                    return exact
+                labels, origins = self._get_mass_properties_components()
+                bounds = self._get_mass_properties_bounds(labels, origins)
+                ordinary = None
+
+        # Bin only ordinary contributions without copying the majority array.
+        vectors = self.vectors
         references = origins[labels]
-        x = self.x.astype(np.float64)
-        y = self.y.astype(np.float64)
-        z = self.z.astype(np.float64)
+        x = vectors[:, :, 0].astype(np.float64)
+        y = vectors[:, :, 1].astype(np.float64)
+        z = vectors[:, :, 2].astype(np.float64)
+        spans = bounds[labels]
 
         def subexpression(x: _f64_2d) -> tuple[_f64_1d, ...]:
             w0, w1, w2 = x[:, 0], x[:, 1], x[:, 2]
@@ -714,17 +922,24 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         x -= references[:, 0, None]
         y -= references[:, 1, None]
         z -= references[:, 2, None]
-        # A connected component can contain a long, low-volume appendage.
-        # Estimate its mass centroid before integrating second moments.
+        # Estimate each component's mass centroid before second moments.
         initial_terms = [
-            d0 * x.sum(axis=1) / 6,
+            np.choose(
+                spans.argmax(axis=1),
+                [d0 * x.sum(axis=1), d1 * y.sum(axis=1), d2 * z.sum(axis=1)],
+            )
+            / 6,
             d0 * subexpression(x)[1] / 24,
             d1 * subexpression(y)[1] / 24,
             d2 * subexpression(z)[1] / 24,
         ]
         initial = np.stack(
             [
-                np.bincount(labels, weights=term, minlength=len(origins))
+                np.bincount(
+                    labels,
+                    weights=term if ordinary is None else term * ordinary,
+                    minlength=len(origins),
+                )
                 for term in initial_terms
             ],
             axis=1,
@@ -744,37 +959,82 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             out=np.zeros_like(origins),
             where=np.abs(initial[:, :1]) > volume_roundoff[:, None],
         )
+        # Keep the cancellation scale from the original integration frame.
+        # Recentering can otherwise hide a lost coordinate of the centroid.
+        centroid_scale = np.array(
+            [
+                np.sum(np.abs(term), where=ordinary)
+                if ordinary is not None
+                else np.sum(np.abs(term))
+                for term in initial_terms[1:]
+            ]
+        ) + np.abs(initial[:, :1] * origins).sum(axis=0)
         origins += shifts
         x -= shifts[labels, 0, None]
         y -= shifts[labels, 1, None]
         z -= shifts[labels, 2, None]
+        del initial_terms, initial, volume_roundoff, shifts
         f1x, f2x, f3x, g0x, g1x, g2x = subexpression(x)
-        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)  # noqa: RUF059
-        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)  # noqa: RUF059
+        f1y, f2y, f3y, g0y, g1y, g2y = subexpression(y)
+        f1z, f2z, f3z, g0z, g1z, g2z = subexpression(z)
         terms = [
-            d0 * f1x,
+            np.choose(spans.argmax(axis=1), [d0 * f1x, d1 * f1y, d2 * f1z]),
             d0 * f2x,
             d1 * f2y,
             d2 * f2z,
             d0 * f3x,
             d1 * f3y,
             d2 * f3z,
-            d0 * (y0 * g0x + y1 * g1x + y2 * g2x),
-            d1 * (z0 * g0y + z1 * g1y + z2 * g2y),
-            d2 * (x0 * g0z + x1 * g1z + x2 * g2z),
+            np.where(
+                spans[:, 0] >= spans[:, 1],
+                d0 * (y0 * g0x + y1 * g1x + y2 * g2x),
+                d1 * (x0 * g0y + x1 * g1y + x2 * g2y),
+            ),
+            np.where(
+                spans[:, 1] >= spans[:, 2],
+                d1 * (z0 * g0y + z1 * g1y + z2 * g2y),
+                d2 * (y0 * g0z + y1 * g1z + y2 * g2z),
+            ),
+            np.where(
+                spans[:, 2] >= spans[:, 0],
+                d2 * (x0 * g0z + x1 * g1z + x2 * g2z),
+                d0 * (z0 * g0x + z1 * g1x + z2 * g2x),
+            ),
         ]
         intg = np.stack(
             [
-                np.bincount(labels, weights=term, minlength=len(origins))
+                np.bincount(
+                    labels,
+                    weights=term if ordinary is None else term * ordinary,
+                    minlength=len(origins),
+                )
                 for term in terms
             ],
             axis=1,
         ).astype(np.float64, copy=False)
+        del ordinary
         intg /= np.array([6, 24, 24, 24, 60, 60, 60, 120, 120, 120])
+        if exact_components is not None:
+            exact_volume, _, exact_cog, _ = exact_components
+            # Translate the exact subset as a point mass here. Add its central
+            # inertia directly below, preserving small principal moments.
+            intg = np.vstack(
+                (
+                    intg,
+                    [exact_volume, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                )
+            )
+            origins = np.vstack((origins, exact_cog))
         volumes = intg[:, 0]
         volume = volumes.sum()
         first = intg[:, 1:4]
-        cog = (first + volumes[:, None] * origins).sum(axis=0) / volume
+        first_global = first + volumes[:, None] * origins
+        first_scale = (
+            centroid_scale
+            + np.abs(first).sum(axis=0)
+            + np.abs(volumes[:, None] * origins).sum(axis=0)
+        )
+        cog = first_global.sum(axis=0) / volume
         # Translate raw moments, including any zero-volume signed component.
         # Dividing each first moment by its volume would lose such components.
         second = np.zeros((len(volumes), 3, 3))
@@ -790,13 +1050,65 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             * offsets[:, :, None]
             * offsets[:, None, :]
         )
+        inertia_scale = np.abs(second).sum(axis=0)
+        inertia_scale[(0, 1, 2), (0, 1, 2)] = np.abs(
+            second[:, (1, 2, 0), (1, 2, 0)] + second[:, (2, 0, 1), (2, 0, 1)]
+        ).sum(axis=0)
         second = second.sum(axis=0)
         inertia = -second
         inertia[0, 0] = second[1, 1] + second[2, 2]
         inertia[1, 1] = second[0, 0] + second[2, 2]
         inertia[2, 2] = second[0, 0] + second[1, 1]
+        if exact_components is not None:
+            inertia += exact_components[3]
+            inertia_scale += np.abs(exact_components[3])
+        unstable = np.any(
+            (first_scale > 0)
+            & (
+                np.abs(first_global.sum(axis=0))
+                <= first_scale
+                * len(self.vectors)
+                * np.sqrt(np.finfo(np.float64).eps)
+            )
+        ) or (
+            exact_components is not None
+            and (
+                (
+                    possible_cancellation
+                    and abs(volume)
+                    <= np.abs(volumes).sum()
+                    * len(self.vectors)
+                    * np.sqrt(np.finfo(np.float64).eps)
+                )
+                # Central and parallel-axis products can cancel even when
+                # every component has positive volume.
+                or np.any(
+                    (inertia_scale > 0)
+                    & (
+                        np.abs(inertia)
+                        <= inertia_scale
+                        * len(self.vectors)
+                        * np.sqrt(np.finfo(np.float64).eps)
+                    )
+                )
+            )
+        )
         inertia *= density
-        return volume, volume * density, cog, inertia
+        result = volume, volume * density, cog, inertia
+        if unstable:
+            # Release facet-sized arrays before streaming a signed fallback.
+            del vectors, labels, origins, bounds, references, spans
+            del x, y, z, x0, x1, x2, y0, y1, y2, z0, z1, z2
+            del a1, b1, c1, a2, b2, c2, d0, d1, d2
+            del f1x, f2x, f3x, g0x, g1x, g2x
+            del f1y, f2y, f3y, g0y, g1y, g2y
+            del f1z, f2z, f3z, g0z, g1z, g2z
+            del terms, intg, volumes, first, second, offsets
+            del inertia_scale, first_global, first_scale, exact_components
+            del centroid_scale
+            exact = self._get_mass_properties_exact(density)
+            return exact or result
+        return result
 
     def get_mass_properties(self) -> tuple[np.float64, _f64_1d, _f64_2d]:
         """Compute volume, center of gravity, and inertia.
