@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `Mesh.from_3mf_file()` built each mesh from zeros and filled in the
+  triangles afterwards, so the normals of a loaded 3MF mesh were all zero
+  and `calculate_normals`, `name`, `remove_empty_areas` and the other
+  constructor options were ignored. An empty 3MF mesh also failed to load.
+  The loader now constructs each mesh from the parsed triangles with the
+  options you pass. Thanks to @schlagskill for the report (#247)
 - `get_mass_properties()` and `get_mass_properties_with_density()` could
   still lose accuracy on a closed mesh whose connected component holds a
   long thin appendage, on a nearly coplanar solid, or on parts whose
