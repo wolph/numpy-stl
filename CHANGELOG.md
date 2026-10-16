@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `get_mass_properties()` and `get_mass_properties_with_density()` could
+  still lose accuracy on a closed mesh whose connected component holds a
+  long thin appendage, on a nearly coplanar solid, or on parts whose
+  signed volumes cancel. Each component is now integrated around an
+  estimate of its own mass centroid, and poorly conditioned components
+  fall back to exact integer arithmetic. That exact path is a plain
+  Python loop, so a mesh that needs it, including one whose centre of
+  gravity has a coordinate close to zero, takes roughly 1.6 times as
+  long as before. Thanks to @antonsoo (#246)
 - `get_mass_properties()` and `get_mass_properties_with_density()` returned
   a wrong centre of gravity and inertia tensor, often with negative diagonal
   entries, for closed meshes away from the origin or built from distant
