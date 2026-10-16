@@ -735,7 +735,7 @@ class BaseStl(base.BaseMesh):
         cls,
         filename: str,
         calculate_normals: bool = True,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> Generator['Self', None, None]:
         """Load meshes from a 3MF file (read-only).
 
@@ -746,7 +746,9 @@ class BaseStl(base.BaseMesh):
             filename: Path to the .3mf file.
             calculate_normals: Whether to recalculate
                 normals. Defaults to True.
-            **kwargs: Additional arguments.
+            **kwargs: Additional arguments passed to the
+                Mesh constructor, such as ``name`` or
+                ``remove_empty_areas``.
 
         Yields:
             Mesh instances, one per 3MF mesh element.
@@ -818,11 +820,18 @@ class BaseStl(base.BaseMesh):
                                     ]
                                 )
 
-                    mesh = cls(np.zeros(len(triangles), dtype=cls.dtype))
-                    # pyrefly: ignore[missing-attribute]
-                    mesh.vectors[:] = np.array(triangles)
+                    # Fill the vectors before constructing the mesh, so the
+                    # constructor calculates normals and removes empty or
+                    # duplicate triangles from the real geometry. An empty
+                    # mesh needs the (0, 3, 3) shape spelled out.
+                    data = np.zeros(len(triangles), dtype=cls.dtype)
+                    data['vectors'] = np.asarray(
+                        triangles, dtype=np.float32
+                    ).reshape(-1, 3, 3)
                     # pyrefly: ignore[invalid-yield]
-                    yield mesh
+                    yield cls(
+                        data, calculate_normals=calculate_normals, **kwargs
+                    )
 
     @classmethod
     def from_ply_file(
