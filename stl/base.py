@@ -1306,7 +1306,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 return matrix.dot(rotation_matrix)
 
         # Rotate the normals
-        self.normals[:] = _rotate(self.normals[:])
+        self.normals[:] = self.normals.dot(rotation_matrix)
 
         # Rotate the vectors
         for i in range(3):

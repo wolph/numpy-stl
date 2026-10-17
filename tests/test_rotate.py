@@ -103,6 +103,24 @@ def test_double_rotation():
     )
 
 
+@pytest.mark.parametrize('point', [1.0, [1, 2, 3]])
+@pytest.mark.parametrize('use_matrix', [False, True])
+def test_rotation_over_point_preserves_normals(point, use_matrix):
+    data = np.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    mesh = Mesh(data)
+    # Preserve a caller-provided magnitude as well as the normal's direction.
+    mesh.normals *= 0.25
+
+    if use_matrix:
+        matrix = Mesh.rotation_matrix([1, 0, 0], math.pi)
+        mesh.rotate_using_matrix(matrix, point=point)
+    else:
+        mesh.rotate([1, 0, 0], math.pi, point=point)
+
+    np.testing.assert_allclose(mesh.normals, [[0.25, -0.25, -0.25]])
+
+
 def test_no_rotation():
     # Create a single face
     data = np.zeros(1, dtype=Mesh.dtype)
