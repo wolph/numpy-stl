@@ -1305,12 +1305,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 # Simply apply the rotation
                 return matrix.dot(rotation_matrix)
 
-        # Rotate the normals
-        self.normals[:] = self.normals.dot(rotation_matrix)
-
-        # Rotate the vectors
+        # Rotate the vectors first: a pivot that cannot be broadcast
+        # against them raises here, before anything has been written.
         for i in range(3):
             self.vectors[:, i] = _rotate(self.vectors[:, i])
+
+        # Normals are directions, so the pivot does not apply to them
+        self.normals[:] = self.normals.dot(rotation_matrix)
 
         self._invalidate_bounds()
 

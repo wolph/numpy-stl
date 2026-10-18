@@ -141,6 +141,28 @@ def test_rotation_over_mesh_point(point_field, use_matrix):
     np.testing.assert_array_equal(mesh.normals, expected.normals)
 
 
+@pytest.mark.parametrize('use_matrix', [False, True])
+def test_rotation_over_invalid_point_leaves_mesh_untouched(use_matrix):
+    data = np.zeros(1, dtype=Mesh.dtype)
+    data['vectors'][0] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    mesh = Mesh(data)
+    normals = mesh.normals.copy()
+    vectors = mesh.vectors.copy()
+    # Three rows of one value broadcast against the mesh data instead of
+    # acting as a single pivot, so the rotation has to fail.
+    point = np.array([[1], [2], [3]])
+
+    with pytest.raises(ValueError):
+        if use_matrix:
+            matrix = Mesh.rotation_matrix([1, 0, 0], math.pi)
+            mesh.rotate_using_matrix(matrix, point=point)
+        else:
+            mesh.rotate([1, 0, 0], math.pi, point=point)
+
+    np.testing.assert_array_equal(mesh.normals, normals)
+    np.testing.assert_array_equal(mesh.vectors, vectors)
+
+
 def test_no_rotation():
     # Create a single face
     data = np.zeros(1, dtype=Mesh.dtype)
