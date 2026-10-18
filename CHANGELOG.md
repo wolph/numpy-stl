@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `rotate()` and `rotate_using_matrix()` with a `point` other than the
+  origin moved the normals around that point as well as the vertices, so
+  a mesh rotated around a pivot carried normals that were no longer
+  perpendicular to its faces until you called `update_normals()`. Files
+  written with `update_normals=False` kept those wrong normals. Normals
+  are now rotated in place and keep their magnitude, and a pivot taken
+  from the mesh itself, such as `mesh.normals[0]`, is copied before the
+  rotation changes it. The vertices come out exactly as before.
+  Thanks to @antonsoo (#248)
+
 ## [4.1.0] - 2026-10-16
 
 ### Fixed
