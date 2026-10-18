@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-10-19
+
 ### Fixed
 - `rotate()` and `rotate_using_matrix()` with a `point` other than the
   origin moved the normals around that point as well as the vertices, so
@@ -15,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   written with `update_normals=False` kept those wrong normals. Normals
   are now rotated in place and keep their magnitude, and a pivot taken
   from the mesh itself, such as `mesh.normals[0]`, is copied before the
-  rotation changes it. The vertices come out exactly as before.
+  rotation changes it. A pivot that cannot be broadcast against the
+  mesh now raises before anything is written. The vertices come out
+  exactly as before.
   Thanks to @antonsoo (#248)
 
 ## [4.1.0] - 2026-10-16
@@ -185,7 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.0...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.1...HEAD
+[4.1.1]: https://github.com/WoLpH/numpy-stl/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/WoLpH/numpy-stl/compare/v4.0.1...v4.1.0
 [4.0.1]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/WoLpH/numpy-stl/compare/v3.2.0...v4.0.0
