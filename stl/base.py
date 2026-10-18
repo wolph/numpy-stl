@@ -1289,7 +1289,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             return
 
         if isinstance(point, (np.ndarray, list, tuple)) and len(point) == 3:
-            point = np.asarray(point)
+            point = np.array(point)
         elif point is None:
             point = np.array([0, 0, 0])
         elif isinstance(point, (int, float)):
@@ -1306,7 +1306,7 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
                 return matrix.dot(rotation_matrix)
 
         # Rotate the normals
-        self.normals[:] = _rotate(self.normals[:])
+        self.normals[:] = self.normals.dot(rotation_matrix)
 
         # Rotate the vectors
         for i in range(3):
