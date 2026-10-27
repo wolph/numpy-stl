@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.2] - 2026-10-28
+
+### Changed
+- The build backend requirement now allows every `uv_build` release below
+  1.0 instead of stopping at 0.12, so distributions and build frontends
+  that ship a newer uv can build the sdist without waiting for a release.
+  Nothing changes for `pip install numpy-stl`, which installs the wheel.
+
 ## [4.1.1] - 2026-10-19
 
 ### Fixed
@@ -189,7 +197,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.1...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.2...HEAD
+[4.1.2]: https://github.com/WoLpH/numpy-stl/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/WoLpH/numpy-stl/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/WoLpH/numpy-stl/compare/v4.0.1...v4.1.0
 [4.0.1]: https://github.com/WoLpH/numpy-stl/compare/v4.0.0...v4.0.1

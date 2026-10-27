@@ -1,10 +1,10 @@
 [build-system]
-requires = ["uv_build>=0.11.0,<0.12"]
+requires = ["uv_build>=0.11.0,<1"]
 build-backend = "uv_build"
 
 [project]
 name = "numpy-stl"
-version = "4.1.1"
+version = "4.1.2"
 description = "Library to make reading, writing and modifying both binary and ascii STL files easy."
 readme = "README.md"
 license = "BSD-3-Clause"
