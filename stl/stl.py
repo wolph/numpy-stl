@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import enum
 import io
 import os
@@ -514,7 +514,7 @@ class BaseStl(base.BaseMesh):
         header: str = HEADER_FORMAT.format(
             package_name=metadata.__package_name__,
             version=metadata.__version__,
-            now=datetime.datetime.now(),
+            now=dt.datetime.now(),
             name=name,
         )
 

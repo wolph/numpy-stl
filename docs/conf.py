@@ -1,6 +1,6 @@
-'''numpy-stl Sphinx configuration.'''
+"""numpy-stl Sphinx configuration."""
 
-import datetime
+import datetime as dt
 
 from stl import __about__ as metadata
 
@@ -8,7 +8,7 @@ from stl import __about__ as metadata
 project = 'numpy-stl'
 author = metadata.__author__
 version = release = metadata.__version__
-copyright = f'2014-{datetime.date.today().year}, {author}'
+copyright = f'2014-{dt.date.today().year}, {author}'
 
 # -- Extensions
 extensions = [
