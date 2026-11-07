@@ -25,7 +25,7 @@ jobs:
           - python-version: '3.13'
             numpy-version: 'numpy1'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
@@ -35,7 +35,7 @@ jobs:
       - name: Run tests
         run: tox -e py$(echo "${{ matrix.python-version }}" | tr -d .)-${{ matrix.numpy-version }}
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.python-version }}-${{ matrix.numpy-version }}
           path: .tox/.coverage.*
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
@@ -54,7 +54,7 @@ jobs:
       - name: Run tests with speedups
         run: tox -e speedups
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-speedups
           path: .tox/.coverage.*
@@ -65,13 +65,13 @@ jobs:
     timeout-minutes: 5
     needs: [test, speedups, docs]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
       - name: Install tox
         run: uv pip install '.[tox]'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
           path: .tox
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
@@ -133,7 +133,7 @@ jobs:
       - name: Run docs examples
         run: tox -e docs-examples
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-docs-examples
           path: .tox/.coverage.*
