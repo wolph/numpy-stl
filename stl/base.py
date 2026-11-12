@@ -606,11 +606,13 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
             `#198 <https://github.com/WoLpH/numpy-stl/issues/198>`_.
         """
         if exact:
-            vectors = self.vectors
-            v0, v1, v2 = vectors[:, 0], vectors[:, 1], vectors[:, 2]
+            # The winding test reads the v0, v1 and v2 properties, which a
+            # subclass may override, as it did before the edges were built
+            # in bulk.
             reversed_triangles: _bool_1d = (
-                np.cross(v1 - v0, v2 - v0) * self.normals
+                np.cross(self.v1 - self.v0, self.v2 - self.v0) * self.normals
             ).sum(axis=1) < 0
+            vectors = self.vectors
             # Build every directed edge as a (start, end) row of 6 floats,
             # swapping the endpoints of triangles with reversed winding.
             starts = vectors

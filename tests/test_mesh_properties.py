@@ -687,3 +687,36 @@ def test_mass_properties_edge_connected_broad_plate(
         atol=1e-8,
     )
     np.testing.assert_array_equal(joined.data, before)
+
+
+def test_exact_is_closed_reads_vertex_properties() -> None:
+    """The winding test of is_closed goes through v0, v1 and v2.
+
+    A subclass that overrides them saw its own vertices in 4.1.3.
+    """
+    tetrahedron = np.array(
+        [
+            [[0, 0, 0], [0, 1, 0], [1, 0, 0]],
+            [[0, 0, 0], [1, 0, 0], [0, 0, 1]],
+            [[0, 0, 0], [0, 0, 1], [0, 1, 0]],
+            [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        ],
+        dtype=np.float32,
+    )
+    data = np.zeros(4, dtype=Mesh.dtype)
+    data['vectors'] = tetrahedron
+
+    class SwappedFirstTriangle(Mesh):
+        @property
+        def v0(self) -> np.ndarray:
+            vertices = self.vectors[:, 0].copy()
+            vertices[0] = self.vectors[0, 1]
+            return vertices
+
+        @property
+        def v1(self) -> np.ndarray:
+            vertices = self.vectors[:, 1].copy()
+            vertices[0] = self.vectors[0, 0]
+            return vertices
+
+    assert SwappedFirstTriangle(data).is_closed(exact=True)
