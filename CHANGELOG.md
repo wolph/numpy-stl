@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `remove_duplicate_polygons=1` and `=2`, and `RemoveDuplicates.map()` with
+  those integers, work on Python 3.10 and 3.11, contributed by @xixihaha-ha
+  in #250. 4.1.3 raised `TypeError` there, because enum containment only
+  accepts raw values from Python 3.12 on. On 3.10 and 3.11 a value that
+  matches no strategy, such as `'SINGLE'` or `3`, now maps to
+  `RemoveDuplicates.NONE` instead of raising `TypeError`, as it already did
+  on 3.12 and later.
+
+### Changed
+- `is_closed(exact=True)`, and with it `check(exact=True)` and the mass
+  properties, builds its edge set in one NumPy pass, contributed by
+  @dexhunter in #249. The results and warnings are unchanged. The PR
+  measured it 19% to 64% faster, depending on the mesh size.
+
 ## [4.1.3] - 2026-10-28
 
 ### Changed
