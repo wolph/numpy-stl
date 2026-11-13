@@ -1166,12 +1166,31 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         # For each face, project every vertex onto the normal vector and make
         # sure it isn't longer than the projection of the face itself.
         # The dot product is a scaled projection: (a dot b) = |a||b| cos(angle)
+        dot = np.dot
+        asarray = np.asarray
+        matmul = np.matmul
+        tested_planes = {}
+        get_projection = tested_planes.get
+        vertices = None
         for i, normal_vector in enumerate(self.normals):
-            face_projection = np.dot(self.v0[i], normal_vector)
-            normal_vector_2d = np.expand_dims(normal_vector, axis=-1)
-            all_vertex_projection = np.matmul(self.vectors, normal_vector_2d)
-            if not np.all(all_vertex_projection <= face_projection):
+            if vertices is None:
+                first_vertices = self.v0
+                vertices = np.ascontiguousarray(self.vectors)
+            face_projection = dot(first_vertices[i], normal_vector)
+            normal = asarray(normal_vector)
+            plane = (normal.dtype, normal.tobytes())
+            previous_projection = get_projection(plane)
+            # A successful tighter plane also proves this parallel plane.
+            if (
+                previous_projection is not None
+                and previous_projection <= face_projection
+            ):
+                continue
+            normal_vector_2d = normal[..., None]
+            all_vertex_projection = matmul(vertices, normal_vector_2d)
+            if not (all_vertex_projection <= face_projection).all():
                 return False
+            tested_planes[plane] = face_projection
 
         return True
 
