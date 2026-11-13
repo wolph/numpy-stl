@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.4] - 2026-11-13
+
 ### Fixed
 - `remove_duplicate_polygons=1` and `=2`, and `RemoveDuplicates.map()` with
   those integers, work on Python 3.10 and 3.11, contributed by @xixihaha-ha
@@ -221,7 +223,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cython speedups for ASCII I/O
 - Improved test coverage
 
-[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.3...HEAD
+[Unreleased]: https://github.com/WoLpH/numpy-stl/compare/v4.1.4...HEAD
+[4.1.4]: https://github.com/WoLpH/numpy-stl/compare/v4.1.3...v4.1.4
 [4.1.3]: https://github.com/WoLpH/numpy-stl/compare/v4.1.2...v4.1.3
 [4.1.2]: https://github.com/WoLpH/numpy-stl/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/WoLpH/numpy-stl/compare/v4.1.0...v4.1.1
