@@ -471,7 +471,7 @@ class BaseStl(base.BaseMesh):
             for row in self.data:
                 # Explicitly convert each component to standard float for
                 # normals and vertices to be compatible with numpy 2.x
-                normals = tuple(float(n) for n in row['normals'])
+                normals = tuple(map(float, row['normals']))
                 vectors = row['vectors']
                 p(
                     'facet normal {:.9g} {:.9g} {:.9g}'.format(*normals),
@@ -480,19 +480,19 @@ class BaseStl(base.BaseMesh):
                 p('  outer loop', file=fh)
                 p(
                     '    vertex {:.9g} {:.9g} {:.9g}'.format(
-                        *tuple(float(v) for v in vectors[0])
+                        *map(float, vectors[0])
                     ),
                     file=fh,
                 )
                 p(
                     '    vertex {:.9g} {:.9g} {:.9g}'.format(
-                        *tuple(float(v) for v in vectors[1])
+                        *map(float, vectors[1])
                     ),
                     file=fh,
                 )
                 p(
                     '    vertex {:.9g} {:.9g} {:.9g}'.format(
-                        *tuple(float(v) for v in vectors[2])
+                        *map(float, vectors[2])
                     ),
                     file=fh,
                 )
