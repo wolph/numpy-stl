@@ -1169,12 +1169,12 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         dot = np.dot
         asarray = np.asarray
         matmul = np.matmul
-        tested_planes = {}
+        tested_planes: dict[tuple[np.dtype[Any], bytes], np.float32] = {}
         get_projection = tested_planes.get
         vertices = None
+        first_vertices = self.v0
         for i, normal_vector in enumerate(self.normals):
             if vertices is None:
-                first_vertices = self.v0
                 vertices = np.ascontiguousarray(self.vectors)
             face_projection = dot(first_vertices[i], normal_vector)
             normal = asarray(normal_vector)
