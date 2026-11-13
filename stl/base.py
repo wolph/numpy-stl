@@ -123,8 +123,11 @@ class RemoveDuplicates(enum.Enum):
         """
         if value is True:
             return cls.SINGLE
-        elif value and value in cls:
-            return cls(value)
+        elif value:
+            try:
+                return cls(value)
+            except ValueError:
+                return cls.NONE
         else:
             return cls.NONE
 
