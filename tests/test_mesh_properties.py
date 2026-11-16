@@ -498,6 +498,40 @@ def test_is_convex(binary_ascii_path, speedups, filename, expected_result):
     assert mesh.is_convex() == expected_result
 
 
+def _parallel_triangles(*heights):
+    """Build one triangle per height, all with the stored normal +z."""
+    data = np.zeros(len(heights), dtype=Mesh.dtype)
+    for index, height in enumerate(heights):
+        data['vectors'][index] = [
+            [0, 0, height],
+            [1, 0, height],
+            [0, 1, height],
+        ]
+    data['normals'] = [0, 0, 1]
+    return Mesh(data, remove_empty_areas=False)
+
+
+@pytest.mark.parametrize(
+    'heights, expected_result',
+    [
+        # Coplanar faces share a plane, the second one adds no new bound.
+        ((1, 1), True),
+        ((1, 1, 1), True),
+        # A higher face sticks out above the lower plane, whichever of the
+        # two comes first. The normals are identical in both cases, so a
+        # result remembered per normal must still compare the bounds.
+        ((2, 1), False),
+        ((1, 2), False),
+        ((2, 2, 1), False),
+        ((2, 1, 2), False),
+    ],
+)
+def test_is_convex_faces_with_one_normal(heights, expected_result):
+    """Faces with one normal on different planes are checked per plane."""
+    mesh = _parallel_triangles(*heights)
+    assert bool(mesh.is_convex()) is expected_result
+
+
 def test_mass_properties_open_mesh_warns_and_returns(caplog):
     """An open mesh warns instead of raising and still returns values."""
     data = np.zeros(1, dtype=Mesh.dtype)
