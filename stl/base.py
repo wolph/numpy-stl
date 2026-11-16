@@ -1167,7 +1167,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         # sure it isn't longer than the projection of the face itself.
         # The dot product is a scaled projection: (a dot b) = |a||b| cos(angle)
         dot = np.dot
-        asarray = np.asarray
+        # asanyarray keeps an ndarray subclass such as a masked array, so
+        # its own handling still applies in the projection below.
+        asanyarray = np.asanyarray
         matmul = np.matmul
         tested_planes: dict[tuple[np.dtype[Any], bytes], np.float32] = {}
         get_projection = tested_planes.get
@@ -1175,9 +1177,9 @@ class BaseMesh(logger.Logged, abc.Mapping['_ToIndices', np.ndarray]):
         first_vertices = self.v0
         for i, normal_vector in enumerate(self.normals):
             if vertices is None:
-                vertices = np.ascontiguousarray(self.vectors)
+                vertices = asanyarray(self.vectors, order='C')
             face_projection = dot(first_vertices[i], normal_vector)
-            normal = asarray(normal_vector)
+            normal = asanyarray(normal_vector)
             plane = (normal.dtype, normal.tobytes())
             previous_projection = get_projection(plane)
             # A successful tighter plane also proves this parallel plane.

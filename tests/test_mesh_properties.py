@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -530,6 +531,35 @@ def test_is_convex_faces_with_one_normal(heights, expected_result):
     """Faces with one normal on different planes are checked per plane."""
     mesh = _parallel_triangles(*heights)
     assert bool(mesh.is_convex()) is expected_result
+
+
+class _RecordingArray(np.ndarray):
+    """An array that records the ufuncs it is asked to handle."""
+
+    seen: ClassVar[set[str]] = set()
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        self.seen.add(ufunc.__name__)
+        plain = tuple(
+            input_.view(np.ndarray)
+            if isinstance(input_, _RecordingArray)
+            else input_
+            for input_ in inputs
+        )
+        return getattr(ufunc, method)(*plain, **kwargs)
+
+
+def test_is_convex_keeps_the_array_class_of_the_data():
+    """An ndarray subclass as mesh data still handles the projection.
+
+    A masked array is the everyday case: 4.1.4 hands it to ``matmul`` as
+    it is, so its own handling applies and no mask is dropped on the way.
+    """
+    mesh = _parallel_triangles(1, 1)
+    mesh.data = mesh.data.view(_RecordingArray)
+    _RecordingArray.seen.clear()
+    assert mesh.is_convex()
+    assert 'matmul' in _RecordingArray.seen
 
 
 def test_mass_properties_open_mesh_warns_and_returns(caplog):
