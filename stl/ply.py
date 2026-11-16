@@ -481,7 +481,9 @@ def _deduplicate_vertices(
     for start in range(0, count, chunk_size):
         stop = min(start + chunk_size, count)
         mask = starts[start:stop]
-        indices = np.cumsum(mask, dtype=index_dtype)
+        indices: np.ndarray[tuple[int], np.dtype[np.int32 | np.intp]] = (
+            np.cumsum(mask, dtype=index_dtype)
+        )
         indices += offset - 1
         inverse[permutation[start:stop]] = indices
         triangle, corner = np.divmod(permutation[start:stop][mask], 3)
