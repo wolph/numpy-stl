@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `is_convex()` remembers the bound it proved for each normal and skips a
+  face whose plane an earlier face with the same normal already covers,
+  contributed by @dexhunter in #255. The results are unchanged. The PR
+  measured it 97% faster on a mesh whose faces share normals, such as a
+  tessellated box. A subclass that overrides `vectors` or `v0` has each
+  property read once per call instead of once per face.
+- Saving an ASCII file without the speedups extension converts the values
+  with `map(float, ...)`, contributed by @dexhunter in #254. The output is
+  byte for byte the same. The PR measured it 6.6% faster on a mesh of
+  20,000 triangles.
+
 ## [4.1.4] - 2026-11-13
 
 ### Fixed
