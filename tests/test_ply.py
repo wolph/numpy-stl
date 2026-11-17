@@ -756,3 +756,25 @@ def test_negative_face_index_raises_value_error():
     # Negative indices used to wrap around silently via numpy indexing.
     with pytest.raises(ValueError, match='index'):
         ply.read_ply(_ascii_triangle_with_face(b'3 0 1 -1\n'), mesh.Mesh.dtype)
+
+
+def test_deduplicate_vertices_matches_numpy_unique_across_chunks():
+    # 36,000 vertex rows span three of the 16,384 row chunks, and the few
+    # distinct values put a run of equal rows across both chunk boundaries.
+    rng: np.random.Generator = np.random.default_rng(257)
+    values: np.ndarray = np.array(
+        [0.0, -0.0, 1.0, 2.0, np.nan], dtype=np.float32
+    )
+    data: np.ndarray = np.zeros(12_000, dtype=mesh.Mesh.dtype)
+    data['vectors'] = rng.choice(
+        values, size=(12_000, 3, 3), p=[0.3, 0.3, 0.19, 0.19, 0.02]
+    )
+
+    vertices, faces = ply._deduplicate_vertices(data)
+
+    expected_vertices, inverse = np.unique(
+        data['vectors'].reshape(-1, 3), axis=0, return_inverse=True
+    )
+    # Bytes keep -0.0 apart from 0.0 and compare the NaN rows as well.
+    assert vertices.tobytes() == expected_vertices.tobytes()
+    np.testing.assert_array_equal(faces, inverse.reshape(-1, 3))
