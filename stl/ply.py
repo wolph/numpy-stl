@@ -444,7 +444,7 @@ def _build_mesh_data(
 
 def _deduplicate_vertices(
     data: np.ndarray,
-) -> tuple[np.ndarray, list[tuple[int, int, int]]]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Extract unique vertices and face indices.
 
     Args:
@@ -452,20 +452,45 @@ def _deduplicate_vertices(
 
     Returns:
         (vertices, faces) where vertices is (N, 3)
-        float32 and faces is a list of (i, j, k) tuples.
+        float32 and faces is an (M, 3) integer array.
     """
-    all_verts = data['vectors'].reshape(-1, 3)
-    unique_verts, inverse = np.unique(all_verts, axis=0, return_inverse=True)
-    faces: list[tuple[int, int, int]] = []
-    for i in range(len(data)):
-        base = i * 3
-        faces.append(
-            (
-                int(inverse[base]),
-                int(inverse[base + 1]),
-                int(inverse[base + 2]),
-            )
+    all_verts = np.ascontiguousarray(data['vectors'].reshape(-1, 3))
+    row_dtype = np.dtype([(f'f{i}', all_verts.dtype) for i in range(3)])
+    rows = all_verts.view(row_dtype).reshape(-1)
+    # Match np.unique's row ordering, including signed zeros and NaNs.
+    permutation = rows.argsort(kind='quicksort')
+    del rows, all_verts
+
+    vectors = data['vectors']
+    count = len(permutation)
+    starts = np.empty(count, dtype=bool)
+    starts[:1] = True
+    chunk_size = 16384
+    for start in range(1, count, chunk_size):
+        stop = min(start + chunk_size, count)
+        triangle, corner = np.divmod(permutation[start - 1 : stop], 3)
+        rows = vectors[triangle, corner].view(row_dtype).reshape(-1)
+        starts[start:stop] = rows[1:] != rows[:-1]
+        del triangle, corner, rows
+
+    unique_count = int(np.count_nonzero(starts))
+    index_dtype = np.int32 if unique_count <= 2**31 else np.intp
+    inverse = np.empty(count, dtype=index_dtype)
+    unique_verts = np.empty((unique_count, 3), dtype=vectors.dtype)
+    offset = 0
+    for start in range(0, count, chunk_size):
+        stop = min(start + chunk_size, count)
+        mask = starts[start:stop]
+        indices: np.ndarray[tuple[int], np.dtype[np.int32 | np.intp]] = (
+            np.cumsum(mask, dtype=index_dtype)
         )
+        indices += offset - 1
+        inverse[permutation[start:stop]] = indices
+        triangle, corner = np.divmod(permutation[start:stop][mask], 3)
+        size = len(triangle)
+        unique_verts[offset : offset + size] = vectors[triangle, corner]
+        offset += size
+    faces = inverse.reshape(len(data), 3)
     return unique_verts, faces
 
 
