@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `save_ply()` and `write_ply()` deduplicate the vertices in chunks and
+  keep the face indices in a NumPy array, contributed by @dexhunter in
+  #257. The output is byte for byte the same. The PR measured 75% less peak
+  memory on the export of 200,000 triangles that share their vertices,
+  from 48 MB to 12 MB.
 - `is_convex()` remembers the bound it proved for each normal and skips a
   face whose plane an earlier face with the same normal already covers,
   contributed by @dexhunter in #255. The results are unchanged. The PR
