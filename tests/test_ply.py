@@ -778,3 +778,104 @@ def test_deduplicate_vertices_matches_numpy_unique_across_chunks():
     # Bytes keep -0.0 apart from 0.0 and compare the NaN rows as well.
     assert vertices.tobytes() == expected_vertices.tobytes()
     np.testing.assert_array_equal(faces, inverse.reshape(-1, 3))
+
+
+def _ascii_ply_body(data: object) -> list[bytes]:
+    fh: io.BytesIO = io.BytesIO()
+    ply.write_ply(fh, data, mode='ascii')
+    return fh.getvalue().split(b'end_header\n')[1].splitlines()
+
+
+def _counted_vertex_lines(count: int) -> list[bytes]:
+    """The vertex lines of np.arange(3 * count) taken three at a time."""
+    return [
+        f'{3 * i}.0 {3 * i + 1}.0 {3 * i + 2}.0'.encode('ascii')
+        for i in range(count)
+    ]
+
+
+def _masked_mesh_data(vectors: np.ndarray) -> np.ma.MaskedArray:
+    """Two triangles as a masked array with the second one masked."""
+    data: np.ma.MaskedArray = np.ma.zeros(2, dtype=mesh.Mesh.dtype)
+    data['vectors'] = vectors
+    data[1] = np.ma.masked
+    return data
+
+
+def test_save_ply_keeps_every_vertex_of_a_masked_triangle():
+    # 4.1.4 deduplicated with np.unique, which reads the plain values of a
+    # masked array. Comparing masked rows instead merges the three vertices
+    # of the masked triangle into one.
+    vectors: np.ndarray = np.arange(18, dtype=np.float32).reshape(2, 3, 3)
+    masked_mesh = mesh.Mesh(_masked_mesh_data(vectors))
+    fh: io.BytesIO = io.BytesIO()
+
+    masked_mesh.save_ply('masked.ply', fh=fh)
+
+    fh.seek(0)
+    reloaded = mesh.Mesh.from_ply_file('masked.ply', fh=fh)
+    np.testing.assert_array_equal(reloaded.vectors, vectors)
+
+
+def test_write_ply_shares_a_vertex_between_masked_and_plain_triangles():
+    triangle: list[list[float]] = [[0, 0, 0], [1, 0, 0], [0, 1, 0]]
+    vectors: np.ndarray = np.array([triangle, triangle], dtype=np.float32)
+
+    body: list[bytes] = _ascii_ply_body(_masked_mesh_data(vectors))
+
+    assert body == [
+        b'0.0 0.0 0.0',
+        b'0.0 1.0 0.0',
+        b'1.0 0.0 0.0',
+        b'3 0 2 1',
+        b'3 0 2 1',
+    ]
+
+
+def _two_dimensional_data() -> np.ndarray:
+    data: np.ndarray = np.zeros((1, 2), dtype=mesh.Mesh.dtype)
+    data['vectors'] = np.arange(18).reshape(1, 2, 3, 3)
+    return data
+
+
+def _data_with_vectors_of_shape(*shape: int) -> np.ndarray:
+    data: np.ndarray = np.zeros(1, dtype=[('vectors', 'f4', shape)])
+    data['vectors'] = np.arange(data['vectors'].size).reshape(shape)
+    return data
+
+
+@pytest.mark.parametrize(
+    ('data', 'vertex_count'),
+    [
+        pytest.param(_two_dimensional_data(), 6, id='two-dimensional'),
+        pytest.param(_data_with_vectors_of_shape(9), 3, id='flat-vectors'),
+        pytest.param(_data_with_vectors_of_shape(4, 3), 4, id='four-rows'),
+        pytest.param(
+            {'vectors': np.arange(18, dtype=np.float32).reshape(2, 3, 3)},
+            6,
+            id='dict',
+        ),
+    ],
+)
+def test_write_ply_keeps_the_4_1_4_output_for_other_shapes(
+    data: object, vertex_count: int
+):
+    # 4.1.4 wrote every vertex it found in the vectors and one face for
+    # each item of the data, whatever the shape of either.
+    body: list[bytes] = _ascii_ply_body(data)
+
+    assert body == [*_counted_vertex_lines(vertex_count), b'3 0 1 2']
+
+
+@pytest.mark.parametrize(
+    'data',
+    [
+        pytest.param(_triangle_mesh_data()[0], id='single-record'),
+        pytest.param(_data_with_vectors_of_shape(3, 2), id='two-rows'),
+    ],
+)
+def test_write_ply_raises_index_error_for_data_longer_than_its_vectors(
+    data: object,
+):
+    with pytest.raises(IndexError, match='out of bounds'):
+        _ascii_ply_body(data)

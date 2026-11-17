@@ -442,6 +442,33 @@ def _build_mesh_data(
     return data
 
 
+def _deduplicate_with_unique(
+    data: np.ndarray,
+    vectors: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract unique vertices and face indices from data of any shape.
+
+    This is what 4.1.4 did for every input: ``np.unique`` flattens the
+    vectors whatever their shape, and the faces are the first
+    ``len(data)`` index triples. Data that is longer than its vectors
+    asks for a triple that does not exist and raises ``IndexError``.
+
+    Args:
+        data: The object that was passed to ``write_ply``.
+        vectors: Its ``vectors`` as a plain array.
+
+    Returns:
+        (vertices, faces) where vertices is (N, 3) and faces is a
+        (len(data), 3) integer array.
+    """
+    unique_verts, inverse = np.unique(
+        vectors.reshape(-1, 3), axis=0, return_inverse=True
+    )
+    wanted: np.ndarray = np.arange(3 * len(data))
+    faces: np.ndarray = inverse.reshape(-1)[wanted].reshape(-1, 3)
+    return unique_verts, faces
+
+
 def _deduplicate_vertices(
     data: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -454,14 +481,20 @@ def _deduplicate_vertices(
         (vertices, faces) where vertices is (N, 3)
         float32 and faces is an (M, 3) integer array.
     """
-    all_verts = np.ascontiguousarray(data['vectors'].reshape(-1, 3))
+    # np.unique read the plain values of a masked array, so the mask is
+    # dropped here as well.
+    vectors: np.ndarray = np.asarray(data['vectors'])
+    if vectors.shape[1:] != (3, 3) or len(vectors) != len(data):
+        # The chunks below index one triangle per item of data.
+        return _deduplicate_with_unique(data, vectors)
+
+    all_verts = np.ascontiguousarray(vectors.reshape(-1, 3))
     row_dtype = np.dtype([(f'f{i}', all_verts.dtype) for i in range(3)])
     rows = all_verts.view(row_dtype).reshape(-1)
     # Match np.unique's row ordering, including signed zeros and NaNs.
     permutation = rows.argsort(kind='quicksort')
     del rows, all_verts
 
-    vectors = data['vectors']
     count = len(permutation)
     starts = np.empty(count, dtype=bool)
     starts[:1] = True
